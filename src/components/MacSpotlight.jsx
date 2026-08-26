@@ -15,7 +15,8 @@ export default function MacSpotlight({ onClose, onLaunchApp, onSelectProject, is
     { id: 'app-finder', title: 'Finder Workspace', type: 'app', action: () => onLaunchApp('finder'), icon: Folder },
     { id: 'app-terminal', title: 'Terminal Shell (zsh)', type: 'app', action: () => onLaunchApp('terminal'), icon: Terminal },
     { id: 'app-safari', title: 'Safari Web Browser', type: 'app', action: () => onLaunchApp('safari'), icon: Globe },
-    { id: 'app-notes', title: 'Notes Scratchpad', type: 'app', action: () => onLaunchApp('notes'), icon: FileText },
+    { id: 'app-notes', title: 'Notes Scratchpad (Resume Workspace)', type: 'app', action: () => onLaunchApp('notes'), icon: FileText },
+    { id: 'app-resume', title: 'Ishant Chauhan Resume & Bio.pdf', subtitle: 'Official Portfolio Resume Document', type: 'doc', action: () => onLaunchApp('notes'), icon: FileText },
     { id: "app-ipod", title: "iPod Classic Music Player", type: "app", action: () => onLaunchApp("ipod"), icon: Music },
     { id: 'app-system', title: 'About This Mac', type: 'app', action: () => onLaunchApp('system-info'), icon: Sparkles },
     ...PROJECTS_DATA.map(p => ({

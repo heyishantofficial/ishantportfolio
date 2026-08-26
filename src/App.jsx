@@ -229,9 +229,11 @@ export default function App() {
       setActiveAppTitle(nextState ? "iPod Classic" : "Finder");
       return;
     }
-    setActiveAppTitle(appId);
+    const targetApp = (appId === "resume" || appId === "resume.pdf") ? "notes" : appId;
+    setActiveAppTitle(targetApp === "notes" ? "Notes Workspace" : targetApp);
     setOpenApps(prev => ({
       ...prev,
+      [targetApp]: true,
       [appId]: true,
       creativeApp: appId === 'ae' || appId === 'ps' || appId === 'ai' ? appId : prev.creativeApp
     }));
@@ -244,6 +246,10 @@ export default function App() {
     if (appId === "ipod" || appId === "music" || appId === "cyberdeck") {
       setShowCyberdeck(false);
       setOpenApps(prev => ({ ...prev, ipod: false }));
+      return;
+    }
+    if (appId === "notes" || appId === "resume") {
+      setOpenApps(prev => ({ ...prev, notes: false, resume: false }));
       return;
     }
     setOpenApps(prev => ({ ...prev, [appId]: false }));

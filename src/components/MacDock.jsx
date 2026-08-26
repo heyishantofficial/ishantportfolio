@@ -221,6 +221,7 @@ export default function MacDock({
       {openApps.finder && (
         <FinderModal 
           onSelectProject={onSelectProject} 
+          onLaunchApp={onLaunchApp}
           onClose={() => onCloseApp('finder')} 
         />
       )}
@@ -248,7 +249,7 @@ export default function MacDock({
       {openApps.warning && (
         <DiagnosticsModal onClose={() => onCloseApp('warning')} />
       )}
-      {openApps.notes && (
+      {(openApps.notes || openApps.resume) && (
         <QuickNotesModal onClose={() => onCloseApp('notes')} />
       )}
       {openApps.photos && (

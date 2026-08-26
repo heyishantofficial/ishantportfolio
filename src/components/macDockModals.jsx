@@ -75,7 +75,7 @@ export function Mac3DFolderIcon({ title, itemsCount, onClick, isSelected }) {
 
 
 // 1. Finder App Modal (Exact 1:1 Replica of Image 2)
-export function FinderModal({ onSelectProject, onClose }) {
+export function FinderModal({ onSelectProject, onLaunchApp, onClose }) {
   const [activeSidebar, setActiveSidebar] = useState("downloads");
   const [selectedFolder, setSelectedFolder] = useState("geist-font");
   const [searchQuery, setSearchQuery] = useState("");
@@ -100,6 +100,12 @@ export function FinderModal({ onSelectProject, onClose }) {
 
   const handleFolderClick = (folder) => {
     setSelectedFolder(folder.id);
+    if (folder.projId === "resume") {
+      if (onLaunchApp) {
+        onLaunchApp("notes");
+      }
+      return;
+    }
     const targetProject = PROJECTS_DATA.find(p => p.id === folder.projId) || PROJECTS_DATA[0];
     if (onSelectProject) {
       onSelectProject(targetProject);

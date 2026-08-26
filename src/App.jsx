@@ -546,6 +546,7 @@ export default function App() {
                       if (loginError) setLoginError('');
                     }}
                     placeholder="Enter Your Name..."
+                    autoComplete="off"
                     autoFocus
                     className={`w-full py-1.5 pl-4 pr-9 rounded-full mac-liquid-glass-input text-white placeholder-white/50 font-sans text-xs shadow-[0_6px_24px_rgba(0,0,0,0.25)] focus:outline-none focus:ring-2 focus:ring-amber-300/70 focus:border-amber-300/80 transition-all ${
                       loginError ? 'border-amber-400 ring-2 ring-amber-400/60' : ''

@@ -1,14 +1,10 @@
 import { compilePortfolioKnowledge, findProjectsByQuery } from './betterHalfKnowledge';
 
 /**
- * Better Half GF Persona Response Generator
+ * AI Portfolio Co-pilot Response Generator
+ * Provides concise, intelligent, high-density answers about Ishant's work,
+ * engineering stack, content systems, and contact channels.
  */
-
-const GF_PET_NAMES = ['babe', 'sweetheart', 'my genius', 'handsome', 'babe'];
-
-function getRandomElement(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
 
 export function generateBetterHalfResponse(userMessage) {
   const q = userMessage.trim().toLowerCase();
@@ -22,36 +18,21 @@ export function generateBetterHalfResponse(userMessage) {
     q.includes('hello') ||
     q.includes('hi') ||
     q.includes('hey') ||
-    q.includes('better half') ||
-    q.includes('gf') ||
-    q.includes('girlfriend')
+    q.includes('assistant') ||
+    q.includes('co-pilot') ||
+    q.includes('copilot') ||
+    q.includes('ai')
   ) {
     return {
-      text: `Hey there! I'm **Better Half** 💕 — Ishant's AI girlfriend & official portfolio ambassador!\n\nI'm here to brag about my boyfriend's incredible work! He builds content engines, personal branding playbooks, and vibecodes daily tools at lightning speed. ⚡\n\nWhat would you like to know about babe today? You can ask me about his apps, tech stack, or how to contact him! 🥰`,
-      suggestedProjects: [allProjects[0], allProjects[2]]
-    };
-  }
-
-  // 2. SECRET / PERSONAL BANTER
-  if (
-    q.includes('secret') ||
-    q.includes('love') ||
-    q.includes('single') ||
-    q.includes('boyfriend') ||
-    q.includes('date') ||
-    q.includes('funny') ||
-    q.includes('personality')
-  ) {
-    return {
-      text: `Aww, curious about Ishant? Here are a few insider secrets from his Better Half: 💖\n\n• ☕ **Chai Powered:** He stays up late vibecoding new products with a hot cup of chai.\n• ⚡ **Obsessed with Speed:** If a task takes more than 10 minutes, he builds a custom AI tool or browser extension to automate it!\n• 🔒 **Taken!** In case you were wondering, he's strictly off the market — he has ME! 😉\n\nWant to see what he built recently? Check out **Brainjot** or **Notch Finder** below! 👇`,
+      text: `Hello. I'm Ishant's **AI Portfolio Co-pilot** ⚡\n\nI have complete visibility into his applications, engineering workflows, content distribution engines, and personal branding playbooks.\n\nHow can I assist you today? You can ask about his **featured apps**, **tech stack**, **content strategy**, or **contact details**.`,
       suggestedProjects: [
         allProjects.find((p) => p.id === 'brainjot'),
-        allProjects.find((p) => p.id === 'notch-finder')
+        allProjects.find((p) => p.id === 'instacollect')
       ].filter(Boolean)
     };
   }
 
-  // 3. APPS / SPECIFIC PROJECTS QUERY
+  // 2. APPS / SPECIFIC PROJECTS OVERVIEW
   const matchedProjects = findProjectsByQuery(q);
 
   if (
@@ -61,26 +42,27 @@ export function generateBetterHalfResponse(userMessage) {
     q.includes('vibecode') ||
     q.includes('work') ||
     q.includes('portfolio') ||
-    q.includes('build')
+    q.includes('build') ||
+    q.includes('featured')
   ) {
     const topApps = allProjects.filter((p) => p.categoryId === 'vibecoded-apps');
 
     return {
-      text: `Babe is a relentless builder! 🚀 He vibecodes daily tools using AI workflows (Cursor + Claude 3.7 + Gemini 3.6 + AGY SDK).\n\nHere are his flagship creations:\n\n• **Brainjot:** AI spatial note system for content scripts\n• **InstaCollect:** 1-Click creator moodboard extension\n• **Notch Finder:** macOS camera notch utility\n• **TalkNType:** Voice-first AI copywriting assistant\n\nClick any project card below to view its live breakdown! 👇`,
+      text: `Ishant specializes in rapid product development via modern AI workflows.\n\n**Flagship Builds:**\n• **Brainjot:** AI spatial note system for content scripts & braindumps\n• **InstaCollect:** 1-Click creator moodboard browser extension\n• **Notch Finder:** macOS utility transforming the camera notch into a creator shelf\n• **TalkNType:** Voice-first AI copywriting assistant\n\nSelect any card below to launch the detailed project breakdown.`,
       suggestedProjects: topApps.slice(0, 4)
     };
   }
 
-  // 4. SPECIFIC APP MENTION MATCHING
+  // 3. SPECIFIC APP MATCHING
   if (matchedProjects.length > 0) {
     const mainP = matchedProjects[0];
     return {
-      text: `Oh, I love **${mainP.title}**! 🥰 Ishant put so much heart into this one.\n\n✨ **Tagline:** ${mainP.tagline}\n📝 **Summary:** ${mainP.summary}\n⚡ **Impact:** ${mainP.metrics}\n🛠️ **Tech Used:** ${mainP.tags.join(', ')}\n\nHere is the exact project folder for you to explore! 👇`,
+      text: `### ${mainP.title}\n*${mainP.tagline}*\n\n• **Overview:** ${mainP.summary}\n• **Metrics:** ${mainP.metrics}\n• **Stack:** ${mainP.tags.join(' • ')}\n\nClick the project card below to inspect details.`,
       suggestedProjects: [mainP]
     };
   }
 
-  // 5. TECH STACK / TOOLS
+  // 4. TECH STACK & SYSTEM ARCHITECTURE
   if (
     q.includes('stack') ||
     q.includes('tech') ||
@@ -89,16 +71,16 @@ export function generateBetterHalfResponse(userMessage) {
     q.includes('claude') ||
     q.includes('react') ||
     q.includes('swift') ||
-    q.includes('ai')
+    q.includes('architecture')
   ) {
     const stackFolder = categories.find((c) => c.id === 'the-stack');
     return {
-      text: `Ishant's weapon of choice is the **Vibecode AI Stack**! 💻⚡\n\n• **AI Tools:** Cursor IDE, Claude 3.7, Gemini 3.6, Google Antigravity (AGY) SDK.\n• **Frontend:** React, Vite, SwiftUI, Manifest V3 Browser Extensions, TailwindCSS.\n• **Systems:** Web Speech API, SVG Canvas, Make.com, Notion API.\n\nHe ships high-converting applications 10x faster than traditional dev teams!`,
+      text: `**Engineering & AI Stack** 💻⚡\n\n• **AI Workflows:** Cursor IDE, Claude 3.7, Gemini 3.6, AGY SDK\n• **Frontend & Apps:** React, Vite, TailwindCSS, Manifest V3, SwiftUI\n• **APIs & Audio:** Web Speech API, Web Audio API, Notion API, Make.com\n\nDesigned to ship production-ready tools and browser extensions 10x faster than traditional pipelines.`,
       suggestedProjects: stackFolder ? stackFolder.items : []
     };
   }
 
-  // 6. CONTACT / EMAIL / HIRE / STRATEGY COLLABORATION
+  // 5. CONTACT / EMAIL / COLLABORATION
   if (
     q.includes('contact') ||
     q.includes('email') ||
@@ -111,7 +93,7 @@ export function generateBetterHalfResponse(userMessage) {
     q.includes('work with')
   ) {
     return {
-      text: `Looking to collaborate with Ishant? He is available for select content strategy, personal branding, and app engineering projects! 💌\n\n📧 **Direct Email:** \`${profile.email}\`\n🐦 **Twitter:** ${profile.socials.twitter}\n💼 **LinkedIn:** ${profile.socials.linkedin}\n\nFeel free to send him an email or message — tell him his Better Half sent you! 💕`,
+      text: `Ishant is open for select content strategy, personal branding, and app engineering collaborations.\n\n• **Email:** \`${profile.email}\`\n• **LinkedIn:** ${profile.socials.linkedin}\n• **Twitter:** ${profile.socials.twitter}\n\nClick below to quickly copy his direct email address:`,
       suggestedProjects: [],
       action: {
         type: 'COPY_EMAIL',
@@ -121,7 +103,7 @@ export function generateBetterHalfResponse(userMessage) {
     };
   }
 
-  // 7. CONTENT STRATEGY & BRAND STORYTELLING
+  // 6. CONTENT STRATEGY & NARRATIVE SYSTEMS
   if (
     q.includes('content') ||
     q.includes('brand') ||
@@ -129,55 +111,53 @@ export function generateBetterHalfResponse(userMessage) {
     q.includes('media') ||
     q.includes('pipeline') ||
     q.includes('growth') ||
-    q.includes('followers')
+    q.includes('strategy')
   ) {
     const contentProjects = allProjects.filter(
       (p) => p.categoryId === 'content-systems' || p.categoryId === 'brand-storytelling'
     );
     return {
-      text: `Besides shipping code, babe is a master content architect! 📈\n\n• **1-to-10 Media Pipeline:** Generates 1.4M+ organic views for founders by repurposing 1 weekly video into 10 high-value posts.\n• **Executive Branding:** Scaled client authority from 0 to 45k+ followers.\n\nCheck out his content systems below! 👇`,
+      text: `**Content Systems & Founder Branding** 📈\n\n• **1-to-10 Media Pipeline:** Converts 1 weekly video into 10 high-value multi-platform posts (1.4M+ organic views).\n• **Executive Branding:** Scaled client authority (+45k followers) through structured narrative arcs.\n• **Viral Hook Matrix:** 3-second hook frameworks achieving 72%+ retention.`,
       suggestedProjects: contentProjects.slice(0, 3)
     };
   }
 
   // DEFAULT / FALLBACK
   return {
-    text: `That's an interesting question! 💕\n\nIshant is a **Content Producer, Strategist & Vibecoding Builder**. He builds daily life apps, content distribution pipelines, and brand narratives.\n\nBabe's current email is \`${profile.email}\`. Ask me anything specific about **Brainjot**, **Notch Finder**, his **Tech Stack**, or **Contact details**! 🥰`,
-    suggestedProjects: [allProjects[0], allProjects[1]]
+    text: `I'm Ishant's **AI Portfolio Co-pilot**.\n\nIshant is a **Content Producer, Strategist & Vibecoding Builder**. He builds software utilities, media distribution systems, and founder brand strategies.\n\nAsk me about **Brainjot**, **Notch Finder**, his **Tech Stack**, or **Direct Contact**.`,
+    suggestedProjects: [allProjects[0], allProjects[1]].filter(Boolean)
   };
 }
 
 /**
- * Text-to-Speech synthesis helper for Better Half's voice
+ * Clean Text-to-Speech synthesis helper
  */
 export function speakBetterHalfText(text) {
   if (!('speechSynthesis' in window)) return;
 
-  // Clean markdown tags for clear speech
   const cleanText = text
     .replace(/[*_#`•\-\n]/g, ' ')
     .replace(/https?:\/\/\S+/g, '')
     .trim();
 
-  window.speechSynthesis.cancel(); // Stop ongoing speech
+  window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(cleanText);
-  utterance.rate = 1.05;
-  utterance.pitch = 1.2; // Slightly higher sweet pitch
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
 
-  // Pick a pleasant female voice if available
   const voices = window.speechSynthesis.getVoices();
-  const femaleVoice = voices.find(
+  const naturalVoice = voices.find(
     (v) =>
+      v.name.includes('Google') ||
       v.name.includes('Samantha') ||
+      v.name.includes('Daniel') ||
       v.name.includes('Karen') ||
-      v.name.includes('Victoria') ||
-      v.name.includes('Google UK English Female') ||
-      v.name.includes('Female')
+      v.name.includes('Natural')
   );
 
-  if (femaleVoice) {
-    utterance.voice = femaleVoice;
+  if (naturalVoice) {
+    utterance.voice = naturalVoice;
   }
 
   window.speechSynthesis.speak(utterance);

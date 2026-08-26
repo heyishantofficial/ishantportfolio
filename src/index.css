@@ -33,6 +33,36 @@ html, body {
   font-family: 'Instrument Serif', serif;
 }
 
+.font-script {
+  font-family: 'Caveat', 'Playfair Display', cursive, serif;
+}
+
+/* Mouse-reactive text character physics styling */
+.reactive-char {
+  display: inline-block;
+  transition: transform 0.12s cubic-bezier(0.1, 0.85, 0.25, 1), text-shadow 0.12s ease, filter 0.12s ease;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reactive-char {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Error Shake Animation for Input Field */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.animate-shake {
+  animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

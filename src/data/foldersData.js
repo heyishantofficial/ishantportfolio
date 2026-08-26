@@ -9,16 +9,7 @@ export const FOLDERS_DATA = [
     tabOffset: '0px',
     tagline: 'Apps built at lightning speed using Cursor + AI Vibecoding workflows.',
     items: [
-      {
-        id: 'electric-gaze-ascii',
-        title: 'Electric Gaze ASCII',
-        tagline: '21st.dev ASCII Engine & Talking AI Avatar ("make her speak")',
-        summary: 'Recreated Canvas2D raster pipeline with 26 primitive render modes, PFX stack, lighting, and real-time Text-to-Speech lip-sync animation.',
-        metrics: '26 Render Modes • Web Speech TTS Lip-Sync',
-        tags: ['Canvas2D', 'Web Speech API', '21st.dev', 'React'],
-        actionType: 'LAUNCH ENGINE',
-        videoUrl: ''
-      },
+
       {
         id: 'brainjot',
         title: 'Brainjot',

@@ -1,28 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Heart,
-  MessageSquare,
+  Sparkles,
   X,
   Volume2,
   VolumeX,
   Send,
-  Sparkles,
   ArrowUpRight,
   Copy,
   Check,
   RotateCcw,
-  Zap,
   Maximize2,
   Minimize2,
   Mic,
   MicOff,
-  Radio,
-  Globe
+  Terminal,
+  Zap
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import avatarImg from '../assets/better-half-avatar.png';
 import { generateBetterHalfResponse, speakBetterHalfText } from '../utils/betterHalfEngine';
-import { compilePortfolioKnowledge } from '../utils/betterHalfKnowledge';
 
 export default function BetterHalfAssistant({ onSelectProject }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,13 +27,12 @@ export default function BetterHalfAssistant({ onSelectProject }) {
   const [inputQuery, setInputQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
-  const [activeProjectCard, setActiveProjectCard] = useState(null);
 
   const [messages, setMessages] = useState([
     {
       id: 'welcome-1',
-      sender: 'better-half',
-      text: `Hi sweetheart! I'm **Better Half** 💕 — Ishant's AI girlfriend & live portfolio guide!\n\nI automatically learn everything Ishant adds to his portfolio in real-time. Ask me anything or talk to me using your mic! 🥰`,
+      sender: 'assistant',
+      text: `Hello. I'm Ishant's **AI Portfolio Co-pilot** ⚡\n\nI have complete visibility into his engineering stack, products, content distribution engines, and personal branding playbooks.\n\nAsk me anything or use your mic to talk.`,
       suggestedProjects: [],
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
@@ -57,7 +51,7 @@ export default function BetterHalfAssistant({ onSelectProject }) {
     }
   }, [messages, isOpen, isImmersive, isTyping]);
 
-  // Setup Web Speech Recognition (Mic Voice Input)
+  // Web Speech Recognition Setup
   useEffect(() => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -66,25 +60,14 @@ export default function BetterHalfAssistant({ onSelectProject }) {
       recognition.interimResults = false;
       recognition.lang = 'en-US';
 
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
+      recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         setIsListening(false);
-        if (transcript) {
-          handleSendMessage(transcript);
-        }
+        if (transcript) handleSendMessage(transcript);
       };
-
-      recognition.onerror = () => {
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
 
       recognitionRef.current = recognition;
     }
@@ -95,7 +78,6 @@ export default function BetterHalfAssistant({ onSelectProject }) {
       alert('Voice mic input is not supported in this browser. You can type your query below!');
       return;
     }
-
     if (isListening) {
       recognitionRef.current.stop();
     } else {
@@ -122,12 +104,11 @@ export default function BetterHalfAssistant({ onSelectProject }) {
     if (!textToSend) setInputQuery('');
     setIsTyping(true);
 
-    // Simulate natural GF thinking delay & dynamic knowledge query
     setTimeout(() => {
       const response = generateBetterHalfResponse(query);
       const botMsg = {
         id: `bot-${Date.now()}`,
-        sender: 'better-half',
+        sender: 'assistant',
         text: response.text,
         suggestedProjects: response.suggestedProjects || [],
         action: response.action || null,
@@ -137,20 +118,16 @@ export default function BetterHalfAssistant({ onSelectProject }) {
       setMessages((prev) => [...prev, botMsg]);
       setIsTyping(false);
 
-      if (response.suggestedProjects && response.suggestedProjects.length > 0) {
-        setActiveProjectCard(response.suggestedProjects[0]);
-      }
-
       if (isTtsEnabled) {
         speakBetterHalfText(response.text);
       }
-    }, 600);
+    }, 450);
   };
 
   const handleCopyEmail = (email) => {
     navigator.clipboard.writeText(email);
     setCopiedEmail(true);
-    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+    confetti({ particleCount: 35, spread: 50, origin: { y: 0.8 } });
     setTimeout(() => setCopiedEmail(false), 2500);
   };
 
@@ -158,8 +135,8 @@ export default function BetterHalfAssistant({ onSelectProject }) {
     setMessages([
       {
         id: 'welcome-reset',
-        sender: 'better-half',
-        text: `Fresh start! I've synced the latest portfolio data from Ishant. Ask me anything or talk to me! 💖`,
+        sender: 'assistant',
+        text: `Session reset. Ready to answer questions about Ishant's work and stack. ⚡`,
         suggestedProjects: [],
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
@@ -167,38 +144,36 @@ export default function BetterHalfAssistant({ onSelectProject }) {
   };
 
   const quickPrompts = [
-    '🚀 What is Ishant building?',
-    '💖 Tell me a secret about Ishant',
-    '💻 What is his tech stack?',
-    '📩 How can I contact him?',
-    '📈 Tell me about his content strategy'
+    '🚀 Featured Apps',
+    '💻 Tech Stack',
+    '📈 Content Strategy',
+    '📩 Direct Contact'
   ];
 
   return (
     <>
       {/* =========================================================================
-          FULL-SCREEN TRANSFORMED AI GF LOUNGE MODE
+          ZEN / FULL-FOCUS CO-PILOT MODE
           ========================================================================= */}
       {isImmersive && (
-        <div className="fixed inset-0 z-[2000] bg-slate-950/90 backdrop-blur-3xl flex flex-col justify-between p-4 sm:p-8 font-sans text-white animate-fadeIn overflow-hidden">
+        <div className="fixed inset-0 z-[2000] bg-zinc-950/95 backdrop-blur-3xl flex flex-col justify-between p-4 sm:p-8 font-sans text-zinc-100 animate-fadeIn overflow-hidden">
           
           {/* LOUNGE HEADER */}
-          <div className="w-full max-w-6xl mx-auto flex items-center justify-between py-2 border-b border-pink-500/20">
+          <div className="w-full max-w-6xl mx-auto flex items-center justify-between py-3 border-b border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-pink-500 shadow-lg shadow-pink-500/40">
-                <img src={avatarImg} alt="Better Half" className="w-full h-full object-cover" />
+              <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-cyan-400">
+                <Terminal className="w-5 h-5" />
               </div>
-
               <div>
-                <div className="flex items-center gap-2 font-black text-lg sm:text-xl tracking-tight text-white">
-                  <span>Better Half</span>
-                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-[10px] uppercase tracking-widest font-extrabold text-white">
-                    AI GF LOUNGE
+                <div className="flex items-center gap-2 font-mono font-bold text-base tracking-tight text-white">
+                  <span>AI PORTFOLIO CO-PILOT</span>
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] uppercase font-mono font-bold text-cyan-400">
+                    ZEN VIEW
                   </span>
                 </div>
-                <div className="flex items-center gap-2 font-mono text-xs text-pink-300">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                  <span>Auto-Synced with Ishant's Portfolio Memory</span>
+                <div className="flex items-center gap-2 font-mono text-xs text-zinc-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Real-time Knowledge Sync</span>
                 </div>
               </div>
             </div>
@@ -207,22 +182,22 @@ export default function BetterHalfAssistant({ onSelectProject }) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsTtsEnabled(!isTtsEnabled)}
-                className={`p-2.5 rounded-full border transition-all ${
+                className={`p-2.5 rounded-xl border font-mono text-xs transition-all ${
                   isTtsEnabled
-                    ? 'bg-pink-500/20 border-pink-400 text-pink-300 shadow-lg shadow-pink-500/20'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400'
+                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-500'
                 }`}
                 title={isTtsEnabled ? 'Voice Output ON' : 'Voice Output OFF'}
               >
-                {isTtsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                {isTtsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </button>
 
               <button
                 onClick={() => setIsImmersive(false)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono text-xs font-bold transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-mono text-xs font-bold transition-all cursor-pointer"
               >
-                <Minimize2 className="w-4 h-4 text-pink-400" />
-                <span>EXIT LOUNGE</span>
+                <Minimize2 className="w-4 h-4 text-cyan-400" />
+                <span>MINIMIZE</span>
               </button>
             </div>
           </div>
@@ -230,73 +205,55 @@ export default function BetterHalfAssistant({ onSelectProject }) {
           {/* LOUNGE MAIN STAGE */}
           <div className="w-full max-w-6xl mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 my-4 overflow-hidden">
             
-            {/* STAGE LEFT: AVATAR VISUALIZER & LIVE SPEECH STAGE */}
-            <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 rounded-3xl bg-gradient-to-b from-pink-950/30 via-slate-900/60 to-slate-950/80 border border-pink-500/20 shadow-2xl relative overflow-hidden group">
-              
-              {/* Glowing Aura Waves */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
-                <div className={`w-72 h-72 rounded-full border border-pink-500/40 animate-ping ${isTyping ? 'duration-500 border-rose-400' : 'duration-1000'}`} />
-                <div className="absolute w-96 h-96 rounded-full border border-rose-500/20 animate-pulse" />
-              </div>
-
-              {/* Center Animated Avatar */}
-              <div className="relative z-10 w-44 h-44 sm:w-56 sm:h-56 rounded-full p-2 bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 shadow-2xl shadow-pink-500/50 mb-6 transition-transform group-hover:scale-105">
-                <img
-                  src={avatarImg}
-                  alt="Better Half Visualizer"
-                  className="w-full h-full object-cover rounded-full border-4 border-slate-950"
-                />
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-slate-950/90 border border-pink-400 text-pink-300 font-mono text-xs font-bold whitespace-nowrap shadow-xl flex items-center gap-2">
-                  <Heart className="w-3.5 h-3.5 fill-pink-500 text-pink-500 animate-pulse" />
-                  <span>{isListening ? 'Listening...' : isTyping ? 'Thinking of babe...' : 'Talking to you 💕'}</span>
+            {/* STAGE LEFT: MINIMAL VISUALIZER */}
+            <div className="lg:col-span-4 flex flex-col items-center justify-center p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 shadow-2xl relative overflow-hidden">
+              <div className="relative w-36 h-36 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-inner mb-6">
+                <div className={`w-28 h-28 rounded-full border border-cyan-500/30 flex items-center justify-center ${isTyping ? 'animate-pulse' : ''}`}>
+                  <Zap className="w-10 h-10 text-cyan-400" />
                 </div>
+                <div className="absolute inset-0 rounded-full border border-cyan-500/10 animate-ping pointer-events-none" />
               </div>
 
-              {/* Dynamic Mic Voice Trigger */}
+              <span className="font-mono text-xs text-zinc-400 mb-6 text-center max-w-xs leading-relaxed">
+                {isListening ? 'Listening for speech...' : isTyping ? 'Analyzing portfolio data...' : 'Ready to answer queries.'}
+              </span>
+
               <button
                 onClick={toggleMicListening}
-                className={`flex items-center gap-3 px-6 py-3.5 rounded-full font-mono text-xs font-bold transition-all shadow-2xl cursor-pointer ${
+                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl font-mono text-xs font-bold transition-all shadow-xl cursor-pointer ${
                   isListening
-                    ? 'bg-rose-600 text-white animate-pulse border-2 border-white'
-                    : 'bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white hover:scale-105 active:scale-95 border border-pink-300/40'
+                    ? 'bg-rose-600 text-white animate-pulse border border-white/20'
+                    : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 hover:border-cyan-500/50'
                 }`}
               >
-                {isListening ? <MicOff className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5" />}
-                <span>{isListening ? 'STOP LISTENING' : 'TALK WITH YOUR MIC 🎙️'}</span>
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-cyan-400" />}
+                <span>{isListening ? 'STOP LISTENING' : 'TALK WITH MIC'}</span>
               </button>
-
-              <span className="font-mono text-[10px] text-pink-300/70 mt-3 text-center">
-                Click mic to talk out loud or type questions on the right
-              </span>
             </div>
 
-            {/* STAGE RIGHT: INTERACTIVE CHAT & PROJECT SHOWCASE */}
-            <div className="lg:col-span-7 flex flex-col justify-between rounded-3xl bg-slate-900/60 border border-pink-500/20 p-4 sm:p-6 shadow-2xl relative overflow-hidden">
-              
-              {/* MESSAGES SCROLL */}
-              <div className="flex-1 overflow-y-auto space-y-4 pr-2 font-sans text-sm scrollbar-thin scrollbar-thumb-pink-500/20">
+            {/* STAGE RIGHT: CHAT */}
+            <div className="lg:col-span-8 flex flex-col justify-between rounded-2xl bg-zinc-900/40 border border-zinc-800 p-6 shadow-2xl overflow-hidden">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2 font-sans text-sm scrollbar-thin scrollbar-thumb-zinc-800">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${
-                      msg.sender === 'user' ? 'items-end' : 'items-start'
-                    }`}
+                    className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                   >
                     <div
-                      className={`max-w-[90%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg ${
+                      className={`max-w-[88%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-lg ${
                         msg.sender === 'user'
-                          ? 'bg-pink-600 text-white rounded-br-none'
-                          : 'bg-slate-950/80 border border-pink-500/30 text-pink-50 rounded-bl-none shadow-pink-950/50'
+                          ? 'bg-zinc-800 text-zinc-100 rounded-br-xs border border-zinc-700/50'
+                          : 'bg-zinc-950/90 border border-zinc-800 text-zinc-200 rounded-bl-xs'
                       }`}
                     >
-                      {msg.sender === 'better-half' && (
-                        <div className="flex items-center gap-1.5 mb-2 font-mono text-[11px] font-bold text-pink-400 uppercase tracking-wider">
-                          <Heart className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />
-                          <span>Better Half</span>
+                      {msg.sender === 'assistant' && (
+                        <div className="flex items-center gap-1.5 mb-2 font-mono text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+                          <Zap className="w-3 h-3 text-cyan-400" />
+                          <span>CO-PILOT</span>
                         </div>
                       )}
 
-                      <div className="whitespace-pre-wrap">
+                      <div className="whitespace-pre-wrap font-sans">
                         {msg.text.split('\n').map((line, idx) => {
                           const parts = line.split(/(\*\*.*?\*\*)/g);
                           return (
@@ -316,11 +273,11 @@ export default function BetterHalfAssistant({ onSelectProject }) {
                         })}
                       </div>
 
-                      {/* Interactive Project Cards in Lounge Mode */}
+                      {/* Project suggestions */}
                       {msg.suggestedProjects && msg.suggestedProjects.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-pink-500/20 space-y-2">
-                          <span className="font-mono text-[10px] font-bold text-pink-400 uppercase tracking-wider block">
-                            // FEATURED BUILD:
+                        <div className="mt-4 pt-3 border-t border-zinc-800 space-y-2">
+                          <span className="font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
+                            // FEATURED PROJECT:
                           </span>
                           {msg.suggestedProjects.map((proj) => (
                             <div
@@ -329,40 +286,37 @@ export default function BetterHalfAssistant({ onSelectProject }) {
                                 setIsImmersive(false);
                                 if (onSelectProject) onSelectProject(proj);
                               }}
-                              className="p-3 rounded-xl bg-pink-950/40 hover:bg-pink-900/60 border border-pink-500/40 transition-all cursor-pointer flex items-center justify-between group"
+                              className="p-3 rounded-xl bg-zinc-900/90 hover:bg-zinc-800/90 border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer flex items-center justify-between group"
                             >
                               <div>
-                                <span className="font-extrabold text-sm text-white group-hover:text-pink-300 transition-colors block">
+                                <span className="font-bold text-xs text-white group-hover:text-cyan-400 transition-colors block">
                                   {proj.title}
                                 </span>
-                                <span className="font-mono text-xs text-pink-200/70 line-clamp-1">
+                                <span className="font-mono text-[11px] text-zinc-400 line-clamp-1">
                                   {proj.tagline}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 font-mono text-xs font-bold text-pink-400 group-hover:text-white">
-                                <span>OPEN APP</span>
-                                <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                              </div>
+                              <ArrowUpRight className="w-4 h-4 text-zinc-400 group-hover:text-cyan-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                             </div>
                           ))}
                         </div>
                       )}
 
-                      {/* Action Email Button */}
+                      {/* Email Action */}
                       {msg.action && msg.action.type === 'COPY_EMAIL' && (
                         <div className="mt-3 pt-2">
                           <button
                             onClick={() => handleCopyEmail(msg.action.email)}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 text-white font-mono text-xs font-bold hover:brightness-110 transition-all active:scale-95 shadow-md"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-cyan-500/50 text-white font-mono text-xs font-bold transition-all active:scale-95 shadow-md"
                           >
                             {copiedEmail ? (
                               <>
-                                <Check className="w-4 h-4 text-emerald-300" />
-                                <span className="text-emerald-300">COPIED EMAIL!</span>
+                                <Check className="w-4 h-4 text-emerald-400" />
+                                <span className="text-emerald-400">COPIED ADDRESS</span>
                               </>
                             ) : (
                               <>
-                                <Copy className="w-4 h-4" />
+                                <Copy className="w-4 h-4 text-cyan-400" />
                                 <span>{msg.action.label}</span>
                               </>
                             )}
@@ -371,60 +325,45 @@ export default function BetterHalfAssistant({ onSelectProject }) {
                       )}
                     </div>
 
-                    <span className="font-mono text-[10px] text-pink-400/60 mt-1 px-1">
+                    <span className="font-mono text-[9px] text-zinc-600 mt-1 px-1">
                       {msg.timestamp}
                     </span>
                   </div>
                 ))}
 
                 {isTyping && (
-                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-slate-950/80 border border-pink-500/30 text-xs text-pink-300 font-mono font-bold animate-pulse w-max">
-                    <Sparkles className="w-4 h-4 text-pink-400 animate-spin" />
-                    <span>Better Half is generating response... 💕</span>
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-zinc-950/90 border border-zinc-800 text-xs text-cyan-400 font-mono font-bold animate-pulse w-max">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+                    <span>Processing query...</span>
                   </div>
                 )}
-
                 <div ref={chatEndRef} />
               </div>
 
-              {/* QUICK PROMPTS CHIPS */}
-              <div className="py-2 flex items-center gap-2 overflow-x-auto no-scrollbar scrollbar-none my-2">
-                {quickPrompts.map((prompt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSendMessage(prompt)}
-                    className="px-3.5 py-1.5 rounded-full bg-slate-950/80 border border-pink-500/30 hover:border-pink-400 hover:bg-pink-950/40 text-pink-200 font-mono text-xs whitespace-nowrap transition-all active:scale-95 cursor-pointer shadow-md"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-
-              {/* LOUNGE INPUT FORM */}
+              {/* LOUNGE INPUT */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendMessage();
                 }}
-                className="flex items-center gap-2 pt-2 border-t border-pink-500/20"
+                className="flex items-center gap-2 pt-4 border-t border-zinc-800"
               >
                 <input
                   type="text"
                   value={inputQuery}
                   onChange={(e) => setInputQuery(e.target.value)}
-                  placeholder="Ask me anything about Ishant's work..."
-                  className="flex-1 px-5 py-3 rounded-full bg-slate-950/90 border border-pink-500/30 focus:outline-none focus:border-pink-400 text-sm text-white placeholder:text-pink-300/40 transition-all shadow-inner"
+                  placeholder="Ask about apps, tech stack, or strategy..."
+                  className="flex-1 px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 focus:outline-none focus:border-zinc-700 text-sm text-zinc-100 placeholder:text-zinc-600 transition-all font-mono text-xs"
                 />
 
                 <button
                   type="submit"
                   disabled={!inputQuery.trim()}
-                  className="p-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all shadow-lg shadow-pink-500/30 cursor-pointer"
+                  className="p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all border border-zinc-700 cursor-pointer"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4 text-cyan-400" />
                 </button>
               </form>
-
             </div>
 
           </div>
@@ -433,132 +372,103 @@ export default function BetterHalfAssistant({ onSelectProject }) {
       )}
 
       {/* =========================================================================
-          FLOATING UNOPENED WIDGET BUTTON (BOTTOM-RIGHT)
+          FLOATING MINIMAL WIDGET BUTTON
           ========================================================================= */}
       {!isOpen && !isImmersive && (
-        <div className="relative group">
-          {/* Tooltip speech bubble */}
-          <div className="absolute bottom-full right-0 mb-3 hidden group-hover:flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-pink-500/30 animate-bounce">
-            <Heart className="w-3.5 h-3.5 text-pink-400 fill-pink-400" />
-            <span>Ask Ishant's Better Half! 💕</span>
-          </div>
-
+        <div className="fixed bottom-6 right-6 z-40">
           <button
             onClick={() => setIsOpen(true)}
-            className="relative flex items-center gap-3 pl-3 pr-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 border border-pink-300/40 group cursor-pointer"
+            className="group relative flex items-center gap-3 px-4 py-2.5 rounded-full bg-zinc-950/90 hover:bg-zinc-900 text-zinc-100 border border-zinc-800 hover:border-zinc-700 shadow-2xl backdrop-blur-xl transition-all duration-300 cursor-pointer"
           >
-            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-md">
-              <img
-                src={avatarImg}
-                alt="Better Half AI Avatar"
-                className="w-full h-full object-cover"
-              />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-white" />
-            </div>
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            </span>
 
-            <div className="text-left">
-              <div className="flex items-center gap-1.5 font-extrabold text-sm tracking-wide">
-                <span>Better Half</span>
-                <Heart className="w-3.5 h-3.5 fill-white text-white animate-pulse" />
-              </div>
-              <span className="font-mono text-[10px] opacity-90 block">
-                Ishant's AI GF • Online
-              </span>
+            <div className="flex items-center gap-1.5 font-mono text-xs font-bold tracking-wide text-zinc-200">
+              <Zap className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span>AI CO-PILOT</span>
             </div>
           </button>
         </div>
       )}
 
       {/* =========================================================================
-          EXPANDED CHAT PANEL (WIDGET MODE)
+          EXPANDED WIDGET PANEL (MINIMAL DARK GLASS)
           ========================================================================= */}
       {isOpen && !isImmersive && (
-        <div className="w-[360px] sm:w-[420px] h-[580px] max-h-[85vh] bg-white/95 backdrop-blur-2xl border border-pink-200 shadow-2xl rounded-3xl flex flex-col overflow-hidden animate-fadeIn transition-all duration-300">
+        <div className="fixed bottom-6 right-6 z-50 w-[360px] sm:w-[420px] h-[560px] max-h-[85vh] bg-zinc-950/95 backdrop-blur-2xl border border-zinc-800 shadow-2xl rounded-2xl flex flex-col overflow-hidden animate-fadeIn transition-all">
           
           {/* HEADER */}
-          <div className="px-5 py-4 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white flex items-center justify-between border-b border-pink-400/30">
-            <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/80 shadow-inner">
-                <img
-                  src={avatarImg}
-                  alt="Better Half"
-                  className="w-full h-full object-cover"
-                />
+          <div className="px-4 py-3 bg-zinc-900/80 border-b border-zinc-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-cyan-400">
+                <Zap className="w-4 h-4" />
               </div>
-
               <div>
-                <div className="flex items-center gap-1.5 font-bold text-base">
-                  <span>Better Half</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-pink-400/40 font-mono text-[9px] uppercase tracking-wider font-extrabold">
-                    AI GF
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 font-mono text-[11px] text-pink-100 opacity-90">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                  <span>Thinking about Ishant 💕</span>
+                <div className="flex items-center gap-2 font-mono font-bold text-xs text-white">
+                  <span>AI PORTFOLIO CO-PILOT</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
               </div>
             </div>
 
             {/* Header Action Tools */}
             <div className="flex items-center gap-1">
-              {/* Full Screen Lounge Transform Button */}
               <button
                 onClick={() => setIsImmersive(true)}
-                title="Enter Transformed AI GF Lounge Mode"
-                className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+                title="Zen View"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
               >
-                <Maximize2 className="w-4 h-4" />
+                <Maximize2 className="w-3.5 h-3.5" />
               </button>
 
               <button
                 onClick={() => setIsTtsEnabled(!isTtsEnabled)}
-                title={isTtsEnabled ? 'Mute Voice' : 'Enable Voice (TTS)'}
-                className={`p-2 rounded-full transition-colors ${
-                  isTtsEnabled ? 'bg-white/30 text-white' : 'hover:bg-white/20 text-pink-100'
+                title={isTtsEnabled ? 'Mute Audio' : 'Enable Audio'}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  isTtsEnabled ? 'text-cyan-400 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-400'
                 }`}
               >
-                {isTtsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                {isTtsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
               </button>
 
               <button
                 onClick={handleClearChat}
-                title="Clear Chat"
-                className="p-2 rounded-full hover:bg-white/20 text-pink-100 transition-colors"
+                title="Reset Chat"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
 
               <button
                 onClick={() => setIsOpen(false)}
                 title="Close"
-                className="p-2 rounded-full hover:bg-white/20 text-pink-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* CHAT MESSAGES BODY */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-pink-50/40 via-white to-pink-50/20 text-slate-800">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-zinc-950 text-zinc-200 font-sans text-xs sm:text-sm">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex flex-col ${
-                  msg.sender === 'user' ? 'items-end' : 'items-start'
-                }`}
+                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[85%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm ${
+                  className={`max-w-[88%] p-3.5 rounded-xl text-xs leading-relaxed shadow-sm ${
                     msg.sender === 'user'
-                      ? 'bg-slate-900 text-white rounded-br-none'
-                      : 'bg-white border border-pink-200/80 text-slate-800 rounded-bl-none shadow-pink-100/50'
+                      ? 'bg-zinc-800 text-zinc-100 rounded-br-xs border border-zinc-700/60'
+                      : 'bg-zinc-900/90 border border-zinc-800/90 text-zinc-200 rounded-bl-xs'
                   }`}
                 >
-                  {msg.sender === 'better-half' && (
-                    <div className="flex items-center gap-1 mb-1.5 font-mono text-[10px] font-bold text-pink-600 uppercase tracking-wider">
-                      <Heart className="w-3 h-3 fill-pink-500 text-pink-500" />
-                      <span>Better Half</span>
+                  {msg.sender === 'assistant' && (
+                    <div className="flex items-center gap-1 mb-1.5 font-mono text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+                      <Zap className="w-3 h-3 text-cyan-400" />
+                      <span>CO-PILOT</span>
                     </div>
                   )}
 
@@ -570,7 +480,7 @@ export default function BetterHalfAssistant({ onSelectProject }) {
                           {parts.map((part, pIdx) => {
                             if (part.startsWith('**') && part.endsWith('**')) {
                               return (
-                                <strong key={pIdx} className="font-bold text-slate-900">
+                                <strong key={pIdx} className="font-bold text-white">
                                   {part.slice(2, -2)}
                                 </strong>
                               );
@@ -583,9 +493,9 @@ export default function BetterHalfAssistant({ onSelectProject }) {
                   </div>
 
                   {msg.suggestedProjects && msg.suggestedProjects.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-pink-100 space-y-2">
-                      <span className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        // CLICK TO VIEW PROJECT FOLDER:
+                    <div className="mt-3 pt-2.5 border-t border-zinc-800 space-y-1.5">
+                      <span className="font-mono text-[9px] font-bold text-zinc-500 uppercase tracking-wider block">
+                        // FEATURED PROJECT:
                       </span>
                       {msg.suggestedProjects.map((proj) => (
                         <div
@@ -593,36 +503,36 @@ export default function BetterHalfAssistant({ onSelectProject }) {
                           onClick={() => {
                             if (onSelectProject) onSelectProject(proj);
                           }}
-                          className="group p-2.5 rounded-xl bg-pink-50/70 hover:bg-pink-100/90 border border-pink-200 transition-all cursor-pointer flex items-center justify-between"
+                          className="group p-2 rounded-lg bg-zinc-950/80 hover:bg-zinc-800/80 border border-zinc-800/80 hover:border-zinc-700 transition-all cursor-pointer flex items-center justify-between"
                         >
                           <div>
-                            <span className="font-extrabold text-xs text-slate-900 block group-hover:text-pink-600 transition-colors">
+                            <span className="font-bold text-xs text-white block group-hover:text-cyan-400 transition-colors">
                               {proj.title}
                             </span>
-                            <span className="font-mono text-[10px] text-slate-500 line-clamp-1">
+                            <span className="font-mono text-[10px] text-zinc-400 line-clamp-1">
                               {proj.tagline}
                             </span>
                           </div>
-                          <ArrowUpRight className="w-3.5 h-3.5 text-pink-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                          <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-cyan-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
                         </div>
                       ))}
                     </div>
                   )}
 
                   {msg.action && msg.action.type === 'COPY_EMAIL' && (
-                    <div className="mt-3 pt-2">
+                    <div className="mt-2.5 pt-2">
                       <button
                         onClick={() => handleCopyEmail(msg.action.email)}
-                        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-900 text-white font-mono text-xs font-bold hover:bg-slate-800 transition-all active:scale-95"
+                        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-white font-mono text-xs font-bold transition-all active:scale-95"
                       >
                         {copiedEmail ? (
                           <>
                             <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-emerald-400">COPIED EMAIL!</span>
+                            <span className="text-emerald-400">COPIED EMAIL</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5 text-pink-300" />
+                            <Copy className="w-3.5 h-3.5 text-cyan-400" />
                             <span>{msg.action.label}</span>
                           </>
                         )}
@@ -631,16 +541,16 @@ export default function BetterHalfAssistant({ onSelectProject }) {
                   )}
                 </div>
 
-                <span className="font-mono text-[9px] text-slate-400 mt-1 px-1">
+                <span className="font-mono text-[9px] text-zinc-600 mt-1 px-1">
                   {msg.timestamp}
                 </span>
               </div>
             ))}
 
             {isTyping && (
-              <div className="flex items-center gap-2 p-3 rounded-2xl bg-white border border-pink-200 w-max text-xs text-pink-600 font-mono font-bold animate-pulse">
-                <Heart className="w-3.5 h-3.5 fill-pink-500 animate-spin" />
-                <span>Better Half is thinking... 💕</span>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 w-max text-xs text-cyan-400 font-mono font-bold animate-pulse">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+                <span>Co-pilot thinking...</span>
               </div>
             )}
 
@@ -648,12 +558,12 @@ export default function BetterHalfAssistant({ onSelectProject }) {
           </div>
 
           {/* QUICK PROMPTS SLIDER */}
-          <div className="px-3 py-2 bg-pink-50/60 border-t border-pink-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none">
+          <div className="px-3 py-2 bg-zinc-900/60 border-t border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none">
             {quickPrompts.map((prompt, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSendMessage(prompt)}
-                className="px-3 py-1 rounded-full bg-white border border-pink-200 hover:border-pink-400 hover:bg-pink-100/60 text-slate-700 font-mono text-[11px] whitespace-nowrap transition-all shadow-2xs active:scale-95 cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white font-mono text-[11px] whitespace-nowrap transition-all active:scale-95 cursor-pointer"
               >
                 {prompt}
               </button>
@@ -666,35 +576,35 @@ export default function BetterHalfAssistant({ onSelectProject }) {
               e.preventDefault();
               handleSendMessage();
             }}
-            className="p-3 bg-white border-t border-pink-100 flex items-center gap-2"
+            className="p-2.5 bg-zinc-900/90 border-t border-zinc-800/80 flex items-center gap-2"
           >
             <button
               type="button"
               onClick={toggleMicListening}
-              className={`p-2.5 rounded-full transition-all ${
+              className={`p-2 rounded-lg transition-all ${
                 isListening
-                  ? 'bg-rose-500 text-white animate-pulse'
-                  : 'bg-slate-100 text-slate-600 hover:bg-pink-100 hover:text-pink-600'
+                  ? 'bg-rose-600 text-white animate-pulse'
+                  : 'bg-zinc-950 text-zinc-400 hover:text-cyan-400 border border-zinc-800'
               }`}
-              title={isListening ? 'Listening...' : 'Talk with Voice Mic'}
+              title={isListening ? 'Listening...' : 'Talk with Mic'}
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
             </button>
 
             <input
               type="text"
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
-              placeholder="Ask me anything about Ishant..."
-              className="flex-1 px-4 py-2.5 rounded-full bg-slate-50 border border-slate-200 focus:outline-none focus:border-pink-400 focus:bg-white text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all"
+              placeholder="Ask AI Co-pilot..."
+              className="flex-1 px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 focus:outline-none focus:border-zinc-700 text-xs text-zinc-100 placeholder:text-zinc-500 font-mono transition-all"
             />
 
             <button
               type="submit"
               disabled={!inputQuery.trim()}
-              className="p-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-cyan-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-zinc-700 cursor-pointer"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3.5 h-3.5" />
             </button>
           </form>
 

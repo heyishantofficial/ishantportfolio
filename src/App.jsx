@@ -13,6 +13,7 @@ import OfficeCoutureFolder from './components/OfficeCoutureFolder';
 import ProjectModal from './components/ProjectModal';
 import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
+import { CircularProgressCombined } from './components/CircularProgress';
 import { playBootChime } from './utils/macAudioEngine';
 
 export default function App() {
@@ -65,8 +66,9 @@ export default function App() {
   }, []);
 
   const [isAppReady, setIsAppReady] = useState(false);
+  const [isBootLoading, setIsBootLoading] = useState(true);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(25);
+  const [loadingProgress, setLoadingProgress] = useState(15);
   const [bgVideoSrc, setBgVideoSrc] = useState('/bg-video.mp4');
   const [lockVideoSrc, setLockVideoSrc] = useState('/lock-video.mp4');
 
@@ -132,6 +134,16 @@ export default function App() {
       clearTimeout(fallbackTimer);
     };
   }, [isVideoLoaded, isAppReady]);
+
+  // Transition from Circular Progress Loader to Quote & Login Screen when complete
+  useEffect(() => {
+    if (loadingProgress >= 100 && isBootLoading) {
+      const timer = setTimeout(() => {
+        setIsBootLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loadingProgress, isBootLoading]);
 
   // LOGIN UNLOCK FUNCTION (NAME LOGIN)
   const handleBootSystem = (e) => {
@@ -519,66 +531,97 @@ export default function App() {
               <span className="ml-1 tracking-tight font-medium">{loginTimeStr || 'Sat Aug 26 16:54'}</span>
             </div>
 
-            {/* Center User Login Card — Positioned in upper blue sky zone above green hills */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="flex flex-col items-center justify-start mt-6 sm:mt-12 mb-auto z-10 space-y-2.5 w-full max-w-2xl text-center"
-            >
-              {/* One-Time Morphing Entrance & Mouse-Reactive Quote Heading */}
-              <AnimatedQuoteHeading />
+            {/* Center Stage — Loading Screen vs User Login Screen */}
+            <AnimatePresence mode="wait">
+              {isBootLoading ? (
+                <motion.div 
+                  key="boot-loader"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9, filter: 'blur(8px)' }}
+                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex flex-col items-center justify-center my-auto z-10 space-y-4 text-center"
+                >
+                  <div className="p-8 sm:p-10 rounded-3xl mac-liquid-glass-input border border-white/30 shadow-[0_16px_48px_rgba(0,0,0,0.4)] backdrop-blur-2xl flex flex-col items-center justify-center gap-5">
+                    <CircularProgressCombined
+                      value={loadingProgress}
+                      size={80}
+                      thickness={6}
+                      className="text-amber-300"
+                    />
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="font-mono text-xs font-bold tracking-widest uppercase text-white drop-shadow-md">
+                        Loading Workspace...
+                      </span>
+                      <span className="font-mono text-[11px] text-white/70">
+                        {loadingProgress}% Complete
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="login-screen"
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex flex-col items-center justify-start mt-6 sm:mt-12 mb-auto z-10 space-y-2.5 w-full max-w-2xl text-center"
+                >
+                  {/* One-Time Morphing Entrance & Mouse-Reactive Quote Heading */}
+                  <AnimatedQuoteHeading />
 
-              {/* Helper Subtitle */}
-              <p className="text-[11px] sm:text-xs font-sans text-white/80 drop-shadow-md mb-1.5 font-medium tracking-wide">
-                Enter your name to log in
-              </p>
+                  {/* Helper Subtitle */}
+                  <p className="text-[11px] sm:text-xs font-sans text-white/80 drop-shadow-md mb-1.5 font-medium tracking-wide">
+                    Enter your name to log in
+                  </p>
 
-              {/* Liquid Glass macOS Input Form */}
-              <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-52 sm:w-60 max-w-[250px]">
-                <div className={`w-full relative flex items-center ${isShaking ? 'animate-shake' : ''}`}>
-                  <input
-                    ref={nameInputRef}
-                    type="text"
-                    value={viewerName}
-                    onChange={(e) => {
-                      setViewerName(e.target.value);
-                      if (loginError) setLoginError('');
-                    }}
-                    placeholder="Enter Your Name..."
-                    autoComplete="off"
-                    autoFocus
-                    className={`w-full py-1.5 pl-4 pr-9 rounded-full mac-liquid-glass-input text-white placeholder-white/50 font-sans text-xs shadow-[0_6px_24px_rgba(0,0,0,0.25)] focus:outline-none focus:ring-2 focus:ring-amber-300/70 focus:border-amber-300/80 transition-all ${
-                      loginError ? 'border-amber-400 ring-2 ring-amber-400/60' : ''
-                    }`}
-                  />
+                  {/* Liquid Glass macOS Input Form */}
+                  <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-52 sm:w-60 max-w-[250px]">
+                    <div className={`w-full relative flex items-center ${isShaking ? 'animate-shake' : ''}`}>
+                      <input
+                        ref={nameInputRef}
+                        type="text"
+                        value={viewerName}
+                        onChange={(e) => {
+                          setViewerName(e.target.value);
+                          if (loginError) setLoginError('');
+                        }}
+                        placeholder="Enter Your Name..."
+                        autoComplete="off"
+                        autoFocus
+                        className={`w-full py-1.5 pl-4 pr-9 rounded-full mac-liquid-glass-input text-white placeholder-white/50 font-sans text-xs shadow-[0_6px_24px_rgba(0,0,0,0.25)] focus:outline-none focus:ring-2 focus:ring-amber-300/70 focus:border-amber-300/80 transition-all ${
+                          loginError ? 'border-amber-400 ring-2 ring-amber-400/60' : ''
+                        }`}
+                      />
+                      <button
+                        type="submit"
+                        className="absolute right-1 w-5.5 h-5.5 rounded-full bg-white/20 hover:bg-white/35 active:scale-90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/30 shadow-sm"
+                        title="Unlock"
+                      >
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Validation Error Message */}
+                  {loginError && (
+                    <p className="font-mono text-[11px] text-amber-300 font-bold animate-fadeIn">
+                      {loginError}
+                    </p>
+                  )}
+
+                  {/* Click to Unlock Liquid Glass Prompt Button */}
                   <button
-                    type="submit"
-                    className="absolute right-1 w-5.5 h-5.5 rounded-full bg-white/20 hover:bg-white/35 active:scale-90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/30 shadow-sm"
-                    title="Unlock"
+                    type="button"
+                    onClick={handleBootSystem}
+                    className="mt-2 px-4 py-1.5 rounded-full mac-liquid-glass-btn text-white/90 font-mono text-[11px] transition-all cursor-pointer active:scale-95 hover:bg-white/25 font-semibold flex items-center gap-1.5"
                   >
-                    <ArrowRight className="w-3 h-3" />
+                    <span>{isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName}` : 'Click to Unlock'}</span>
+                    <span>🔒</span>
                   </button>
-                </div>
-              </form>
-
-              {/* Validation Error Message */}
-              {loginError && (
-                <p className="font-mono text-[11px] text-amber-300 font-bold animate-fadeIn">
-                  {loginError}
-                </p>
+                </motion.div>
               )}
-
-              {/* Click to Unlock Liquid Glass Prompt Button */}
-              <button
-                type="button"
-                onClick={handleBootSystem}
-                className="mt-2 px-4 py-1.5 rounded-full mac-liquid-glass-btn text-white/90 font-mono text-[11px] transition-all cursor-pointer active:scale-95 hover:bg-white/25 font-semibold flex items-center gap-1.5"
-              >
-                <span>{isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName}` : 'Click to Unlock'}</span>
-                <span>🔒</span>
-              </button>
-            </motion.div>
+            </AnimatePresence>
 
             {/* Bottom macOS Action Buttons */}
             <div className="flex items-center justify-center gap-10 z-10 pb-4">

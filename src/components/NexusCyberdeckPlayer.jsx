@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './nexusCyberdeck.css';
 import { Play, Pause, SkipBack, SkipForward, Minus, Maximize2, X, RefreshCw, Volume1, Volume2, VolumeX, Shuffle, Repeat } from 'lucide-react';
 
-export default function NexusCyberdeckPlayer({ onClose }) {
+export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMuted = false, onIsPlayingChange }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progressWidth, setProgressWidth] = useState(0);
   const [currentTimeStr, setCurrentTimeStr] = useState("0:00");
@@ -16,6 +16,42 @@ export default function NexusCyberdeckPlayer({ onClose }) {
   const [volume, setVolume] = useState(80);
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
+  // Sync iPod playback state with parent callback (for background audio ducking)
+  useEffect(() => {
+    if (onIsPlayingChange) {
+      onIsPlayingChange(isPlaying);
+    }
+  }, [isPlaying, onIsPlayingChange]);
+
+  // Sync master volume and mute from top menu bar / control center controls
+  useEffect(() => {
+    const effectiveVol = isMuted ? 0 : masterVolume;
+    setVolume(effectiveVol);
+    if (playerRef.current) {
+      try {
+        if (typeof playerRef.current.setVolume === 'function') {
+          playerRef.current.setVolume(effectiveVol);
+        }
+        if (isMuted) {
+          if (typeof playerRef.current.mute === 'function') playerRef.current.mute();
+        } else {
+          if (typeof playerRef.current.unMute === 'function') playerRef.current.unMute();
+        }
+      } catch (err) {}
+    }
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: isMuted ? 'mute' : 'unMute', args: '' }),
+          '*'
+        );
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'setVolume', args: [effectiveVol] }),
+          '*'
+        );
+      } catch (err) {}
+    }
+  }, [masterVolume, isMuted]);
 
   const playClickSound = () => {
     try {
@@ -455,7 +491,7 @@ export default function NexusCyberdeckPlayer({ onClose }) {
           ref={iframeRef}
           id="yt-player-iframe"
           className="w-1 h-1 border-0"
-          src={`https://www.youtube.com/embed/videoseries?si=wZpUvQDLhFD5G0-O&list=${ytPlaylistId}&autoplay=1&enablejsapi=1`} 
+          src={`https://www.youtube.com/embed/videoseries?si=wZpUvQDLhFD5G0-O&list=${ytPlaylistId}&autoplay=0&enablejsapi=1`} 
           title="YouTube background audio stream" 
           allow="autoplay"
         />

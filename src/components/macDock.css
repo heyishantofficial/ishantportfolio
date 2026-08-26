@@ -1,0 +1,341 @@
+/* macOS Sequoia Styling System */
+
+/* Wallpaper Theme Background Gradients */
+.wallpaper-video {
+  background-color: #000000;
+}
+
+.wallpaper-custom {
+  background-image: url('/bg-poc.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.wallpaper-sequoia {
+  background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+}
+
+.wallpaper-sonoma {
+  background: radial-gradient(circle at 60% 30%, #b45309 0%, #be123c 45%, #311042 100%);
+}
+
+.wallpaper-neon {
+  background: radial-gradient(circle at 30% 40%, #030712 0%, #1e1b4b 50%, #0284c7 100%);
+}
+
+.wallpaper-aurora {
+  background: radial-gradient(circle at 70% 30%, #022c22 0%, #115e59 45%, #020617 100%);
+}
+
+/* macOS Dock Styling & Magnification */
+.mac-dock-container {
+  position: fixed;
+  bottom: 0.85rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9990;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(32px) saturate(210%);
+  -webkit-backdrop-filter: blur(32px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.3),
+    0 10px 15px -5px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mac-dock-container {
+    background: rgba(18, 18, 24, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 
+      0 20px 50px -10px rgba(0, 0, 0, 0.6),
+      inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  }
+}
+
+.mac-dock-item-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 0.18rem;
+  cursor: pointer;
+  outline: none;
+  transform-origin: bottom center;
+}
+
+.mac-dock-icon {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.95rem;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: filter 0.15s ease;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mac-dock-icon:hover {
+  filter: brightness(1.1);
+}
+
+.mac-dock-icon:active {
+  filter: brightness(0.9);
+}
+
+/* App bounce animation on launch */
+@keyframes macDockBounce {
+  0% { transform: translateY(0); }
+  25% { transform: translateY(-22px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+
+.mac-dock-bounce {
+  animation: macDockBounce 0.75s cubic-bezier(0.28, 0.84, 0.42, 1);
+}
+
+/* Active indicator dot underneath icon */
+.mac-dock-dot {
+  position: absolute;
+  bottom: -0.35rem;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Vertical Separator Divider Line */
+.mac-dock-divider {
+  width: 1px;
+  height: 2.6rem;
+  margin: 0 0.4rem;
+  background: rgba(255, 255, 255, 0.35);
+  align-self: center;
+  box-shadow: 0.5px 0 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Sleek macOS Dark Tooltip */
+.mac-dock-tooltip {
+  position: absolute;
+  top: -2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.65rem;
+  background: rgba(20, 20, 24, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  animation: macTooltipFadeIn 0.15s ease-out;
+}
+
+.mac-dock-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px 4px 0 4px;
+  border-style: solid;
+  border-color: rgba(20, 20, 24, 0.85) transparent transparent transparent;
+}
+
+@keyframes macTooltipFadeIn {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* macOS Window Modal Styles */
+.mac-window-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9980;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: macWindowOverlayFade 0.2s ease-out;
+}
+
+@keyframes macWindowOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mac-window {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 0.85rem;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: macWindowPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #1e293b;
+}
+
+@keyframes macWindowPop {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.mac-window-titlebar {
+  height: 38px;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.85rem;
+  user-select: none;
+}
+
+.mac-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mac-btn-close {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff5f56;
+  border: 1px solid #e0443e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 10px;
+  font-weight: bold;
+}
+.mac-btn-close:hover { color: #4c0000; }
+
+.mac-btn-minimize {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffbd2e;
+  border: 1px solid #dea123;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 10px;
+  font-weight: bold;
+}
+.mac-btn-minimize:hover { color: #5c4100; }
+
+.mac-btn-expand {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #27c93f;
+  border: 1px solid #1aab29;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 10px;
+  font-weight: bold;
+}
+.mac-btn-expand:hover { color: #004d0d; }
+
+.mac-window-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mac-window-body {
+  padding: 1.25rem;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+
+/* Sequoia Ultra-Frosted Glass Window Material */
+.mac-window-glass {
+  background: rgba(255, 255, 255, 0.62) !important;
+  backdrop-filter: blur(40px) saturate(210%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(210%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  border-radius: 1.4rem !important;
+  box-shadow: 
+    0 35px 70px -15px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.9) !important;
+}
+
+.mac-window-glass-dark {
+  background: rgba(24, 28, 38, 0.72) !important;
+  backdrop-filter: blur(45px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(45px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 1.4rem !important;
+  box-shadow: 
+    0 35px 70px -15px rgba(0, 0, 0, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Glass Pocket Cards from Screenshot 2 */
+.glass-pocket-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 15px 35px -10px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.glass-pocket-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 
+    0 22px 45px -10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+.glass-pocket-bottom {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.12) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}

@@ -15,30 +15,64 @@ const InstagramIcon = (props) => (
   </svg>
 );
 
-// Draggable & Resizable macOS Window Container Component
-export function MacWindow({ title, icon: IconComponent, onClose, onMinimize, children, width = 'max-w-3xl' }) {
+// Draggable & Resizable macOS Window Container Component with Ultra-Frosted Sequoia Material
+export function MacWindow({ title, icon: IconComponent, onClose, onMinimize, children, width = "max-w-4xl", isDark = false }) {
   return (
     <div className="mac-window-overlay" onClick={onClose}>
-      <div className={`mac-window ${width}`} onClick={(e) => e.stopPropagation()}>
-        <div className="mac-window-titlebar">
-          <div className="mac-window-controls">
-            <button className="mac-btn-close" onClick={onClose} title="Close">×</button>
-            <button className="mac-btn-minimize" onClick={onMinimize || onClose} title="Minimize">–</button>
-            <button className="mac-btn-expand" onClick={onClose} title="Maximize">+</button>
+      <div className={`mac-window ${width} ${isDark ? "mac-window-glass-dark text-slate-100" : "mac-window-glass text-slate-900"}`} onClick={(e) => e.stopPropagation()}>
+        {/* Continuous Glass Titlebar */}
+        <div className="h-10 px-4 flex items-center justify-between select-none relative z-20">
+          <div className="flex items-center gap-2">
+            <button className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:opacity-80 transition-opacity" onClick={onClose} title="Close" />
+            <button className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:opacity-80 transition-opacity" onClick={onMinimize || onClose} title="Minimize" />
+            <button className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:opacity-80 transition-opacity" onClick={onClose} title="Maximize" />
           </div>
-          <div className="mac-window-title font-sans">
-            {IconComponent && <IconComponent className="w-4 h-4 text-slate-600" />}
+          <div className="text-xs font-semibold flex items-center gap-1.5 opacity-80">
+            {IconComponent && <IconComponent className="w-3.5 h-3.5" />}
             <span>{title}</span>
           </div>
-          <div className="w-12"></div>
+          <div className="w-14" />
         </div>
-        <div className="mac-window-body">
+        <div className="p-4 sm:p-5 pt-0 max-h-[82vh] overflow-y-auto">
           {children}
         </div>
       </div>
     </div>
   );
 }
+
+// 3D macOS Blue Folder Icon Matching Photo 1
+export function Mac3DFolderIcon({ title, itemsCount, onClick, isSelected }) {
+  return (
+    <div 
+      onClick={onClick}
+      className={`group p-3 rounded-2xl transition-all duration-200 cursor-pointer flex flex-col items-center justify-center text-center ${
+        isSelected 
+          ? "bg-white/60 dark:bg-white/15 border border-white/80 dark:border-white/20 shadow-lg backdrop-blur-xl scale-105" 
+          : "hover:bg-white/40 dark:hover:bg-white/10 hover:shadow-md backdrop-blur-md border border-transparent"
+      }`}
+    >
+      {/* 3D Blue Folder Graphic */}
+      <div className="relative w-16 h-14 mb-2 transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-0.5">
+        {/* Back Tab */}
+        <div className="absolute top-0 left-1 w-6 h-4 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-t-md shadow-sm" />
+        {/* Front Pocket */}
+        <div className="absolute bottom-0 inset-x-0 h-11 bg-gradient-to-b from-[#5194ff] via-[#3b82f6] to-[#2563eb] rounded-xl shadow-md border border-blue-300/50 flex items-center justify-center overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-3 bg-gradient-to-b from-white/35 to-transparent rounded-t-xl" />
+          <div className="w-7 h-1 bg-white/40 rounded-full blur-[0.5px]" />
+        </div>
+      </div>
+
+      <div className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate max-w-[110px]">
+        {title}
+      </div>
+      <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+        {itemsCount}
+      </div>
+    </div>
+  );
+}
+
 
 // 1. Finder App Modal
 export function FinderModal({ onSelectProject, onClose }) {
@@ -646,21 +680,51 @@ export function DiagnosticsModal({ onClose }) {
   );
 }
 
-// 7. Quick Notes Modal (Notes App featuring Resume - No Scroll Fit)
+// 7. Quick Notes & Glass Workspace Modal (Exact 1:1 Match to Photo 2)
 export function QuickNotesModal({ onClose }) {
-  const [activeTab, setActiveTab] = useState("resume");
+  const [activeTab, setActiveTab] = useState("pockets");
   const [isZoomed, setIsZoomed] = useState(false);
-  const [noteText, setNoteText] = useState(
-    "💡 Ishant's Developer Scratchpad:\n- Vibecoded apps suite shipped with AI workflows\n- High retention content strategy systems\n- macOS Sequoia glassmorphism UI engine\n- Open for creative collaborations!"
-  );
-  const [saved, setSaved] = useState(false);
+  const [activeNote, setActiveNote] = useState(null);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  const handleDownload = () => {
+  const pocketCards = [
+    {
+      id: "career",
+      title: "Design Career",
+      badge: "125",
+      updated: "Edited 18 mins ago",
+      noteText: "I'm starting a new internship soon, I wonder if I have what it takes or if I just got really lucky?",
+      secondaryText: "Leadership / 10 things failure taught me"
+    },
+    {
+      id: "ai",
+      title: "AI thinking",
+      badge: "167",
+      updated: "Edited 3 hrs ago",
+      noteText: "I wonder if there is a future of AI identities - login with openai lol... wait this is gonna be real and then all the context and personalization...",
+      secondaryText: "Anthropic vs OpenAI vs Gemini"
+    },
+    {
+      id: "tech",
+      title: "Fun tech",
+      badge: "67",
+      updated: "Edited 8 hrs ago",
+      noteText: "Nintendo design philosophy teaches us that fun, playful design in itself is another strength. In an age where everything is minimal, there will be a resurgence of tech...",
+      secondaryText: "Developer Platforms for OpenAI"
+    },
+    {
+      id: "resume",
+      title: "Official Resume",
+      badge: "2027",
+      updated: "Edited 1 day ago",
+      noteText: "Ishant Chauhan — Full-Stack AI Engineer & Creator Resume Document 2027.",
+      secondaryText: "Click to View High-Res Image"
+    }
+  ];
+
+  const handleDownloadResume = () => {
     const link = document.createElement("a");
     link.href = "/resume.jpg";
     link.download = "Ishant_Chauhan_Resume.jpg";
@@ -671,134 +735,138 @@ export function QuickNotesModal({ onClose }) {
 
   return (
     <>
-      <MacWindow title="Notes — Ishant Chauhan Resume" icon={FileText} onClose={onClose} width="max-w-4xl">
-        <div className="flex flex-col md:flex-row gap-4 h-[540px] max-h-[72vh] overflow-hidden select-none">
-          {/* Notes App Sidebar */}
-          <div className="w-full md:w-56 bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5 flex flex-col gap-2 shrink-0 h-full overflow-hidden">
-            <div className="px-2 py-1 flex items-center justify-between">
-              <span className="text-[11px] font-bold tracking-wider uppercase text-amber-900/60 font-mono">
-                All Notes (2)
-              </span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+      <MacWindow title="Notes Workspace — Thought Architecture" icon={FileText} onClose={onClose} width="max-w-5xl" isDark={true}>
+        <div className="flex flex-col h-[520px] max-h-[75vh] select-none overflow-hidden text-slate-100 p-2 sm:p-4">
+          
+          {/* Top Greeting Header from Photo 2 */}
+          <div className="flex items-center justify-between mb-4 px-2 shrink-0">
+            <div>
+              <h1 className="font-sans font-extrabold text-2xl sm:text-3xl text-slate-100 tracking-tight">
+                {greeting}, Ishant
+              </h1>
             </div>
-
-            {/* Note 1: Resume */}
-            <button
-              onClick={() => setActiveTab("resume")}
-              className={`w-full text-left p-2.5 rounded-lg transition-all flex items-start gap-2.5 cursor-pointer ${
-                activeTab === "resume"
-                  ? "bg-amber-500 text-white shadow-md"
-                  : "hover:bg-amber-100/80 text-slate-700"
-              }`}
-            >
-              <FileText className={`w-4 h-4 mt-0.5 shrink-0 ${activeTab === "resume" ? "text-white" : "text-amber-600"}`} />
-              <div className="overflow-hidden">
-                <div className="font-semibold text-xs truncate">Ishant Chauhan — Resume</div>
-                <div className={`text-[10px] mt-0.5 truncate ${activeTab === "resume" ? "text-amber-100" : "text-slate-500"}`}>
-                  Official Resume 2027 • Image
-                </div>
-              </div>
-            </button>
-
-            {/* Note 2: Scratchpad */}
-            <button
-              onClick={() => setActiveTab("scratchpad")}
-              className={`w-full text-left p-2.5 rounded-lg transition-all flex items-start gap-2.5 cursor-pointer ${
-                activeTab === "scratchpad"
-                  ? "bg-amber-500 text-white shadow-md"
-                  : "hover:bg-amber-100/80 text-slate-700"
-              }`}
-            >
-              <Sparkles className={`w-4 h-4 mt-0.5 shrink-0 ${activeTab === "scratchpad" ? "text-white" : "text-amber-600"}`} />
-              <div className="overflow-hidden">
-                <div className="font-semibold text-xs truncate">Scratchpad & Ideas</div>
-                <div className={`text-[10px] mt-0.5 truncate ${activeTab === "scratchpad" ? "text-amber-100" : "text-slate-500"}`}>
-                  macOS Quick Note • Drafts
-                </div>
-              </div>
-            </button>
-
-            <div className="mt-auto p-2 bg-amber-100/50 rounded-lg border border-amber-200/50 text-[10px] text-amber-900/80 flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>Synced with iCloud</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsZoomed(true)}
+                className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-400" />
+                <span>View Resume</span>
+              </button>
             </div>
           </div>
 
-          {/* Main Note View Area — Fixed Height No Scroll */}
-          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-            {activeTab === "resume" ? (
-              <div className="flex flex-col h-full space-y-2.5 overflow-hidden">
-                {/* Note Top Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-slate-900 text-white shadow-sm shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="font-mono text-xs font-bold text-slate-200">
-                      Ishant_Chauhan_Resume_2027.jpg
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-5 overflow-hidden">
+            {/* Left Column: Recent Drafts & Thought Inbox (Photo 2) */}
+            <div className="md:col-span-5 flex flex-col gap-4 overflow-y-auto pr-1">
+              
+              {/* Recent Drafts Section */}
+              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-sans font-bold text-xs text-slate-300">Recent Drafts</span>
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <Search className="w-3.5 h-3.5 hover:text-white cursor-pointer" />
+                    <span className="text-sm cursor-pointer hover:text-white font-bold ml-1">+</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-[11px] font-mono text-slate-400">
+                  <div className="p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer text-slate-200">
+                    AI thinking / OpenAI / <span className="text-white font-semibold">Is OpenAI losing its most?</span>
+                  </div>
+                  <div className="p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer text-slate-200">
+                    Design Career / Leadership / <span className="text-white font-semibold">10 things failure taught me</span>
+                  </div>
+                  <div className="p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer text-slate-200">
+                    AI thinking / ... / <span className="text-white font-semibold">Anthropic vs OpenAI vs Gemini</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-sans font-medium px-2 pt-1 hover:text-slate-300 cursor-pointer">
+                    See more →
+                  </div>
+                </div>
+              </div>
+
+              {/* Thought Inbox Section */}
+              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex-1 flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-sans font-bold text-xs text-slate-300">Thought Inbox</span>
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <Search className="w-3.5 h-3.5 hover:text-white cursor-pointer" />
+                    <span className="text-sm cursor-pointer hover:text-white font-bold ml-1">+</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 overflow-y-auto flex-1">
+                  <div className="p-2.5 rounded-xl bg-white/10 border border-white/15 text-xs text-slate-200 font-medium flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 rounded border border-white/40 flex items-center justify-center text-[10px] bg-emerald-500/20 text-emerald-300">✓</span>
+                    <span>Developer Platforms for OpenAI</span>
+                  </div>
+
+                  <div 
+                    onClick={() => setIsZoomed(true)}
+                    className="p-3 rounded-xl bg-white/15 border border-white/20 text-xs text-slate-100 font-medium space-y-1.5 cursor-pointer hover:bg-white/20 transition-all shadow-md"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 rounded border border-white/40 flex items-center justify-center text-[10px] bg-emerald-500/20 text-emerald-300">✓</span>
+                      <span className="font-bold">Ishant's Official Resume (2027)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 font-mono pl-5 leading-relaxed line-clamp-2">
+                      Full-Stack AI Builder & Portfolio Re-issue Document. Click to open image lightbox.
+                    </p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 font-medium flex items-center gap-2 cursor-pointer">
+                    <span className="w-3.5 h-3.5 rounded border border-white/30" />
+                    <span>Humane Pin Pitfalls</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Column: The 4 Glass Pocket Cards (Exact Photo 2 Grid) */}
+            <div className="md:col-span-7 grid grid-cols-2 gap-4 overflow-y-auto pr-1">
+              {pocketCards.map((card) => (
+                <div
+                  key={card.id}
+                  onClick={() => card.id === "resume" ? setIsZoomed(true) : setActiveNote(card)}
+                  className="glass-pocket-card p-4 flex flex-col justify-between relative group cursor-pointer overflow-hidden min-h-[220px]"
+                >
+                  {/* Top Info */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-sans font-extrabold text-sm text-white tracking-tight">
+                        {card.title}
+                      </h3>
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/15 text-slate-200 border border-white/20">
+                        {card.badge}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400 block mb-3">
+                      {card.updated}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setIsZoomed(true)}
-                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
-                      title="View Full Resolution Lightbox"
-                    >
-                      <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Zoom</span>
-                    </button>
-                    <button
-                      onClick={handleDownload}
-                      className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download</span>
-                    </button>
-                  </div>
-                </div>
 
-                {/* Resume Image Attachment Viewer - Full Height No Scroll */}
-                <div 
-                  onClick={() => setIsZoomed(true)}
-                  className="relative group rounded-xl border border-amber-200/80 bg-amber-50/40 p-2 overflow-hidden shadow-inner cursor-pointer flex-1 flex items-center justify-center h-full w-full"
-                >
-                  <img
-                    src="/resume.jpg"
-                    alt="Ishant Chauhan Resume"
-                    className="max-h-full max-w-full h-auto w-auto object-contain rounded-lg shadow-md transition-transform duration-300 group-hover:scale-[1.01]"
-                  />
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl backdrop-blur-[2px]">
-                    <div className="px-4 py-2 bg-white/95 backdrop-blur-md rounded-full shadow-xl text-slate-900 font-sans text-xs font-bold flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                      <Maximize2 className="w-4 h-4 text-amber-600" />
-                      <span>Click to Zoom Fullscreen</span>
+                  {/* Physical Note Card Sticking out of Glass Pocket (Photo 2) */}
+                  <div className="relative pt-4 mt-auto">
+                    {/* Stacked Note Sheet Behind */}
+                    <div className="absolute top-1 inset-x-2 h-16 bg-white/90 rounded-xl shadow-sm transform -rotate-2" />
+                    
+                    {/* Main Physical White Note Sheet */}
+                    <div className="relative z-10 p-3 bg-white text-slate-900 rounded-xl shadow-lg transform transition-transform duration-300 group-hover:-translate-y-2">
+                      <p className="text-[10px] font-sans font-medium leading-relaxed text-slate-800 line-clamp-3">
+                        {card.noteText}
+                      </p>
                     </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col h-full space-y-2.5 overflow-hidden">
-                <div className="flex justify-between items-center bg-amber-100/70 p-2 rounded-xl border border-amber-200 shrink-0">
-                  <div className="flex items-center gap-2 text-xs text-amber-900 font-medium">
-                    <Sparkles className="w-4 h-4 text-amber-600" />
-                    <span>macOS Quick Note</span>
-                  </div>
-                  <button 
-                    onClick={handleSave}
-                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                  >
-                    {saved ? <CheckCircle2 className="w-3.5 h-3.5" /> : null}
-                    {saved ? "Saved" : "Save Note"}
-                  </button>
-                </div>
 
-                <textarea
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  className="w-full flex-1 p-4 rounded-xl border border-amber-200/80 bg-amber-50/40 text-slate-800 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none leading-relaxed h-full"
-                  placeholder="Write your thoughts..."
-                />
-              </div>
-            )}
+                    {/* Translucent Glass Pocket at Bottom */}
+                    <div className="glass-pocket-bottom absolute inset-x-0 bottom-0 h-14 rounded-b-xl z-20 pointer-events-none" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
           </div>
+
         </div>
       </MacWindow>
 
@@ -811,10 +879,10 @@ export function QuickNotesModal({ onClose }) {
           <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
             <div className="absolute -top-12 right-0 flex items-center gap-3">
               <button
-                onClick={handleDownload}
+                onClick={handleDownloadResume}
                 className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-full transition-all flex items-center gap-1.5 shadow-lg cursor-pointer"
               >
-                <Download className="w-4 h-4" /> Download
+                <Download className="w-4 h-4" /> Download Resume
               </button>
               <button
                 onClick={() => setIsZoomed(false)}
@@ -834,7 +902,6 @@ export function QuickNotesModal({ onClose }) {
     </>
   );
 }
-
 
 
 // 8. Photos Modal

@@ -667,47 +667,10 @@ export function DiagnosticsModal({ onClose }) {
 
 // 7. Quick Notes & Glass Workspace Modal (Exact 1:1 Match to Photo 2)
 export function QuickNotesModal({ onClose }) {
-  const [activeTab, setActiveTab] = useState("pockets");
   const [isZoomed, setIsZoomed] = useState(false);
-  const [activeNote, setActiveNote] = useState(null);
-
+  const [activeTab, setActiveTab] = useState("resume"); // "resume" by default so resume shows directly!
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-
-  const pocketCards = [
-    {
-      id: "career",
-      title: "Design Career",
-      badge: "125",
-      updated: "Edited 18 mins ago",
-      noteText: "I'm starting a new internship soon, I wonder if I have what it takes or if I just got really lucky?",
-      secondaryText: "Leadership / 10 things failure taught me"
-    },
-    {
-      id: "ai",
-      title: "AI thinking",
-      badge: "167",
-      updated: "Edited 3 hrs ago",
-      noteText: "I wonder if there is a future of AI identities - login with openai lol... wait this is gonna be real and then all the context and personalization...",
-      secondaryText: "Anthropic vs OpenAI vs Gemini"
-    },
-    {
-      id: "tech",
-      title: "Fun tech",
-      badge: "67",
-      updated: "Edited 8 hrs ago",
-      noteText: "Nintendo design philosophy teaches us that fun, playful design in itself is another strength. In an age where everything is minimal, there will be a resurgence of tech...",
-      secondaryText: "Developer Platforms for OpenAI"
-    },
-    {
-      id: "resume",
-      title: "Official Resume",
-      badge: "2027",
-      updated: "Edited 1 day ago",
-      noteText: "Ishant Chauhan — Full-Stack AI Engineer & Creator Resume Document 2027.",
-      secondaryText: "Click to View High-Res Image"
-    }
-  ];
 
   const handleDownloadResume = () => {
     const link = document.createElement("a");
@@ -720,134 +683,149 @@ export function QuickNotesModal({ onClose }) {
 
   return (
     <>
-      <MacWindow title="Notes Workspace — Thought Architecture" icon={FileText} onClose={onClose} width="max-w-5xl" isDark={true}>
-        <div className="flex flex-col h-[520px] max-h-[75vh] select-none overflow-hidden text-slate-100 p-2 sm:p-4">
+      <MacWindow title="Notes Workspace — Official Resume Document" icon={FileText} onClose={onClose} width="max-w-6xl" isDark={true}>
+        <div className="flex flex-col h-[560px] max-h-[80vh] select-none overflow-hidden text-slate-100 p-2 sm:p-4">
           
-          {/* Top Greeting Header from Photo 2 */}
-          <div className="flex items-center justify-between mb-4 px-2 shrink-0">
-            <div>
-              <h1 className="font-sans font-extrabold text-2xl sm:text-3xl text-slate-100 tracking-tight">
-                {greeting}, Ishant
-              </h1>
+          {/* Top Header Bar */}
+          <div className="flex items-center justify-between mb-3 px-2 shrink-0 border-b border-white/10 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-bold">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="font-sans font-extrabold text-lg sm:text-xl text-slate-100 tracking-tight">
+                  {greeting}, Ishant
+                </h1>
+                <p className="text-[11px] text-slate-400 font-mono">
+                  Official Portfolio Resume & Thought Architecture Document (2027)
+                </p>
+              </div>
             </div>
+
+            {/* Top Action Buttons */}
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleDownloadResume}
+                className="px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-all flex items-center gap-1.5 shadow-md cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download PDF</span>
+              </button>
               <button
                 onClick={() => setIsZoomed(true)}
                 className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
-                <FileText className="w-3.5 h-3.5 text-amber-400" />
-                <span>View Resume</span>
+                <Maximize2 className="w-3.5 h-3.5 text-blue-400" />
+                <span>Full Lightbox</span>
               </button>
             </div>
           </div>
 
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-5 overflow-hidden">
-            {/* Left Column: Recent Drafts & Thought Inbox (Photo 2) */}
-            <div className="md:col-span-5 flex flex-col gap-4 overflow-y-auto pr-1">
+          {/* Main Content Area */}
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden">
+            
+            {/* Left Sidebar List (Notes & Document Switcher) */}
+            <div className="md:col-span-4 flex flex-col gap-3 overflow-y-auto pr-1">
               
-              {/* Recent Drafts Section */}
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-sans font-bold text-xs text-slate-300">Recent Drafts</span>
-                  <div className="flex items-center gap-1 text-slate-400">
-                    <Search className="w-3.5 h-3.5 hover:text-white cursor-pointer" />
-                    <span className="text-sm cursor-pointer hover:text-white font-bold ml-1">+</span>
-                  </div>
+              {/* Primary Active Document Item: Resume */}
+              <div 
+                onClick={() => setActiveTab("resume")}
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                  activeTab === "resume"
+                    ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/50 shadow-lg ring-1 ring-amber-400/40"
+                    : "bg-white/5 hover:bg-white/10 border-white/10"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-sans font-bold text-xs text-amber-300 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Official Resume Document</span>
+                  </span>
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 border border-amber-400/30">
+                    2027
+                  </span>
                 </div>
-                <div className="space-y-1.5 text-[11px] font-mono text-slate-400">
-                  <div className="p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer text-slate-200">
-                    AI thinking / OpenAI / <span className="text-white font-semibold">Is OpenAI losing its most?</span>
-                  </div>
-                  <div className="p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer text-slate-200">
-                    Design Career / Leadership / <span className="text-white font-semibold">10 things failure taught me</span>
-                  </div>
-                  <div className="p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer text-slate-200">
-                    AI thinking / ... / <span className="text-white font-semibold">Anthropic vs OpenAI vs Gemini</span>
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-sans font-medium px-2 pt-1 hover:text-slate-300 cursor-pointer">
-                    See more →
-                  </div>
-                </div>
+                <p className="text-[11px] text-slate-300 font-mono leading-relaxed line-clamp-2">
+                  Full-Stack AI Builder & Portfolio Re-issue Document. High-resolution scan.
+                </p>
               </div>
 
-              {/* Thought Inbox Section */}
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex-1 flex flex-col">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-sans font-bold text-xs text-slate-300">Thought Inbox</span>
-                  <div className="flex items-center gap-1 text-slate-400">
-                    <Search className="w-3.5 h-3.5 hover:text-white cursor-pointer" />
-                    <span className="text-sm cursor-pointer hover:text-white font-bold ml-1">+</span>
-                  </div>
+              {/* Drafts Section */}
+              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                  Drafts & Notes
                 </div>
-                
-                <div className="space-y-2 overflow-y-auto flex-1">
-                  <div className="p-2.5 rounded-xl bg-white/10 border border-white/15 text-xs text-slate-200 font-medium flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded border border-white/40 flex items-center justify-center text-[10px] bg-emerald-500/20 text-emerald-300">✓</span>
-                    <span>Developer Platforms for OpenAI</span>
-                  </div>
-
-                  <div 
-                    onClick={() => setIsZoomed(true)}
-                    className="p-3 rounded-xl bg-white/15 border border-white/20 text-xs text-slate-100 font-medium space-y-1.5 cursor-pointer hover:bg-white/20 transition-all shadow-md"
+                {[
+                  { id: "career", title: "Design Career", desc: "10 things failure taught me", badge: "125" },
+                  { id: "ai", title: "AI Thinking", desc: "Anthropic vs OpenAI vs Gemini", badge: "167" },
+                  { id: "tech", title: "Fun Tech", desc: "Developer Platforms for OpenAI", badge: "67" }
+                ].map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`p-2.5 rounded-xl text-xs transition-colors cursor-pointer border ${
+                      activeTab === item.id 
+                        ? "bg-white/20 border-white/30 text-white font-bold" 
+                        : "bg-white/5 hover:bg-white/10 border-transparent text-slate-300"
+                    }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="w-3.5 h-3.5 rounded border border-white/40 flex items-center justify-center text-[10px] bg-emerald-500/20 text-emerald-300">✓</span>
-                      <span className="font-bold">Ishant's Official Resume (2027)</span>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-bold">{item.title}</span>
+                      <span className="text-[9px] text-slate-400 font-mono">{item.badge}</span>
                     </div>
-                    <p className="text-[11px] text-slate-300 font-mono pl-5 leading-relaxed line-clamp-2">
-                      Full-Stack AI Builder & Portfolio Re-issue Document. Click to open image lightbox.
-                    </p>
+                    <span className="text-[10px] text-slate-400 font-mono truncate block">{item.desc}</span>
                   </div>
-
-                  <div className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 font-medium flex items-center gap-2 cursor-pointer">
-                    <span className="w-3.5 h-3.5 rounded border border-white/30" />
-                    <span>Humane Pin Pitfalls</span>
-                  </div>
-                </div>
+                ))}
               </div>
 
             </div>
 
-            {/* Right Column: The 4 Glass Pocket Cards (Exact Photo 2 Grid) */}
-            <div className="md:col-span-7 grid grid-cols-2 gap-4 overflow-y-auto pr-1">
-              {pocketCards.map((card) => (
-                <div
-                  key={card.id}
-                  onClick={() => card.id === "resume" ? setIsZoomed(true) : setActiveNote(card)}
-                  className="glass-pocket-card p-4 flex flex-col justify-between relative group cursor-pointer overflow-hidden min-h-[220px]"
-                >
-                  {/* Top Info */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-sans font-extrabold text-sm text-white tracking-tight">
-                        {card.title}
-                      </h3>
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-white/15 text-slate-200 border border-white/20">
-                        {card.badge}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-400 block mb-3">
-                      {card.updated}
-                    </span>
-                  </div>
-
-                  {/* Physical Note Card Sticking out of Glass Pocket (Photo 2) */}
-                  <div className="relative pt-4 mt-auto">
-                    {/* Stacked Note Sheet Behind */}
-                    <div className="absolute top-1 inset-x-2 h-16 bg-white/90 rounded-xl shadow-sm transform -rotate-2" />
+            {/* Right Main Viewer (Displays Resume Directly inside this window!) */}
+            <div className="md:col-span-8 bg-slate-950/60 rounded-2xl border border-white/10 overflow-hidden flex flex-col relative shadow-inner">
+              
+              {activeTab === "resume" ? (
+                <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-col items-center justify-start scrollbar-thin">
+                  <div className="relative group max-w-full">
+                    {/* The Actual Main Resume Image Rendered Directly in Window */}
+                    <img
+                      src="/resume.jpg"
+                      alt="Ishant Chauhan Official Resume Document"
+                      className="max-w-full h-auto rounded-xl shadow-2xl border border-white/20 object-contain cursor-zoom-in transition-transform duration-300 group-hover:scale-[1.01]"
+                      onClick={() => setIsZoomed(true)}
+                    />
                     
-                    {/* Main Physical White Note Sheet */}
-                    <div className="relative z-10 p-3 bg-white text-slate-900 rounded-xl shadow-lg transform transition-transform duration-300 group-hover:-translate-y-2">
-                      <p className="text-[10px] font-sans font-medium leading-relaxed text-slate-800 line-clamp-3">
-                        {card.noteText}
-                      </p>
+                    {/* Hover Overlay Badge */}
+                    <div 
+                      onClick={() => setIsZoomed(true)}
+                      className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/30 text-white text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-xl flex items-center gap-1.5"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Click for Full Screen</span>
                     </div>
-
-                    {/* Translucent Glass Pocket at Bottom */}
-                    <div className="glass-pocket-bottom absolute inset-x-0 bottom-0 h-14 rounded-b-xl z-20 pointer-events-none" />
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="flex-1 p-6 overflow-y-auto flex flex-col justify-between text-slate-200">
+                  <div>
+                    <h2 className="font-sans font-extrabold text-xl text-white mb-2">
+                      {activeTab === "career" ? "Design Career Notes" : activeTab === "ai" ? "AI Thinking & Identity" : "Fun Tech Philosophy"}
+                    </h2>
+                    <p className="text-xs font-sans leading-relaxed text-slate-300">
+                      {activeTab === "career" && "I am starting a new internship soon, I wonder if I have what it takes or if I just got really lucky? Leadership and 10 things failure taught me."}
+                      {activeTab === "ai" && "I wonder if there is a future of AI identities - login with openai lol... wait this is gonna be real and then all the context and personalization..."}
+                      {activeTab === "tech" && "Nintendo design philosophy teaches us that fun, playful design in itself is another strength. In an age where everything is minimal, there will be a resurgence of tech..."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("resume")}
+                    className="mt-4 px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-xs transition-all w-fit cursor-pointer flex items-center gap-1.5"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Back to Official Resume</span>
+                  </button>
+                </div>
+              )}
+
             </div>
 
           </div>
@@ -855,7 +833,7 @@ export function QuickNotesModal({ onClose }) {
         </div>
       </MacWindow>
 
-      {/* Lightbox / Zoom Modal for High-Res Resume View */}
+      {/* Lightbox / Zoom Modal for High-Res Fullscreen View */}
       {isZoomed && (
         <div 
           className="fixed inset-0 z-[20000] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-fadeIn"
@@ -869,17 +847,18 @@ export function QuickNotesModal({ onClose }) {
               >
                 <Download className="w-4 h-4" /> Download Resume
               </button>
-              <button
+              <button 
                 onClick={() => setIsZoomed(false)}
-                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
+                className="p-1.5 bg-white/20 hover:bg-white/30 text-white rounded-full transition-colors cursor-pointer"
               >
-                ×
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <img
-              src="/resume.jpg"
-              alt="Ishant Chauhan Resume High Res"
-              className="max-h-[85vh] w-auto object-contain rounded-xl shadow-2xl border border-white/10"
+            
+            <img 
+              src="/resume.jpg" 
+              alt="Ishant Chauhan Resume High Res" 
+              className="max-h-[85vh] max-w-full object-contain rounded-xl shadow-2xl border border-white/20"
             />
           </div>
         </div>
@@ -888,8 +867,6 @@ export function QuickNotesModal({ onClose }) {
   );
 }
 
-
-// 8. Photos Modal
 export function PhotosModal({ onClose }) {
   const samplePhotos = [
     { title: 'Vibecoded App Canvas', category: 'UI Design', color: 'from-blue-500 to-indigo-600' },

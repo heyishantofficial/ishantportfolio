@@ -87,6 +87,14 @@ export default function MacMenuBar({
                   <span className="text-[10px] opacity-70">M3 Max</span>
                 </button>
 
+                <button 
+                  onClick={() => handleAppAction('settings')}
+                  className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-semibold"
+                >
+                  <span>System Settings...</span>
+                  <span className="text-[10px] opacity-70">⚙️ Wallpapers</span>
+                </button>
+
                 <div className="my-1 border-t border-slate-300/40 dark:border-slate-700/40" />
 
                 <button 

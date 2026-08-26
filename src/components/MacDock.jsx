@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import { Sliders } from 'lucide-react';
+import SystemSettingsModal from './SystemSettingsModal';
 import './macDock.css';
 import { 
   CreativeStudioModal, 
@@ -21,7 +23,16 @@ export default function MacDock({
   onCloseApp,
   activeProject,
   onSelectProject,
-  isMuted
+  isMuted,
+  onToggleMute,
+  wallpaper,
+  onChangeWallpaper,
+  lockWallpaper,
+  onChangeLockWallpaper,
+  isDarkMode,
+  onToggleDarkMode,
+  volume,
+  onChangeVolume
 }) {
   const [mouseX, setMouseX] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
@@ -60,6 +71,16 @@ export default function MacDock({
       type: "app",
       renderIcon: () => (
         <img src="/icons/Notes.png" alt="Notes" className="w-full h-full object-contain drop-shadow-md select-none" />
+      )
+    },
+    {
+      id: "settings",
+      name: "System Settings",
+      type: "app",
+      renderIcon: () => (
+        <div className="w-full h-full bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 rounded-[22%] flex items-center justify-center p-2 shadow-md border border-slate-600">
+          <Sliders className="w-6 h-6 text-slate-100" />
+        </div>
       )
     },
     {

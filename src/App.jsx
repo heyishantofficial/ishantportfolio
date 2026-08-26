@@ -20,6 +20,7 @@ export default function App() {
   const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [wallpaper, setWallpaper] = useState('video');
+  const [lockWallpaper, setLockWallpaper] = useState('custom');
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(20);
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
@@ -339,6 +340,15 @@ export default function App() {
             activeProject={selectedProject}
             onSelectProject={(project) => setSelectedProject(project)}
             isMuted={isMuted}
+            onToggleMute={() => setIsMuted(!isMuted)}
+            wallpaper={wallpaper}
+            onChangeWallpaper={(wp) => setWallpaper(wp)}
+            lockWallpaper={lockWallpaper}
+            onChangeLockWallpaper={(wp) => setLockWallpaper(wp)}
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+            volume={volume}
+            onChangeVolume={handleVolumeChange}
           />
 
           {/* Nexus Cyberdeck Music Player Floating Widget */}
@@ -373,12 +383,27 @@ export default function App() {
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[99999] bg-black/10 flex flex-col items-center justify-between text-white select-none overflow-hidden p-6"
           >
-            {/* User Custom Photo Background for Lock Screen */}
-            <img
-              src="/bg-poc.jpg"
-              alt="Lock Screen Photo Background"
-              className="absolute inset-0 w-full h-full object-cover z-0 opacity-100 pointer-events-none"
-            />
+            {/* Dynamic Lock Screen Wallpaper */}
+            {lockWallpaper === 'custom' && (
+              <img
+                src="/bg-poc.jpg"
+                alt="Lock Screen Photo Background"
+                className="absolute inset-0 w-full h-full object-cover z-0 opacity-100 pointer-events-none"
+              />
+            )}
+            {lockWallpaper === 'video' && (
+              <video
+                src={lockVideoSrc} preload="auto"
+                autoPlay
+                loop
+                playsInline
+                muted
+                className="absolute inset-0 w-full h-full object-cover z-0 opacity-100 pointer-events-none"
+              />
+            )}
+            {lockWallpaper !== 'custom' && lockWallpaper !== 'video' && (
+              <div className={`absolute inset-0 z-0 pointer-events-none ${wallpaperClasses[lockWallpaper] || 'wallpaper-custom'}`} />
+            )}
             
             {/* Soft ambient gradient for UI contrast without blur */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 z-0 pointer-events-none" />

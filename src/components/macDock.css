@@ -1,0 +1,268 @@
+/* macOS Dock Styling & Modals */
+
+.mac-dock-container {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.4rem 0.65rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.25),
+    0 10px 15px -5px rgba(0, 0, 0, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7);
+  transition: padding 0.2s ease, border-radius 0.2s ease;
+  user-select: none;
+}
+
+/* Dark mode adaptive subtle rim */
+@media (prefers-color-scheme: dark) {
+  .mac-dock-container {
+    background: rgba(30, 30, 35, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 
+      0 20px 50px -10px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  }
+}
+
+.mac-dock-item-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 0.2rem;
+  cursor: pointer;
+  outline: none;
+  transform-origin: bottom center;
+}
+
+.mac-dock-icon {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.95rem;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: filter 0.2s ease;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mac-dock-icon:hover {
+  filter: brightness(1.08);
+}
+
+.mac-dock-icon:active {
+  filter: brightness(0.92);
+}
+
+/* App bounce animation on launch */
+@keyframes macDockBounce {
+  0% { transform: translateY(0); }
+  25% { transform: translateY(-24px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+
+.mac-dock-bounce {
+  animation: macDockBounce 0.75s cubic-bezier(0.28, 0.84, 0.42, 1);
+}
+
+/* Active indicator dot underneath icon */
+.mac-dock-dot {
+  position: absolute;
+  bottom: -0.38rem;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Vertical Separator Divider Line */
+.mac-dock-divider {
+  width: 1px;
+  height: 2.8rem;
+  margin: 0 0.45rem;
+  background: rgba(255, 255, 255, 0.35);
+  align-self: center;
+  box-shadow: 0.5px 0 0 rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  .mac-dock-divider {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+/* Sleek macOS Dark Tooltip */
+.mac-dock-tooltip {
+  position: absolute;
+  top: -2.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.28rem 0.7rem;
+  background: rgba(23, 23, 23, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  animation: macTooltipFadeIn 0.15s ease-out;
+}
+
+.mac-dock-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px 4px 0 4px;
+  border-style: solid;
+  border-color: rgba(23, 23, 23, 0.82) transparent transparent transparent;
+}
+
+@keyframes macTooltipFadeIn {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* macOS Window Modal Styles */
+.mac-window-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: macWindowOverlayFade 0.2s ease-out;
+}
+
+@keyframes macWindowOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.mac-window {
+  width: 100%;
+  max-width: 680px;
+  background: #ffffff;
+  border-radius: 0.85rem;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: macWindowPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #1e293b;
+}
+
+@keyframes macWindowPop {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.mac-window-titlebar {
+  height: 40px;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-bottom: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  user-select: none;
+}
+
+.mac-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mac-btn-close {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff5f56;
+  border: 1px solid #e0443e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 10px;
+  font-weight: bold;
+}
+.mac-btn-close:hover { color: #4c0000; }
+
+.mac-btn-minimize {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffbd2e;
+  border: 1px solid #dea123;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 10px;
+  font-weight: bold;
+}
+.mac-btn-minimize:hover { color: #5c4100; }
+
+.mac-btn-expand {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #27c93f;
+  border: 1px solid #1aab29;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 10px;
+  font-weight: bold;
+}
+.mac-btn-expand:hover { color: #004d0d; }
+
+.mac-window-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mac-window-body {
+  padding: 1.5rem;
+  max-height: 75vh;
+  overflow-y: auto;
+}

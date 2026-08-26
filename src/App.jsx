@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import OfficeCoutureFolder from './components/OfficeCoutureFolder';
 import ProjectModal from './components/ProjectModal';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
+import MacDock from './components/MacDock';
 
 export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -21,6 +22,9 @@ export default function App() {
         project={selectedProject}
         onClose={() => setSelectedProject(null)}
       />
+
+      {/* macOS Sequoia Glassmorphism Dock */}
+      <MacDock />
 
       {/* Nexus Cyberdeck iPod Type Music Player Overlay */}
       <AnimatePresence>

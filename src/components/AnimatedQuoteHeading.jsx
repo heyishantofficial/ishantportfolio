@@ -1,20 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 
-// Mouse-reactive letter component for individual letter physics
-function InteractiveChar({ char, isYellowScript, mousePos }) {
+// Mouse-reactive letter component for Montserrat text physics
+function InteractiveChar({ char, mousePos }) {
   const charRef = useRef(null);
   const [style, setStyle] = useState({
     transform: 'translate3d(0px, 0px, 0px) scale(1) rotate(0deg)',
-    textShadow: 'none',
-    color: isYellowScript ? '#EAB308' : '#FFFFFF'
+    textShadow: '0 2px 14px rgba(0,0,0,0.6)',
+    color: '#FFFFFF'
   });
 
   useEffect(() => {
     if (!mousePos.x || !mousePos.y || !charRef.current) {
       setStyle({
         transform: 'translate3d(0px, 0px, 0px) scale(1) rotate(0deg)',
-        textShadow: isYellowScript ? '0 2px 12px rgba(234,179,8,0.5)' : '0 2px 14px rgba(0,0,0,0.6)',
-        color: isYellowScript ? '#EAB308' : '#FFFFFF'
+        textShadow: '0 2px 14px rgba(0,0,0,0.6)',
+        color: '#FFFFFF'
       });
       return;
     }
@@ -38,33 +38,27 @@ function InteractiveChar({ char, isYellowScript, mousePos }) {
       const scale = 1 + force * 0.35;
       const rotate = dirX * force * 15;
 
-      const glowColor = isYellowScript 
-        ? `rgba(250, 204, 21, ${0.9 * force})` 
-        : `rgba(255, 255, 255, ${0.85 * force})`;
+      const glowColor = `rgba(255, 255, 255, ${0.9 * force})`;
 
       setStyle({
         transform: `translate3d(${moveX.toFixed(2)}px, ${moveY.toFixed(2)}px, 0) scale(${scale.toFixed(3)}) rotate(${rotate.toFixed(2)}deg)`,
-        textShadow: `0 0 ${14 * force}px ${glowColor}, 0 0 ${28 * force}px ${glowColor}`,
-        color: isYellowScript ? '#FFEE58' : '#FFFFFF'
+        textShadow: `0 0 ${16 * force}px ${glowColor}, 0 0 ${32 * force}px ${glowColor}`,
+        color: '#FFFFFF'
       });
     } else {
       setStyle({
         transform: 'translate3d(0px, 0px, 0px) scale(1) rotate(0deg)',
-        textShadow: isYellowScript ? '0 2px 12px rgba(234,179,8,0.5)' : '0 2px 14px rgba(0,0,0,0.6)',
-        color: isYellowScript ? '#EAB308' : '#FFFFFF'
+        textShadow: '0 2px 14px rgba(0,0,0,0.6)',
+        color: '#FFFFFF'
       });
     }
-  }, [mousePos, isYellowScript]);
+  }, [mousePos]);
 
   return (
     <span
       ref={charRef}
       style={style}
-      className={`inline-block select-none transition-transform duration-100 ease-out ${
-        isYellowScript 
-          ? 'font-script text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-wide text-yellow-400 drop-shadow-md' 
-          : 'font-playfair italic text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-normal text-white drop-shadow-lg'
-      }`}
+      className="inline-block select-none transition-transform duration-100 ease-out font-montserrat font-extrabold text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-white drop-shadow-lg tracking-tight"
     >
       {char}
     </span>
@@ -108,43 +102,26 @@ export default function AnimatedQuoteHeading() {
   const blurVal = Math.max(0, (1 - animProgress) * 12);
   const opacityVal = Math.pow(animProgress, 0.5);
 
-  const whiteWords = ["I", "believe", "the", "best", "ideas", "usually", "start", "as"];
-  const yellowWords = ["weird", "ones."];
+  const words = ["I", "believe", "the", "best", "ideas", "usually", "start", "as", "weird", "ones."];
 
   return (
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="text-center max-w-5xl w-full px-2 mb-4 select-none relative z-10 flex flex-col items-center justify-center"
+      className="text-center max-w-5xl w-full px-2 mb-4 select-none relative z-10 flex flex-col items-center justify-center font-montserrat"
       style={{
         filter: `blur(${blurVal.toFixed(1)}px)`,
         opacity: opacityVal
       }}
     >
-      <h1 className="leading-snug sm:leading-tight flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-3 gap-y-2 max-w-4xl">
-        {/* White Playfair Display Part */}
-        {whiteWords.map((word, wIdx) => (
+      <h1 className="leading-snug sm:leading-tight flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3.5 gap-y-2 max-w-4xl">
+        {words.map((word, wIdx) => (
           <span key={`w-${wIdx}`} className="inline-flex whitespace-nowrap">
             {word.split('').map((char, cIdx) => (
               <InteractiveChar
                 key={`w-${wIdx}-${cIdx}`}
                 char={char}
-                isYellowScript={false}
-                mousePos={mousePos}
-              />
-            ))}
-          </span>
-        ))}
-
-        {/* Bright Yellow Cursive Script Part */}
-        {yellowWords.map((word, wIdx) => (
-          <span key={`y-${wIdx}`} className="inline-flex whitespace-nowrap">
-            {word.split('').map((char, cIdx) => (
-              <InteractiveChar
-                key={`y-${wIdx}-${cIdx}`}
-                char={char}
-                isYellowScript={true}
                 mousePos={mousePos}
               />
             ))}

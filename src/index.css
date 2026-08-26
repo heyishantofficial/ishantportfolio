@@ -34,7 +34,11 @@ html, body, #root {
 }
 
 .font-serif-title {
-  font-family: 'Playfair Display', 'Instrument Serif', serif;
+  font-family: 'Montserrat', 'Playfair Display', sans-serif;
+}
+
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
 }
 
 .font-playfair {
@@ -42,7 +46,7 @@ html, body, #root {
 }
 
 .font-script {
-  font-family: 'Caveat', 'Playfair Display', cursive, serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* macOS Liquid Glass UI Material */

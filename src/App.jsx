@@ -11,7 +11,7 @@ import MacDock from './components/MacDock';
 
 import OfficeCoutureFolder from './components/OfficeCoutureFolder';
 import ProjectModal from './components/ProjectModal';
-import { MorphingText } from './components/MorphingText';
+import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
 import { playBootChime } from './utils/macAudioEngine';
 
@@ -436,13 +436,8 @@ export default function App() {
               transition={{ duration: 0.4 }}
               className="flex flex-col items-center justify-center my-auto z-10 space-y-3 w-full max-w-2xl text-center"
             >
-              {/* Morphing Text Quote Heading on Lock Screen */}
-              <div className="w-full mb-2">
-                <MorphingText 
-                  texts={QUOTES}
-                  className="text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)] font-serif-title italic"
-                />
-              </div>
+              {/* One-Time Morphing Entrance & Mouse-Reactive Quote Heading */}
+              <AnimatedQuoteHeading />
 
               {/* Helper Subtitle */}
               <p className="text-xs sm:text-sm font-sans text-white/90 drop-shadow-md mb-2 font-medium tracking-wide">

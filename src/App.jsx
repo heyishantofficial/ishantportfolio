@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { User, X, Wifi, Battery, ArrowRight, Fingerprint } from 'lucide-react';
+import ishantPhotoImg from './assets/ishant-photo.png';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import MacMenuBar from './components/MacMenuBar';
@@ -33,6 +35,21 @@ export default function App() {
   });
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
+  const [loginTimeStr, setLoginTimeStr] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  useEffect(() => {
+    const updateLoginTime = () => {
+      const d = new Date();
+      const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+      setLoginTimeStr(d.toLocaleDateString('en-US', options).replace(',', ''));
+    };
+    updateLoginTime();
+    const interval = setInterval(updateLoginTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [isAppReady, setIsAppReady] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(25);
@@ -64,13 +81,18 @@ export default function App() {
     };
   }, [isVideoLoaded, isAppReady]);
 
-  const handleBootSystem = () => {
+  const handleBootSystem = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setIsLoggingIn(true);
     playBootChime(isMuted);
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
       videoRef.current.play().catch(() => {});
     }
-    setIsAppReady(true);
+    setTimeout(() => {
+      setIsAppReady(true);
+      setIsLoggingIn(false);
+    }, 450);
   };
 
   // Trigger Boot Chime & Video Sound on first click/interaction
@@ -264,60 +286,108 @@ export default function App() {
         </div>
       </MacBookDeviceFrame>
 
-      {/* macOS Startup Preloader Overlay */}
+      {/* macOS Photorealistic Login Screen Overlay */}
       <AnimatePresence>
         {!isAppReady && (
           <motion.div
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.04, filter: 'blur(12px)' }}
-            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-            onClick={handleBootSystem}
-            className="fixed inset-0 z-[99999] bg-[#050509] flex flex-col items-center justify-center text-white cursor-pointer select-none overflow-hidden"
+            exit={{ opacity: 0, scale: 1.06, filter: 'blur(20px)' }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-[99999] bg-black/40 backdrop-blur-2xl flex flex-col items-center justify-between text-white select-none overflow-hidden p-6"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-950/30 via-indigo-950/20 to-transparent pointer-events-none" />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4 }}
-              className="relative z-10 flex flex-col items-center mb-8 text-center px-4"
-            >
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white/10 border border-white/20 backdrop-blur-2xl flex items-center justify-center shadow-[0_0_60px_rgba(59,130,246,0.35)] mb-5">
-                <svg className="w-10 h-10 sm:w-12 sm:h-12 fill-current text-white drop-shadow-md" viewBox="0 0 170 170">
-                  <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.82.13-9.67-1.92-14.54-6.17-3.21-2.77-7.14-7.46-11.78-14.07-6.22-8.87-11.05-18.79-14.48-29.77-3.44-10.98-5.16-21.46-5.16-31.43 0-14.54 3.73-26.47 11.18-35.8 7.46-9.33 16.73-14.08 27.81-14.24 4.58 0 9.69 1.15 15.34 3.44 5.65 2.29 9.61 3.44 11.88 3.44 1.95 0 6.01-1.2 12.18-3.6 6.16-2.4 11.19-3.52 15.08-3.36 12.06.63 21.72 5.26 28.98 13.9-10.74 6.47-16.02 15.28-15.83 26.43.19 8.7 3.51 16.08 9.97 22.13 6.46 6.05 14.1 9.62 22.92 10.71-2.4 7.15-5.65 14.41-9.76 21.78zm-22.84-108.6c0 6.64-2.41 12.87-7.24 17.69-4.83 4.82-10.79 7.64-17.88 8.46-.27-1.12-.41-2.12-.41-3 0-6.72 2.53-13.11 7.58-18.17 5.06-5.06 11.23-7.97 18.52-8.73.19 1.03.43 2.28.43 3.75z" />
-                </svg>
+            {/* Top Right macOS System Status Indicators */}
+            <div className="w-full flex items-center justify-end gap-3 text-[11px] font-sans text-white/90 drop-shadow-sm font-medium z-10 pt-1 px-2">
+              <span className="px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-[10px] font-mono tracking-wider font-semibold">
+                U.S.
+              </span>
+              <div className="flex items-center gap-1">
+                <Battery className="w-4 h-4 text-white" />
+                <span className="text-[10px] font-mono font-semibold">100%</span>
               </div>
-              <h1 className="font-extrabold text-xl sm:text-2xl tracking-tight text-white/95 font-sans">
-                Ishant Chauhan Portfolio
-              </h1>
-              <p className="text-xs font-mono text-slate-400 mt-1">macOS Sequoia v15.0 • Live Environment</p>
-            </motion.div>
-
-            <div className="w-64 sm:w-80 h-1.5 bg-white/10 rounded-full overflow-hidden mb-6 relative">
-              <motion.div
-                className="h-full bg-gradient-to-r from-blue-500 via-indigo-400 to-emerald-400 rounded-full shadow-[0_0_14px_rgba(96,165,250,0.9)]"
-                style={{ width: `${loadingProgress}%` }}
-                transition={{ ease: "easeOut", duration: 0.15 }}
-              />
+              <Wifi className="w-3.5 h-3.5 text-white" />
+              <span className="ml-1 tracking-tight font-medium">{loginTimeStr || 'Sat Aug 26 16:54'}</span>
             </div>
 
-            <div className="flex flex-col items-center gap-2">
-              {loadingProgress < 100 ? (
-                <span className="font-mono text-xs text-slate-400 animate-pulse tracking-wide">
-                  Preloading live video & desktop environment ({loadingProgress}%)...
-                </span>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col items-center gap-2"
+            {/* Center User Login Card */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex flex-col items-center justify-center my-auto z-10"
+            >
+              {/* User Avatar Circle */}
+              <div className="relative group cursor-pointer mb-3" onClick={handleBootSystem}>
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-white/80 shadow-[0_15px_35px_rgba(0,0,0,0.6)] overflow-hidden bg-slate-800/60 backdrop-blur-md flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                  <img 
+                    src={ishantPhotoImg} 
+                    alt="Ishant Chauhan" 
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
+                {/* Touch ID Icon Overlay Badge */}
+                <div className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg border border-white/40">
+                  <Fingerprint className="w-4 h-4 animate-pulse" />
+                </div>
+              </div>
+
+              {/* User Name */}
+              <h1 className="font-sans font-bold text-xl sm:text-2xl text-white tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] mb-1">
+                Ishant Chauhan
+              </h1>
+
+              {/* Helper Subtitle */}
+              <p className="text-xs font-sans text-white/75 drop-shadow-md mb-4 font-normal tracking-wide">
+                Touch ID or Enter Password
+              </p>
+
+              {/* Interactive macOS Password Pill Input */}
+              <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-56 sm:w-64">
+                <input
+                  type="password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Enter Password"
+                  autoFocus
+                  className="w-full py-2 pl-4 pr-10 rounded-full bg-white/20 dark:bg-black/30 backdrop-blur-xl border border-white/40 text-white placeholder-white/60 font-sans text-xs shadow-[0_8px_20px_rgba(0,0,0,0.3)] focus:outline-none focus:ring-2 focus:ring-blue-400/80 focus:border-transparent transition-all"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-1.5 w-6 h-6 rounded-full bg-white/30 hover:bg-white/50 text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
-                  <span className="px-5 py-2 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 font-mono text-xs font-bold animate-bounce shadow-xl backdrop-blur-md">
-                    Click anywhere to Enter Desktop 🚀
-                  </span>
-                  <span className="text-[11px] text-slate-500 font-sans">Background video buffered • Audio ready</span>
-                </motion.div>
-              )}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </form>
+
+              {/* Click to Unlock Prompt Button */}
+              <button
+                onClick={handleBootSystem}
+                className="mt-4 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/90 font-mono text-[11px] transition-all cursor-pointer shadow-md backdrop-blur-md"
+              >
+                {isLoggingIn ? 'Logging in...' : 'Click to Unlock System 🔓'}
+              </button>
+            </motion.div>
+
+            {/* Bottom macOS Action Buttons */}
+            <div className="flex items-center justify-center gap-10 z-10 pb-4">
+              {/* Cancel Button */}
+              <div className="flex flex-col items-center cursor-pointer group" onClick={handleBootSystem}>
+                <div className="w-10 h-10 rounded-full bg-white/15 border border-white/30 backdrop-blur-xl text-white flex items-center justify-center shadow-lg group-hover:bg-white/25 group-hover:scale-105 transition-all">
+                  <X className="w-4 h-4" />
+                </div>
+                <span className="text-[11px] font-sans font-medium text-white/80 drop-shadow-md mt-1.5">
+                  Cancel
+                </span>
+              </div>
+
+              {/* Switch User Button */}
+              <div className="flex flex-col items-center cursor-pointer group" onClick={handleBootSystem}>
+                <div className="w-10 h-10 rounded-full bg-white/15 border border-white/30 backdrop-blur-xl text-white flex items-center justify-center shadow-lg group-hover:bg-white/25 group-hover:scale-105 transition-all">
+                  <User className="w-4 h-4" />
+                </div>
+                <span className="text-[11px] font-sans font-medium text-white/80 drop-shadow-md mt-1.5">
+                  Switch User
+                </span>
+              </div>
             </div>
           </motion.div>
         )}

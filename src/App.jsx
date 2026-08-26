@@ -37,7 +37,7 @@ export default function App() {
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
   const [loginTimeStr, setLoginTimeStr] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [viewerName, setViewerName] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
@@ -349,17 +349,17 @@ export default function App() {
               </h1>
 
               {/* Helper Subtitle */}
-              <p className="text-xs font-sans text-white/75 drop-shadow-md mb-4 font-normal tracking-wide">
-                Touch ID or Enter Password
+              <p className="text-xs font-sans text-white/80 drop-shadow-md mb-4 font-normal tracking-wide">
+                Enter your name to log in
               </p>
 
-              {/* Interactive macOS Password Pill Input */}
+              {/* Viewer Name Input */}
               <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-56 sm:w-64">
                 <input
-                  type="password"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="Enter Password"
+                  type="text"
+                  value={viewerName}
+                  onChange={(e) => setViewerName(e.target.value)}
+                  placeholder="Enter Your Name..."
                   autoFocus
                   className="w-full py-2 pl-4 pr-10 rounded-full bg-white/20 dark:bg-black/30 backdrop-blur-xl border border-white/40 text-white placeholder-white/60 font-sans text-xs shadow-[0_8px_20px_rgba(0,0,0,0.3)] focus:outline-none focus:ring-2 focus:ring-blue-400/80 focus:border-transparent transition-all"
                 />
@@ -376,7 +376,7 @@ export default function App() {
                 onClick={handleBootSystem}
                 className="mt-4 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/90 font-mono text-[11px] transition-all cursor-pointer shadow-md backdrop-blur-md"
               >
-                {isLoggingIn ? 'Logging in...' : 'Click to Unlock System 🔓'}
+                {isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName} 🔓` : 'Click to Unlock 🔓'}
               </button>
             </motion.div>
 

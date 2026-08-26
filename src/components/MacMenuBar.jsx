@@ -182,7 +182,7 @@ export default function MacMenuBar({
             {/* Transparent Minimal Volume Slider Popover */}
             {showVolumeMenu && (
               <div 
-                className="absolute right-0 top-7 w-52 bg-black/40 dark:bg-black/50 backdrop-blur-2xl rounded-2xl p-2.5 shadow-2xl border border-white/20 dark:border-white/15 z-[9999] text-white font-sans animate-in fade-in zoom-in-95 duration-100 select-none flex items-center gap-2.5"
+                className="absolute left-1/2 -translate-x-1/2 top-7 w-52 bg-black/40 dark:bg-black/50 backdrop-blur-2xl rounded-full px-3 py-2 shadow-2xl border border-white/20 dark:border-white/15 z-[9999] text-white font-sans animate-in fade-in zoom-in-95 duration-100 select-none flex items-center gap-2.5"
                 onClick={(e) => e.stopPropagation()}
               >
                 <button

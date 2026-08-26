@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, X, Wifi, Battery, ArrowRight, Fingerprint } from 'lucide-react';
 import ishantPhotoImg from './assets/ishant-photo.png';
-import lockAvatarImg from './assets/lock-avatar.png';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import MacMenuBar from './components/MacMenuBar';
@@ -405,18 +404,10 @@ export default function App() {
               transition={{ duration: 0.4 }}
               className="flex flex-col items-center justify-center my-auto z-10"
             >
-              {/* User Avatar Circle */}
-              <div className="relative group cursor-pointer mb-3" onClick={handleBootSystem}>
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-white/80 shadow-[0_15px_35px_rgba(0,0,0,0.6)] overflow-hidden bg-slate-800/60 backdrop-blur-md flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-                  <img 
-                    src={lockAvatarImg} 
-                    alt="Ishant Chauhan" 
-                    className="w-full h-full object-cover object-center"
-                  />
-                </div>
-                {/* Touch ID Icon Overlay Badge */}
-                <div className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg border border-white/40">
-                  <Fingerprint className="w-4 h-4 animate-pulse" />
+              {/* Touch ID / Lock Fingerprint Icon */}
+              <div className="relative group cursor-pointer mb-4" onClick={handleBootSystem}>
+                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-xl border border-white/40 text-white flex items-center justify-center shadow-xl transition-transform duration-300 group-hover:scale-110">
+                  <Fingerprint className="w-8 h-8 text-white animate-pulse" />
                 </div>
               </div>
 

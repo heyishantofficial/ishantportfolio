@@ -63,11 +63,70 @@ html, body {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+}
+
+/* ==========================================================================
+   APPLE DESIGN SYSTEM UTILITIES
+   ========================================================================== */
+
+/* 1. Translucent Materials & Depth */
+.apple-glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+
+.apple-glass-pill {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* 2. Response — Instant Press Feedback */
+.apple-pressable {
+  transition: transform 120ms cubic-bezier(0, 0, 0.2, 1), opacity 120ms ease, box-shadow 120ms ease;
+  will-change: transform;
+}
+.apple-pressable:active {
+  transform: scale(0.96);
+  opacity: 0.92;
+}
+
+/* 3. Typography — Optical Sizing, Negative Tracking & Calibrated Leading */
+.apple-display-heading {
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  font-optical-sizing: auto;
+}
+
+/* 4. Accessibility & Reduced Motion / Transparency */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .apple-glass-panel,
+  .apple-glass-pill,
+  .modal-backdrop {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }

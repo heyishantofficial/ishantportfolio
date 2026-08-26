@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import OfficeCoutureFolder from './components/OfficeCoutureFolder';
 import ProjectModal from './components/ProjectModal';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
@@ -16,21 +17,27 @@ export default function App() {
       />
 
       {/* Project Detail Modal Overlay */}
-      {selectedProject && (
-        <ProjectModal 
-          project={selectedProject}
-          onClose={() => setSelectedProject(null)}
-        />
-      )}
+      <ProjectModal 
+        project={selectedProject}
+        onClose={() => setSelectedProject(null)}
+      />
 
       {/* Nexus Cyberdeck iPod Type Music Player Overlay */}
-      {showCyberdeck && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <NexusCyberdeckPlayer 
-            onClose={() => setShowCyberdeck(false)}
-          />
-        </div>
-      )}
+      <AnimatePresence>
+        {showCyberdeck && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <NexusCyberdeckPlayer 
+              onClose={() => setShowCyberdeck(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

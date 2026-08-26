@@ -66,7 +66,7 @@ export default function SystemSettingsModal({
       setSettingsAuthError("");
       setSettingsPasswordInput("");
     } else {
-      setSettingsAuthError(`⚠️ Incorrect Password! Enter "${systemPassword}"`);
+      setSettingsAuthError("⚠️ Incorrect password. Access denied.");
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
     }
@@ -167,10 +167,6 @@ export default function SystemSettingsModal({
                   {settingsAuthError}
                 </div>
               )}
-
-              <div className="text-[11px] text-slate-400 font-mono pt-1">
-                Hint: Password is <code className="text-blue-400 font-bold">{systemPassword}</code>
-              </div>
 
               <button
                 type="submit"
@@ -396,7 +392,7 @@ export default function SystemSettingsModal({
                         </div>
                       </div>
                       <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                        Password: <code className="text-blue-600 dark:text-blue-400 font-bold">{systemPassword}</code>
+                        Password: <code className="text-blue-600 dark:text-blue-400 font-bold font-mono">••••••••••••</code>
                       </span>
                     </div>
                   </div>
@@ -419,7 +415,7 @@ export default function SystemSettingsModal({
                       <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Current Password</label>
                       <input
                         type="password"
-                        placeholder="Enter current password (default: ishucreationz)"
+                        placeholder="Enter current password..."
                         value={currentInput}
                         onChange={(e) => setCurrentInput(e.target.value)}
                         className="w-full px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"

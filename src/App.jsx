@@ -94,11 +94,11 @@ export default function App() {
             setBgVideoSrc(bgUrl);
             setLockVideoSrc(lockUrl);
             setIsVideoLoaded(true);
-            setLoadingProgress(100);
           }
         }
       } catch (err) {
         console.warn('Video pre-fetch error:', err);
+        if (isMounted) setIsVideoLoaded(true);
       }
     };
 
@@ -109,38 +109,44 @@ export default function App() {
     };
   }, []);
 
-  // Smooth macOS Startup Progress
+  // Smooth macOS Startup Progress over ~2 seconds
   useEffect(() => {
     if (isAppReady) return;
 
+    setLoadingProgress(5);
+    const startTime = Date.now();
+
     const interval = setInterval(() => {
       setLoadingProgress((prev) => {
-        if (prev >= 90 && !isVideoLoaded) return 90;
         if (prev >= 100) {
           clearInterval(interval);
           return 100;
         }
-        return prev + Math.floor(Math.random() * 15 + 10);
+        // If videos are still fetching, hold at 90% up to 2.5s
+        if (prev >= 90 && !isVideoLoaded && Date.now() - startTime < 2500) {
+          return 90;
+        }
+        const step = Math.floor(Math.random() * 8 + 6);
+        const next = prev + step;
+        if (next >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return next;
       });
-    }, 120);
-
-    const fallbackTimer = setTimeout(() => {
-      setIsVideoLoaded(true);
-      setLoadingProgress(100);
-    }, 2500);
+    }, 100);
 
     return () => {
       clearInterval(interval);
-      clearTimeout(fallbackTimer);
     };
   }, [isVideoLoaded, isAppReady]);
 
-  // Transition from Circular Progress Loader to Quote & Login Screen when complete
+  // Transition from Circular Progress Loader to Quote & Login Screen when 100% complete
   useEffect(() => {
     if (loadingProgress >= 100 && isBootLoading) {
       const timer = setTimeout(() => {
         setIsBootLoading(false);
-      }, 500);
+      }, 700);
       return () => clearTimeout(timer);
     }
   }, [loadingProgress, isBootLoading]);

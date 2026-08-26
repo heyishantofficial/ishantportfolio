@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, FileText, Image as ImageIcon, 
-  Mail, Trash2, Layers, CheckCircle2, Send, RefreshCw, Sparkles, ExternalLink
+  Mail, Trash2, Layers, CheckCircle2, Send, RefreshCw, Sparkles, ExternalLink,
+  Terminal, Globe, Cpu, Folder, Search, Check, ChevronRight, X, Copy, RotateCcw
 } from 'lucide-react';
+import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
 
 const InstagramIcon = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -13,18 +15,18 @@ const InstagramIcon = (props) => (
   </svg>
 );
 
-// Wrapper for all macOS Window Modals
-function MacWindow({ title, icon: IconComponent, onClose, children }) {
+// Draggable & Resizable macOS Window Container Component
+export function MacWindow({ title, icon: IconComponent, onClose, onMinimize, children, width = 'max-w-3xl' }) {
   return (
     <div className="mac-window-overlay" onClick={onClose}>
-      <div className="mac-window" onClick={(e) => e.stopPropagation()}>
+      <div className={`mac-window ${width}`} onClick={(e) => e.stopPropagation()}>
         <div className="mac-window-titlebar">
           <div className="mac-window-controls">
             <button className="mac-btn-close" onClick={onClose} title="Close">×</button>
-            <button className="mac-btn-minimize" title="Minimize">–</button>
-            <button className="mac-btn-expand" title="Expand">+</button>
+            <button className="mac-btn-minimize" onClick={onMinimize || onClose} title="Minimize">–</button>
+            <button className="mac-btn-expand" onClick={onClose} title="Maximize">+</button>
           </div>
-          <div className="mac-window-title">
+          <div className="mac-window-title font-sans">
             {IconComponent && <IconComponent className="w-4 h-4 text-slate-600" />}
             <span>{title}</span>
           </div>
@@ -38,7 +40,466 @@ function MacWindow({ title, icon: IconComponent, onClose, children }) {
   );
 }
 
-// 1. Creative Studio Modal (Ae, Ps, Ai)
+// 1. Finder App Modal
+export function FinderModal({ onSelectProject, onClose }) {
+  const [activeSidebar, setActiveSidebar] = useState('projects');
+  const [selectedTag, setSelectedTag] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItem, setSelectedItem] = useState(PROJECTS_DATA[0]);
+
+  const tags = ['ALL', 'Vibecoded', 'React', 'Content Systems', 'Personal Branding'];
+
+  const filteredProjects = PROJECTS_DATA.filter((p) => {
+    const matchesTag = selectedTag === 'ALL' || p.tags.some(t => t.toLowerCase().includes(selectedTag.toLowerCase()));
+    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          p.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesTag && matchesSearch;
+  });
+
+  return (
+    <MacWindow title="Finder — Ishant's Workspace" icon={Folder} onClose={onClose} width="max-w-4xl">
+      <div className="flex h-[480px] bg-[#f6f6f6] text-slate-800 font-sans select-none -m-6 rounded-b-xl overflow-hidden border-t border-slate-200">
+        
+        {/* Finder Sidebar */}
+        <div className="w-48 bg-slate-200/70 border-r border-slate-300/70 p-3 flex flex-col justify-between shrink-0 font-sans text-xs">
+          <div className="space-y-4">
+            <div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2">
+                Favorites
+              </div>
+              <div className="space-y-1">
+                <button 
+                  onClick={() => setActiveSidebar('projects')}
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    activeSidebar === 'projects' ? 'bg-blue-500 text-white font-semibold shadow-sm' : 'hover:bg-slate-300/60 text-slate-700'
+                  }`}
+                >
+                  <Folder className={`w-3.5 h-3.5 ${activeSidebar === 'projects' ? 'text-white' : 'text-blue-500'}`} />
+                  <span>Projects</span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveSidebar('vibecoded')}
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    activeSidebar === 'vibecoded' ? 'bg-blue-500 text-white font-semibold shadow-sm' : 'hover:bg-slate-300/60 text-slate-700'
+                  }`}
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${activeSidebar === 'vibecoded' ? 'text-white' : 'text-purple-500'}`} />
+                  <span>Vibecoded Suite</span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveSidebar('resume')}
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                    activeSidebar === 'resume' ? 'bg-blue-500 text-white font-semibold shadow-sm' : 'hover:bg-slate-300/60 text-slate-700'
+                  }`}
+                >
+                  <FileText className={`w-3.5 h-3.5 ${activeSidebar === 'resume' ? 'text-white' : 'text-amber-500'}`} />
+                  <span>Resume & Bio</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2">
+                Tags
+              </div>
+              <div className="space-y-0.5 px-1">
+                {tags.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSelectedTag(t)}
+                    className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium flex items-center justify-between ${
+                      selectedTag === t ? 'bg-slate-300/90 font-bold text-slate-900' : 'text-slate-600 hover:bg-slate-300/50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${
+                        t === 'ALL' ? 'bg-slate-400' : t === 'Vibecoded' ? 'bg-cyan-500' : t === 'React' ? 'bg-blue-500' : 'bg-emerald-500'
+                      }`} />
+                      {t}
+                    </span>
+                    {selectedTag === t && <Check className="w-3 h-3 text-slate-700" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-300/60 flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center">
+              IC
+            </div>
+            <div className="overflow-hidden">
+              <div className="font-bold text-[11px] text-slate-900 truncate">{PROFILE_INFO.name}</div>
+              <div className="text-[9px] text-slate-500 truncate">MacBook Pro M3</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Finder Main Content */}
+        <div className="flex-1 flex flex-col bg-white overflow-hidden">
+          <div className="h-10 border-b border-slate-200 bg-slate-100/90 px-3 flex items-center justify-between shrink-0">
+            <span className="text-xs text-slate-600 font-medium">
+              {filteredProjects.length} Items
+            </span>
+
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                placeholder="Search Finder..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-7 pr-3 py-1 bg-white border border-slate-300 rounded-md text-xs w-40 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {activeSidebar === 'resume' ? (
+            <div className="flex-1 p-5 overflow-y-auto font-sans text-slate-800">
+              <div className="max-w-xl mx-auto space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="border-b border-slate-200 pb-3">
+                  <span className="text-[10px] font-mono font-bold text-blue-600 uppercase tracking-widest block mb-1">
+                    // CREATOR & BUILDER
+                  </span>
+                  <h2 className="text-xl font-extrabold text-slate-900">{PROFILE_INFO.name}</h2>
+                  <p className="text-xs text-slate-600 mt-0.5">{PROFILE_INFO.roleTitle}</p>
+                  <div className="text-[11px] text-slate-500 mt-1 font-mono">{PROFILE_INFO.location} • {PROFILE_INFO.email}</div>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider mb-1">Vision</h3>
+                  <p className="text-xs text-slate-700 leading-relaxed">{PROFILE_INFO.tagline}</p>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider mb-2">Core Pillars</h3>
+                  <div className="space-y-2">
+                    {PROFILE_INFO.pillars.map((p) => (
+                      <div key={p.number} className="p-2.5 bg-white rounded-xl border border-slate-200 text-xs">
+                        <div className="font-bold text-blue-700">{p.number} — {p.title}</div>
+                        <div className="text-slate-600 mt-0.5">{p.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex overflow-hidden">
+              <div className="flex-1 p-3 overflow-y-auto grid grid-cols-2 gap-2.5 align-content-start">
+                {filteredProjects.map((proj) => {
+                  const isSelected = selectedItem?.id === proj.id;
+                  return (
+                    <div
+                      key={proj.id}
+                      onClick={() => setSelectedItem(proj)}
+                      onDoubleClick={() => onSelectProject && onSelectProject(proj)}
+                      className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                        isSelected 
+                          ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-300' 
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+                      }`}
+                    >
+                      <div>
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white mb-2 shadow-sm font-bold text-xs">
+                          {proj.title[0]}
+                        </div>
+                        <div className="font-bold text-xs text-slate-900 truncate">{proj.title}</div>
+                        <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{proj.summary}</div>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {proj.tags.slice(0, 2).map((t) => (
+                          <span key={t} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {selectedItem && (
+                <div className="w-56 border-l border-slate-200 bg-slate-50 p-3.5 flex flex-col justify-between overflow-y-auto shrink-0 text-xs">
+                  <div className="space-y-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 text-white flex items-center justify-center font-bold text-xl shadow-md mx-auto">
+                      {selectedItem.title[0]}
+                    </div>
+
+                    <div className="text-center">
+                      <h3 className="font-bold text-xs text-slate-900">{selectedItem.title}</h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{selectedItem.tagline}</p>
+                    </div>
+
+                    <div className="border-t border-slate-200 pt-2.5 space-y-2">
+                      <div>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">Impact</span>
+                        <p className="font-semibold text-emerald-700 text-[10px] mt-0.5">{selectedItem.metrics}</p>
+                      </div>
+
+                      <div>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">Tech Stack</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {selectedItem.techStack.map((ts) => (
+                            <span key={ts} className="text-[9px] font-mono px-1 py-0.5 bg-blue-100 text-blue-800 rounded">
+                              {ts}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => onSelectProject && onSelectProject(selectedItem)}
+                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow transition-colors flex items-center justify-center gap-1 cursor-pointer mt-3"
+                  >
+                    <span>Open Details</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      </div>
+    </MacWindow>
+  );
+}
+
+// 2. Interactive Terminal App Modal (Zsh Shell)
+export function TerminalModal({ onClose }) {
+  const [history, setHistory] = useState([
+    { type: 'sys', text: 'Last login: Wed Aug 26 14:43:00 on ttys001' },
+    { type: 'sys', text: 'Type "help" or "neofetch" to explore Ishant\'s Terminal Portfolio.' }
+  ]);
+  const [inputVal, setInputVal] = useState('');
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [history]);
+
+  const handleCommand = (e) => {
+    if (e.key === 'Enter') {
+      const cmd = inputVal.trim().toLowerCase();
+      const newHistory = [...history, { type: 'cmd', text: `ishant@macbook-pro ~ % ${inputVal}` }];
+
+      if (cmd === 'help') {
+        newHistory.push({ type: 'output', text: 'Available Commands:\n  neofetch    - Show macOS System Specs & Bio\n  projects    - List all Vibecoded Apps & Media Engines\n  skills      - List Tech Stack & Tools\n  resume      - Display Profile Summary\n  contact     - Print Contact & Social links\n  clear       - Clear Terminal screen\n  date        - Show current date & time' });
+      } else if (cmd === 'neofetch' || cmd === 'fastfetch') {
+        newHistory.push({ 
+          type: 'output', 
+          text: `
+  /\_/\\       ishant@macbook-pro-m3
+ ( o.o )      ---------------------
+  > ^ <       OS: macOS Sequoia 15.0 (Vibecode Build)
+              Host: MacBookPro18,1 M3 Max 64GB
+              Kernel: Darwin 23.6.0
+              Uptime: 24/7 Builder Mode
+              Shell: zsh 5.9
+              Role: Content Producer & Vibecoder
+              Location: India / Worldwide
+              Email: ${PROFILE_INFO.email}
+          ` 
+        });
+      } else if (cmd === 'projects') {
+        const listText = PROJECTS_DATA.map(p => `• [${p.id}] ${p.title} (${p.metrics})`).join('\n');
+        newHistory.push({ type: 'output', text: `Vibecoded Projects Portfolio:\n${listText}` });
+      } else if (cmd === 'skills') {
+        newHistory.push({ type: 'output', text: 'Languages & Tech:\n  React 19, JavaScript (ES2026), TailwindCSS v4, Vite, Framer Motion\n  Gemini AI API, Manifest V3, Web Audio API, Canvas Animation, Swift' });
+      } else if (cmd === 'resume') {
+        newHistory.push({ type: 'output', text: `${PROFILE_INFO.name} — ${PROFILE_INFO.roleTitle}\n${PROFILE_INFO.tagline}` });
+      } else if (cmd === 'contact') {
+        newHistory.push({ type: 'output', text: `Email: ${PROFILE_INFO.email}\nTwitter: ${PROFILE_INFO.socials.twitter}\nLinkedIn: ${PROFILE_INFO.socials.linkedin}\nGitHub: ${PROFILE_INFO.socials.github}` });
+      } else if (cmd === 'clear') {
+        setHistory([]);
+        setInputVal('');
+        return;
+      } else if (cmd === 'date') {
+        newHistory.push({ type: 'output', text: new Date().toString() });
+      } else if (cmd !== '') {
+        newHistory.push({ type: 'output', text: `zsh: command not found: ${cmd}. Type "help" for list of commands.` });
+      }
+
+      setHistory(newHistory);
+      setInputVal('');
+    }
+  };
+
+  return (
+    <MacWindow title="Terminal — zsh — 80x24" icon={Terminal} onClose={onClose} width="max-w-2xl">
+      <div className="bg-[#1e1e1e] text-emerald-400 font-mono text-xs p-4 rounded-b-xl min-h-[360px] max-h-[480px] overflow-y-auto space-y-2 -m-6 border-t border-slate-800 shadow-inner select-text">
+        {history.map((item, idx) => (
+          <div key={idx} className="whitespace-pre-wrap leading-relaxed">
+            {item.type === 'sys' && <span className="text-slate-400">{item.text}</span>}
+            {item.type === 'cmd' && <span className="text-white font-bold">{item.text}</span>}
+            {item.type === 'output' && <span className="text-emerald-300">{item.text}</span>}
+          </div>
+        ))}
+
+        <div className="flex items-center gap-2 pt-1 text-white">
+          <span className="text-emerald-400 font-bold">ishant@macbook-pro ~ %</span>
+          <input 
+            type="text" 
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            onKeyDown={handleCommand}
+            autoFocus
+            className="flex-1 bg-transparent border-none outline-none text-emerald-300 font-mono text-xs focus:ring-0 p-0"
+          />
+        </div>
+        <div ref={bottomRef} />
+      </div>
+    </MacWindow>
+  );
+}
+
+// 3. Safari Browser Modal
+export function SafariModal({ onClose }) {
+  const [url, setUrl] = useState('https://ishant.vibecode.dev/projects');
+  const [activeTab, setActiveTab] = useState('portfolio');
+
+  return (
+    <MacWindow title="Safari — Apple Web Browser" icon={Globe} onClose={onClose} width="max-w-3xl">
+      <div className="flex flex-col h-[440px] bg-slate-50 -m-6 rounded-b-xl overflow-hidden font-sans border-t border-slate-200">
+        
+        {/* Safari Navigation Bar */}
+        <div className="h-10 bg-slate-200/90 border-b border-slate-300 px-3 flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-1 text-slate-500">
+            <button className="p-1 hover:bg-slate-300/60 rounded"><ChevronRight className="w-3.5 h-3.5 rotate-180" /></button>
+            <button className="p-1 hover:bg-slate-300/60 rounded"><ChevronRight className="w-3.5 h-3.5" /></button>
+          </div>
+
+          <div className="flex-1 bg-white border border-slate-300/80 rounded-lg px-3 py-1 text-xs text-slate-700 flex items-center justify-between font-mono shadow-inner">
+            <span className="truncate">{url}</span>
+            <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0 ml-2" />
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => { setUrl('https://ishant.vibecode.dev/projects'); setActiveTab('portfolio'); }}
+              className={`px-2 py-1 text-[11px] font-semibold rounded ${activeTab === 'portfolio' ? 'bg-white shadow text-blue-600' : 'text-slate-600'}`}
+            >
+              Portfolio
+            </button>
+            <button 
+              onClick={() => { setUrl('https://x.com/ishantvibecode'); setActiveTab('twitter'); }}
+              className={`px-2 py-1 text-[11px] font-semibold rounded ${activeTab === 'twitter' ? 'bg-white shadow text-blue-600' : 'text-slate-600'}`}
+            >
+              Twitter/X
+            </button>
+            <button 
+              onClick={() => { setUrl('https://github.com'); setActiveTab('github'); }}
+              className={`px-2 py-1 text-[11px] font-semibold rounded ${activeTab === 'github' ? 'bg-white shadow text-blue-600' : 'text-slate-600'}`}
+            >
+              GitHub
+            </button>
+          </div>
+        </div>
+
+        {/* Safari View Content */}
+        <div className="flex-1 p-6 overflow-y-auto bg-white flex flex-col items-center justify-center text-center">
+          {activeTab === 'portfolio' && (
+            <div className="max-w-md space-y-3">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-2xl mx-auto shadow-md">
+                ⚡
+              </div>
+              <h2 className="text-xl font-bold text-slate-900">Ishant Chauhan Portfolio Live Preview</h2>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Operating inside macOS Safari engine. Browse through Vibecoded Apps, Content Systems, and Brand Strategy cases directly.
+              </p>
+              <div className="pt-2 flex justify-center gap-3">
+                <a href={PROFILE_INFO.socials.github} target="_blank" rel="noreferrer" className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800">
+                  Open GitHub Repo
+                </a>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'twitter' && (
+            <div className="max-w-md space-y-3">
+              <div className="w-12 h-12 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-xl mx-auto">
+                𝕏
+              </div>
+              <h2 className="text-lg font-bold text-slate-900">@ishantvibecode on X</h2>
+              <p className="text-xs text-slate-600">Sharing daily Vibecoding breakdowns, AI workflows, and content systems.</p>
+              <a href={PROFILE_INFO.socials.twitter} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 bg-sky-500 text-white text-xs font-semibold rounded-lg hover:bg-sky-600">
+                Follow on Twitter/X
+              </a>
+            </div>
+          )}
+
+          {activeTab === 'github' && (
+            <div className="max-w-md space-y-3">
+              <ExternalLink className="w-12 h-12 text-slate-900 mx-auto" />
+              <h2 className="text-lg font-bold text-slate-900">GitHub Repositories</h2>
+              <p className="text-xs text-slate-600">Explore open source vibecoded projects, Swift apps, and React UI tools.</p>
+              <a href={PROFILE_INFO.socials.github} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800">
+                Visit GitHub Profile
+              </a>
+            </div>
+          )}
+        </div>
+
+      </div>
+    </MacWindow>
+  );
+}
+
+// 4. System Settings / About This Mac Modal
+export function SystemInfoModal({ onClose }) {
+  return (
+    <MacWindow title="About This Mac" icon={Cpu} onClose={onClose} width="max-w-md">
+      <div className="text-center space-y-4 py-2 font-sans">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-slate-200 via-slate-400 to-slate-600 p-1 mx-auto shadow-lg flex items-center justify-center text-3xl">
+          💻
+        </div>
+
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-900">MacBook Pro</h2>
+          <p className="text-xs text-slate-500 font-mono">16-inch, 2026 Edition</p>
+        </div>
+
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs text-left space-y-2 font-mono">
+          <div className="flex justify-between">
+            <span className="text-slate-500">Chip:</span>
+            <span className="font-semibold text-slate-800">Apple M3 Max (16-core)</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Memory:</span>
+            <span className="font-semibold text-slate-800">64 GB Unified Memory</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Developer:</span>
+            <span className="font-semibold text-blue-600">{PROFILE_INFO.name}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">System OS:</span>
+            <span className="font-semibold text-slate-800">macOS Sequoia v15.0</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Status:</span>
+            <span className="font-semibold text-emerald-600">⚡ High Performance Active</span>
+          </div>
+        </div>
+
+        <button 
+          onClick={onClose}
+          className="px-5 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800"
+        >
+          System Info Verified
+        </button>
+      </div>
+    </MacWindow>
+  );
+}
+
+// 5. Creative Studio Modal (Ae, Ps, Ai)
 export function CreativeStudioModal({ activeApp, onClose }) {
   const [activeTab, setActiveTab] = useState(activeApp || 'ae');
 
@@ -46,7 +507,6 @@ export function CreativeStudioModal({ activeApp, onClose }) {
     ae: {
       name: 'Adobe After Effects',
       tag: 'Motion & Visual FX',
-      color: 'bg-indigo-900 text-indigo-200',
       projects: [
         { title: 'Cyberpunk UI HUD Motion', time: '0:15 Loop', desc: 'Complex 3D camera tracker with node-based glow shaders.' },
         { title: '3D Kinetic Typography Showcase', time: '0:30 Reel', desc: 'Custom motion curves & expression-driven text animations.' }
@@ -55,7 +515,6 @@ export function CreativeStudioModal({ activeApp, onClose }) {
     ps: {
       name: 'Adobe Photoshop',
       tag: 'Digital Compositing & Retouching',
-      color: 'bg-sky-950 text-sky-200',
       projects: [
         { title: 'Surrealist Key Art Poster', time: '300 DPI', desc: 'Multi-layer composite with atmospheric color grading.' },
         { title: 'Tactile UI Mockup Assets', time: 'Vector Mask', desc: 'High-precision neumorphic and skeuomorphic texture maps.' }
@@ -64,7 +523,6 @@ export function CreativeStudioModal({ activeApp, onClose }) {
     ai: {
       name: 'Adobe Illustrator',
       tag: 'Vector Graphics & Branding',
-      color: 'bg-amber-950 text-amber-200',
       projects: [
         { title: 'Vibecode Brand Identity Suite', time: 'SVG Export', desc: 'Modular geometric logo system with dark/light variants.' },
         { title: 'Custom App Iconset Pack', time: 'Grid Aligned', desc: 'Precision pixel-grid app icons crafted for macOS Sequoia.' }
@@ -76,8 +534,7 @@ export function CreativeStudioModal({ activeApp, onClose }) {
 
   return (
     <MacWindow title={`${current.name} Showcase`} icon={Layers} onClose={onClose}>
-      {/* App Switcher Tabs */}
-      <div className="flex gap-2 p-1.5 bg-slate-100 rounded-lg mb-6 border border-slate-200">
+      <div className="flex gap-2 p-1.5 bg-slate-100 rounded-lg mb-4 border border-slate-200">
         <button 
           onClick={() => setActiveTab('ae')}
           className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-md transition-all ${
@@ -107,7 +564,7 @@ export function CreativeStudioModal({ activeApp, onClose }) {
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b pb-3">
           <div>
-            <h3 className="font-bold text-lg text-slate-800">{current.name}</h3>
+            <h3 className="font-bold text-base text-slate-800">{current.name}</h3>
             <p className="text-xs text-slate-500">{current.tag}</p>
           </div>
           <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
@@ -115,16 +572,16 @@ export function CreativeStudioModal({ activeApp, onClose }) {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {current.projects.map((item, idx) => (
-            <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-semibold text-sm text-slate-900">{item.title}</h4>
-                <span className="text-[10px] font-mono bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
+            <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
+              <div className="flex justify-between items-start mb-1.5">
+                <h4 className="font-semibold text-xs text-slate-900">{item.title}</h4>
+                <span className="text-[9px] font-mono bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
                   {item.time}
                 </span>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
+              <p className="text-[11px] text-slate-600 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -133,39 +590,37 @@ export function CreativeStudioModal({ activeApp, onClose }) {
   );
 }
 
-// 2. System Diagnostics Warning Modal
+// 6. Diagnostics Modal
 export function DiagnosticsModal({ onClose }) {
   const [cleared, setCleared] = useState(false);
 
   return (
     <MacWindow title="System Health & Diagnostics" icon={AlertTriangle} onClose={onClose}>
       <div className="space-y-4">
-        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
-          <div className="p-2 bg-amber-100 text-amber-700 rounded-lg shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
+        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-bold text-amber-900 text-sm">System Warning Advisory</h4>
-            <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+            <h4 className="font-bold text-amber-900 text-xs">System Status Check</h4>
+            <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
               {cleared 
-                ? 'All diagnostic alerts have been resolved. System running smoothly at 60 FPS.' 
-                : '1 non-critical memory advisory detected in cache pool. High GPU acceleration active.'}
+                ? 'All diagnostic alerts resolved. Operating smoothly at 60 FPS.' 
+                : '1 non-critical memory advisory in cache pool. GPU acceleration active.'}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 text-center">
+        <div className="grid grid-cols-3 gap-3 text-center text-xs">
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <div className="text-xs text-slate-500 font-medium">FPS Performance</div>
-            <div className="text-lg font-bold text-emerald-600 mt-1">60.0 FPS</div>
+            <div className="text-[10px] text-slate-500 font-medium">FPS Rate</div>
+            <div className="text-base font-bold text-emerald-600 mt-0.5">60.0 FPS</div>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <div className="text-xs text-slate-500 font-medium">Memory Usage</div>
-            <div className="text-lg font-bold text-blue-600 mt-1">1.2 / 8 GB</div>
+            <div className="text-[10px] text-slate-500 font-medium">Memory Pool</div>
+            <div className="text-base font-bold text-blue-600 mt-0.5">1.2 / 8 GB</div>
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <div className="text-xs text-slate-500 font-medium">Glass Blur Status</div>
-            <div className="text-lg font-bold text-purple-600 mt-1">Active</div>
+            <div className="text-[10px] text-slate-500 font-medium">Glass Blur</div>
+            <div className="text-base font-bold text-purple-600 mt-0.5">Active</div>
           </div>
         </div>
 
@@ -175,14 +630,14 @@ export function DiagnosticsModal({ onClose }) {
               onClick={() => setCleared(true)}
               className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
             >
-              <CheckCircle2 className="w-4 h-4" /> Resolve Diagnostics
+              <CheckCircle2 className="w-3.5 h-3.5" /> Resolve Diagnostics
             </button>
           ) : (
             <button 
               onClick={() => setCleared(false)}
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
             >
-              <RefreshCw className="w-4 h-4" /> Re-run Scan
+              <RefreshCw className="w-3.5 h-3.5" /> Re-run Scan
             </button>
           )}
         </div>
@@ -191,10 +646,12 @@ export function DiagnosticsModal({ onClose }) {
   );
 }
 
-// 3. Quick Note Modal (Notes App)
+// 7. Quick Notes Modal (Notes App featuring Resume)
 export function QuickNotesModal({ onClose }) {
+  const [activeTab, setActiveTab] = useState("resume");
+  const [isZoomed, setIsZoomed] = useState(false);
   const [noteText, setNoteText] = useState(
-    "💡 Ideas & Portfolio Scratchpad:\n- Implement macOS Sequoia glassmorphism Dock\n- Add fluid magnification physics\n- Connect trash emptying sound effect\n- Polish responsive tactile components"
+    "💡 Ishant's Developer Scratchpad:\n- Vibecoded apps suite shipped with AI workflows\n- High retention content strategy systems\n- macOS Sequoia glassmorphism UI engine\n- Open for creative collaborations!"
   );
   const [saved, setSaved] = useState(false);
 
@@ -203,49 +660,197 @@ export function QuickNotesModal({ onClose }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  return (
-    <MacWindow title="Quick Note — Scratchpad" icon={FileText} onClose={onClose}>
-      <div className="space-y-3">
-        <div className="flex justify-between items-center bg-amber-100/70 p-2 rounded-lg border border-amber-200">
-          <div className="flex items-center gap-2 text-xs text-amber-900 font-medium">
-            <Sparkles className="w-4 h-4 text-amber-600" />
-            <span>macOS Quick Note</span>
-          </div>
-          <button 
-            onClick={handleSave}
-            className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded transition-colors flex items-center gap-1"
-          >
-            {saved ? <CheckCircle2 className="w-3.5 h-3.5" /> : null}
-            {saved ? 'Saved' : 'Save Note'}
-          </button>
-        </div>
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = "/resume.jpg";
+    link.download = "Ishant_Chauhan_Resume.jpg";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-        <textarea
-          value={noteText}
-          onChange={(e) => setNoteText(e.target.value)}
-          rows={8}
-          className="w-full p-4 rounded-xl border border-amber-200/80 bg-amber-50/40 text-slate-800 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none leading-relaxed"
-          placeholder="Write your thoughts..."
-        />
-      </div>
-    </MacWindow>
+  return (
+    <>
+      <MacWindow title="Notes — Ishant Chauhan Resume" icon={FileText} onClose={onClose} width="max-w-4xl">
+        <div className="flex flex-col md:flex-row gap-4 min-h-[460px]">
+          {/* Notes App Sidebar */}
+          <div className="w-full md:w-56 bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5 flex flex-col gap-2 shrink-0">
+            <div className="px-2 py-1 flex items-center justify-between">
+              <span className="text-[11px] font-bold tracking-wider uppercase text-amber-900/60 font-mono">
+                All Notes (2)
+              </span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            </div>
+
+            {/* Note 1: Resume */}
+            <button
+              onClick={() => setActiveTab("resume")}
+              className={`w-full text-left p-2.5 rounded-lg transition-all flex items-start gap-2.5 cursor-pointer ${
+                activeTab === "resume"
+                  ? "bg-amber-500 text-white shadow-md"
+                  : "hover:bg-amber-100/80 text-slate-700"
+              }`}
+            >
+              <FileText className={`w-4 h-4 mt-0.5 shrink-0 ${activeTab === "resume" ? "text-white" : "text-amber-600"}`} />
+              <div className="overflow-hidden">
+                <div className="font-semibold text-xs truncate">Ishant Chauhan — Resume</div>
+                <div className={`text-[10px] mt-0.5 truncate ${activeTab === "resume" ? "text-amber-100" : "text-slate-500"}`}>
+                  Official Resume 2027 • Image
+                </div>
+              </div>
+            </button>
+
+            {/* Note 2: Scratchpad */}
+            <button
+              onClick={() => setActiveTab("scratchpad")}
+              className={`w-full text-left p-2.5 rounded-lg transition-all flex items-start gap-2.5 cursor-pointer ${
+                activeTab === "scratchpad"
+                  ? "bg-amber-500 text-white shadow-md"
+                  : "hover:bg-amber-100/80 text-slate-700"
+              }`}
+            >
+              <Sparkles className={`w-4 h-4 mt-0.5 shrink-0 ${activeTab === "scratchpad" ? "text-white" : "text-amber-600"}`} />
+              <div className="overflow-hidden">
+                <div className="font-semibold text-xs truncate">Scratchpad & Ideas</div>
+                <div className={`text-[10px] mt-0.5 truncate ${activeTab === "scratchpad" ? "text-amber-100" : "text-slate-500"}`}>
+                  macOS Quick Note • Drafts
+                </div>
+              </div>
+            </button>
+
+            <div className="mt-auto p-2 bg-amber-100/50 rounded-lg border border-amber-200/50 text-[10px] text-amber-900/80 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Synced with iCloud</span>
+            </div>
+          </div>
+
+          {/* Main Note View Area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {activeTab === "resume" ? (
+              <div className="space-y-3 flex-1 flex flex-col">
+                {/* Note Top Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900 text-white shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="font-mono text-xs font-bold text-slate-200">
+                      Ishant_Chauhan_Resume_2027.jpg
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsZoomed(true)}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                      title="View Full Resolution"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Zoom</span>
+                    </button>
+                    <button
+                      onClick={handleDownload}
+                      className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Resume Image Attachment Viewer */}
+                <div 
+                  onClick={() => setIsZoomed(true)}
+                  className="relative group rounded-xl border border-amber-200 bg-amber-50/40 p-2 overflow-hidden shadow-inner cursor-pointer flex-1 flex items-center justify-center min-h-[360px]"
+                >
+                  <img
+                    src="/resume.jpg"
+                    alt="Ishant Chauhan Resume"
+                    className="max-h-[480px] w-auto object-contain rounded-lg shadow-md transition-transform duration-300 group-hover:scale-[1.01]"
+                  />
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl backdrop-blur-[2px]">
+                    <div className="px-4 py-2 bg-white/95 backdrop-blur-md rounded-full shadow-xl text-slate-900 font-sans text-xs font-bold flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                      <Maximize2 className="w-4 h-4 text-amber-600" />
+                      <span>Click to Expand Resume</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 flex-1 flex flex-col">
+                <div className="flex justify-between items-center bg-amber-100/70 p-2.5 rounded-xl border border-amber-200">
+                  <div className="flex items-center gap-2 text-xs text-amber-900 font-medium">
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <span>macOS Quick Note</span>
+                  </div>
+                  <button 
+                    onClick={handleSave}
+                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    {saved ? <CheckCircle2 className="w-3.5 h-3.5" /> : null}
+                    {saved ? "Saved" : "Save Note"}
+                  </button>
+                </div>
+
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  className="w-full flex-1 p-4 rounded-xl border border-amber-200/80 bg-amber-50/40 text-slate-800 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none leading-relaxed min-h-[340px]"
+                  placeholder="Write your thoughts..."
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </MacWindow>
+
+      {/* Lightbox / Zoom Modal for High-Res Resume View */}
+      {isZoomed && (
+        <div 
+          className="fixed inset-0 z-[20000] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-fadeIn"
+          onClick={() => setIsZoomed(false)}
+        >
+          <div className="relative max-w-5xl max-h-[92vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute -top-12 right-0 flex items-center gap-3">
+              <button
+                onClick={handleDownload}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-full transition-all flex items-center gap-1.5 shadow-lg cursor-pointer"
+              >
+                <Download className="w-4 h-4" /> Download
+              </button>
+              <button
+                onClick={() => setIsZoomed(false)}
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+            <img
+              src="/resume.jpg"
+              alt="Ishant Chauhan Resume High Res"
+              className="max-h-[85vh] w-auto object-contain rounded-xl shadow-2xl border border-white/10"
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
-// 4. Photos Gallery Modal
+
+
+// 8. Photos Modal
 export function PhotosModal({ onClose }) {
   const samplePhotos = [
-    { title: 'Glassmorphism Concept', category: 'UI Design', color: 'from-blue-500 to-indigo-600' },
-    { title: 'Motion Graphic Art', category: '3D Render', color: 'from-purple-500 to-pink-600' },
-    { title: 'Tokyo Night Lights', category: 'Photography', color: 'from-cyan-500 to-emerald-600' },
-    { title: 'Vector Branding', category: 'Illustrator', color: 'from-amber-500 to-rose-600' }
+    { title: 'Vibecoded App Canvas', category: 'UI Design', color: 'from-blue-500 to-indigo-600' },
+    { title: '3D Cyberdeck Player', category: 'Audio UI', color: 'from-purple-500 to-pink-600' },
+    { title: 'Content Engine Matrix', category: 'Strategy', color: 'from-cyan-500 to-emerald-600' },
+    { title: 'macOS Sequoia Dock', category: 'Interface', color: 'from-amber-500 to-rose-600' }
   ];
 
   return (
-    <MacWindow title="Photos Library" icon={ImageIcon} onClose={onClose}>
-      <div className="space-y-4">
+    <MacWindow title="Photos — Portfolio Shots" icon={ImageIcon} onClose={onClose}>
+      <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 text-base">Recent Portfolio Shots</h3>
+          <h3 className="font-bold text-slate-800 text-sm">Recent Visual Renders</h3>
           <span className="text-xs text-slate-500">{samplePhotos.length} Items</span>
         </div>
 
@@ -253,12 +858,12 @@ export function PhotosModal({ onClose }) {
           {samplePhotos.map((photo, i) => (
             <div 
               key={i} 
-              className={`h-36 rounded-xl bg-gradient-to-br ${photo.color} p-4 flex flex-col justify-end text-white shadow-md hover:scale-[1.02] transition-transform cursor-pointer relative overflow-hidden group`}
+              className={`h-32 rounded-xl bg-gradient-to-br ${photo.color} p-3 flex flex-col justify-end text-white shadow hover:scale-[1.02] transition-transform cursor-pointer relative overflow-hidden group`}
             >
               <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
               <div className="relative z-10">
-                <span className="text-[10px] font-semibold tracking-wider uppercase opacity-80">{photo.category}</span>
-                <h4 className="font-bold text-sm">{photo.title}</h4>
+                <span className="text-[9px] font-semibold tracking-wider uppercase opacity-80">{photo.category}</span>
+                <h4 className="font-bold text-xs">{photo.title}</h4>
               </div>
             </div>
           ))}
@@ -268,19 +873,19 @@ export function PhotosModal({ onClose }) {
   );
 }
 
-// 5. Instagram Social Modal
+// 9. Instagram Modal
 export function InstagramModal({ onClose }) {
   return (
     <MacWindow title="Instagram Profile" icon={InstagramIcon} onClose={onClose}>
-      <div className="text-center space-y-4 py-2">
-        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-1">
-          <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-xl">
-            V
+      <div className="text-center space-y-4 py-2 font-sans">
+        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-1 shadow-md">
+          <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-lg">
+            IC
           </div>
         </div>
         <div>
-          <h3 className="font-bold text-slate-900 text-lg">@ishantvibecode</h3>
-          <p className="text-xs text-slate-500">Creative Technologist & UI Engineer</p>
+          <h3 className="font-bold text-slate-900 text-base">@ishantvibecode</h3>
+          <p className="text-xs text-slate-500">Content Strategist & Vibecoding Builder</p>
         </div>
         <div className="flex justify-center gap-6 py-2 border-y border-slate-100 text-xs">
           <div><span className="font-bold text-slate-800">142</span> <span className="text-slate-500">posts</span></div>
@@ -288,20 +893,20 @@ export function InstagramModal({ onClose }) {
           <div><span className="font-bold text-slate-800">320</span> <span className="text-slate-500">following</span></div>
         </div>
         <a 
-          href="https://instagram.com" 
+          href={PROFILE_INFO.socials.twitter}
           target="_blank" 
           rel="noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold text-xs rounded-xl shadow-md hover:opacity-95 transition-opacity"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold text-xs rounded-xl shadow-md hover:opacity-95 transition-opacity"
         >
-          <span>Visit Instagram Profile</span>
-          <ExternalLink className="w-4 h-4" />
+          <span>Visit Social Profile</span>
+          <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>
     </MacWindow>
   );
 }
 
-// 6. Mail Contact Modal
+// 10. Mail Modal
 export function MailModal({ onClose }) {
   const [submitted, setSubmitted] = useState(false);
 
@@ -313,29 +918,29 @@ export function MailModal({ onClose }) {
   return (
     <MacWindow title="New Message — macOS Mail" icon={Mail} onClose={onClose}>
       {submitted ? (
-        <div className="py-8 text-center space-y-3">
-          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-6 h-6" />
+        <div className="py-6 text-center space-y-3 font-sans">
+          <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
-          <h3 className="font-bold text-slate-800 text-base">Message Sent Successfully!</h3>
+          <h3 className="font-bold text-slate-800 text-sm">Message Sent Successfully!</h3>
           <p className="text-xs text-slate-500 max-w-xs mx-auto">
             Thank you for reaching out. Your message has been dispatched via Apple Mail.
           </p>
           <button 
             onClick={() => setSubmitted(false)}
-            className="mt-2 px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-200"
+            className="mt-1 px-4 py-1.5 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-200"
           >
             Send Another Message
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-3 text-xs font-sans">
           <div>
             <label className="block text-slate-500 font-medium mb-1">To:</label>
             <input 
               type="text" 
               readOnly 
-              value="ishantchauhan@vibecode.dev" 
+              value={PROFILE_INFO.email} 
               className="w-full p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-mono text-xs"
             />
           </div>
@@ -344,7 +949,7 @@ export function MailModal({ onClose }) {
             <input 
               type="text" 
               required
-              placeholder="Collaboration Opportunity / Project Inquiry"
+              placeholder="Collaboration Inquiry / Project Discussion"
               className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
             />
           </div>
@@ -353,14 +958,14 @@ export function MailModal({ onClose }) {
             <textarea 
               rows={4}
               required
-              placeholder="Hi Ishant, I love your portfolio dock implementation..."
+              placeholder="Hi Ishant, I checked out your MacBook OS portfolio..."
               className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 resize-none"
             />
           </div>
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end pt-1">
             <button 
               type="submit" 
-              className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow transition-colors flex items-center gap-1.5"
+              className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" /> Send Message
             </button>
@@ -371,51 +976,47 @@ export function MailModal({ onClose }) {
   );
 }
 
-// 7. Trash Inspector Modal
+// 11. Trash Modal
 export function TrashModal({ itemsInTrash, onEmptyTrash, onClose }) {
   const handleEmpty = () => {
-    confetti({
-      particleCount: 70,
-      spread: 60,
-      origin: { y: 0.8 }
-    });
+    confetti({ particleCount: 70, spread: 60, origin: { y: 0.8 } });
     onEmptyTrash();
   };
 
   return (
-    <MacWindow title="Trash — Discarded Drafts" icon={Trash2} onClose={onClose}>
-      <div className="space-y-4">
+    <MacWindow title="Trash — Discarded Items" icon={Trash2} onClose={onClose}>
+      <div className="space-y-4 font-sans">
         {itemsInTrash > 0 ? (
           <>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
               <div>
-                <h4 className="font-bold text-slate-800 text-xs">{itemsInTrash} Temporary Items in Trash</h4>
+                <h4 className="font-bold text-slate-800 text-xs">{itemsInTrash} Items in Trash</h4>
                 <p className="text-[11px] text-slate-500">Crumpled draft files & temporary visual renders.</p>
               </div>
               <button 
                 onClick={handleEmpty}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
               >
-                <Trash2 className="w-4 h-4" /> Empty Trash
+                <Trash2 className="w-3.5 h-3.5" /> Empty Trash
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-3 bg-slate-100/60 rounded-lg border border-slate-200 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-slate-400" />
+              <div className="p-2.5 bg-slate-100/60 rounded-lg border border-slate-200 flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-slate-400" />
                 <span className="truncate text-slate-700 font-mono">old_dock_draft_v1.js</span>
               </div>
-              <div className="p-3 bg-slate-100/60 rounded-lg border border-slate-200 flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-slate-400" />
+              <div className="p-2.5 bg-slate-100/60 rounded-lg border border-slate-200 flex items-center gap-2">
+                <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
                 <span className="truncate text-slate-700 font-mono">discarded_icon_render.png</span>
               </div>
             </div>
           </>
         ) : (
-          <div className="py-10 text-center space-y-2">
-            <Trash2 className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="font-bold text-slate-700 text-sm">Trash is Empty</h3>
-            <p className="text-xs text-slate-400">No discarded items currently in the bin.</p>
+          <div className="py-8 text-center space-y-2">
+            <Trash2 className="w-8 h-8 text-slate-300 mx-auto" />
+            <h3 className="font-bold text-slate-700 text-xs">Trash is Empty</h3>
+            <p className="text-[11px] text-slate-400">No discarded items currently in bin.</p>
           </div>
         )}
       </div>

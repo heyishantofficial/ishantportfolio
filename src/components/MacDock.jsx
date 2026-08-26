@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import './macDock.css';
 import { 
   CreativeStudioModal, 
@@ -7,143 +7,78 @@ import {
   PhotosModal, 
   InstagramModal, 
   MailModal, 
-  TrashModal 
+  TrashModal,
+  FinderModal,
+  TerminalModal,
+  SafariModal,
+  SystemInfoModal
 } from './macDockModals';
+import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
 
-// Web Audio API Sound Generators
-const playClickSound = () => {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(420, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.04);
-    
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.04);
-  } catch (e) {}
-};
-
-const playTrashSound = () => {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    
-    const bufferSize = ctx.sampleRate * 0.15;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
-    
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1200;
-    filter.Q.value = 3;
-    
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-    
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    
-    noise.start();
-    noise.stop(ctx.currentTime + 0.15);
-  } catch (e) {}
-};
-
-export default function MacDock() {
+export default function MacDock({ 
+  openApps = { finder: true, notes: true },
+  onLaunchApp,
+  onCloseApp,
+  activeProject,
+  onSelectProject,
+  isMuted
+}) {
+  const [mouseX, setMouseX] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [bouncingId, setBouncingId] = useState(null);
-  const [activeModal, setActiveModal] = useState(null);
-  const [openApps, setOpenApps] = useState({ notes: true });
   const [itemsInTrash, setItemsInTrash] = useState(2);
-  const [creativeTab, setCreativeTab] = useState('ae');
-
-  // Smooth RAF Mouse position tracking (prevents feedback loop shaking)
-  const [scales, setScales] = useState({});
-  const [isHovering, setIsHovering] = useState(false);
-  
   const dockRef = useRef(null);
-  const targetMouseX = useRef(null);
-  const currentMouseX = useRef(null);
-  const rafId = useRef(null);
-  const dockCenterXRef = useRef(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
 
-  // App Icon Definition Data matching user screenshot
   const dockApps = [
     {
-      id: 'ae',
-      name: 'Adobe After Effects',
+      id: 'finder',
+      name: 'Finder Workspace',
       type: 'app',
       renderIcon: () => (
-        <div className="w-full h-full bg-[#00003b] flex items-center justify-center relative rounded-[22%] shadow-inner border border-indigo-400/20">
-          <span className="font-extrabold text-[22px] tracking-tight text-[#9999ff] select-none font-sans drop-shadow-[0_2px_4px_rgba(153,153,255,0.4)]">
-            Ae
-          </span>
-        </div>
-      )
-    },
-    {
-      id: 'ps',
-      name: 'Adobe Photoshop',
-      type: 'app',
-      renderIcon: () => (
-        <div className="w-full h-full bg-[#001e36] flex items-center justify-center relative rounded-[22%] shadow-inner border border-sky-400/20">
-          <span className="font-extrabold text-[22px] tracking-tight text-[#31a8ff] select-none font-sans drop-shadow-[0_2px_4px_rgba(49,168,255,0.4)]">
-            Ps
-          </span>
-        </div>
-      )
-    },
-    {
-      id: 'ai',
-      name: 'Adobe Illustrator',
-      type: 'app',
-      renderIcon: () => (
-        <div className="w-full h-full bg-[#330000] flex items-center justify-center relative rounded-[22%] shadow-inner border border-amber-400/20">
-          <span className="font-extrabold text-[22px] tracking-tight text-[#ff9a00] select-none font-sans drop-shadow-[0_2px_4px_rgba(255,154,0,0.4)]">
-            Ai
-          </span>
-        </div>
-      )
-    },
-    {
-      id: 'warning',
-      name: 'System Alerts',
-      type: 'app',
-      renderIcon: () => (
-        <div className="w-full h-full bg-gradient-to-b from-amber-400 to-amber-500 flex items-center justify-center relative rounded-[22%] p-1 shadow-md">
-          <svg className="w-8 h-8 drop-shadow-md" viewBox="0 0 24 24" fill="none">
-            <path 
-              d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" 
-              fill="#F59E0B" 
-              stroke="#FFFFFF" 
-              strokeWidth="2" 
-              strokeLinejoin="round"
-            />
-            <path d="M12 9v4" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="12" cy="16.5" r="1.25" fill="#FFFFFF" />
+        <div className="w-full h-full bg-gradient-to-tr from-blue-500 via-sky-400 to-indigo-500 flex items-center justify-center relative rounded-[22%] shadow-md border border-white/30">
+          {/* Finder Two-Tone Smile Face */}
+          <svg className="w-7 h-7 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2a10 10 0 0 1 10 10v0a10 10 0 0 1-10 10v0A10 10 0 0 1 2 12v0A10 10 0 0 1 12 2z" fill="#0284c7" opacity="0.3" />
+            <path d="M12 2v20" />
+            <path d="M8 9h.01M16 9h.01" strokeWidth="3" />
+            <path d="M8 15c1 1 3 1.5 4 1.5s3-.5 4-1.5" />
           </svg>
         </div>
       )
     },
-    { id: 'divider-1', type: 'divider' },
+    {
+      id: 'terminal',
+      name: 'Terminal Shell',
+      type: 'app',
+      renderIcon: () => (
+        <div className="w-full h-full bg-slate-950 flex flex-col justify-between p-1.5 relative rounded-[22%] shadow-md border border-slate-700">
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="font-mono text-[10px] font-bold text-emerald-400 pl-1 pb-1">
+            &gt;_ zsh
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'safari',
+      name: 'Safari Browser',
+      type: 'app',
+      renderIcon: () => (
+        <div className="w-full h-full bg-white flex items-center justify-center relative rounded-[22%] shadow-md border border-slate-200 p-1">
+          {/* Compass Icon */}
+          <div className="w-full h-full rounded-full bg-gradient-to-tr from-sky-400 to-blue-600 flex items-center justify-center relative shadow-inner">
+            <svg className="w-6 h-6 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="#ef4444" opacity="0.9" />
+            </svg>
+          </div>
+        </div>
+      )
+    },
     {
       id: 'notes',
       name: 'Notes',
@@ -161,18 +96,55 @@ export default function MacDock() {
         </div>
       )
     },
+    { id: 'divider-1', type: 'divider' },
+    {
+      id: 'ae',
+      name: 'Adobe After Effects',
+      type: 'app',
+      renderIcon: () => (
+        <div className="w-full h-full bg-[#00003b] flex items-center justify-center relative rounded-[22%] shadow-inner border border-indigo-400/20">
+          <span className="font-extrabold text-[20px] tracking-tight text-[#9999ff] select-none font-sans drop-shadow-[0_2px_4px_rgba(153,153,255,0.4)]">
+            Ae
+          </span>
+        </div>
+      )
+    },
+    {
+      id: 'ps',
+      name: 'Adobe Photoshop',
+      type: 'app',
+      renderIcon: () => (
+        <div className="w-full h-full bg-[#001e36] flex items-center justify-center relative rounded-[22%] shadow-inner border border-sky-400/20">
+          <span className="font-extrabold text-[20px] tracking-tight text-[#31a8ff] select-none font-sans drop-shadow-[0_2px_4px_rgba(49,168,255,0.4)]">
+            Ps
+          </span>
+        </div>
+      )
+    },
+    {
+      id: 'ai',
+      name: 'Adobe Illustrator',
+      type: 'app',
+      renderIcon: () => (
+        <div className="w-full h-full bg-[#330000] flex items-center justify-center relative rounded-[22%] shadow-inner border border-amber-400/20">
+          <span className="font-extrabold text-[20px] tracking-tight text-[#ff9a00] select-none font-sans drop-shadow-[0_2px_4px_rgba(255,154,0,0.4)]">
+            Ai
+          </span>
+        </div>
+      )
+    },
+    { id: 'divider-2', type: 'divider' },
     {
       id: 'photos',
       name: 'Photos',
       type: 'app',
       renderIcon: () => (
         <div className="w-full h-full bg-white flex items-center justify-center relative rounded-[22%] shadow-md border border-slate-100 p-1">
-          <svg className="w-8 h-8" viewBox="0 0 100 100">
+          <svg className="w-7 h-7" viewBox="0 0 100 100">
             <ellipse cx="50" cy="28" rx="11" ry="18" fill="#EC4899" opacity="0.85" />
             <ellipse cx="50" cy="72" rx="11" ry="18" fill="#06B6D4" opacity="0.85" />
             <ellipse cx="28" cy="50" rx="18" ry="11" fill="#8B5CF6" opacity="0.85" />
             <ellipse cx="72" cy="50" rx="18" ry="11" fill="#F59E0B" opacity="0.85" />
-            
             <g transform="rotate(45 50 50)">
               <ellipse cx="50" cy="28" rx="11" ry="18" fill="#EF4444" opacity="0.85" />
               <ellipse cx="50" cy="72" rx="11" ry="18" fill="#3B82F6" opacity="0.85" />
@@ -183,57 +155,36 @@ export default function MacDock() {
         </div>
       )
     },
-    { id: 'divider-2', type: 'divider' },
-    {
-      id: 'instagram',
-      name: 'Instagram',
-      type: 'app',
-      renderIcon: () => (
-        <div className="w-full h-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center relative rounded-[22%] shadow-md p-1.5">
-          <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-          </svg>
-        </div>
-      )
-    },
     {
       id: 'mail',
       name: 'Mail',
       type: 'app',
       renderIcon: () => (
         <div className="w-full h-full bg-gradient-to-b from-[#00b4db] to-[#0083b0] flex items-center justify-center relative rounded-[22%] shadow-md p-1.5 border border-sky-300/30">
-          <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
             <polyline points="22,6 12,13 2,6"></polyline>
           </svg>
         </div>
       )
     },
-    { id: 'divider-3', type: 'divider' },
     {
       id: 'trash',
       name: 'Trash',
       type: 'app',
       renderIcon: () => (
         <div className="w-full h-full flex items-center justify-center relative rounded-[22%] p-0.5">
-          <svg className="w-9 h-9 drop-shadow-md" viewBox="0 0 64 64" fill="none">
+          <svg className="w-8 h-8 drop-shadow-md" viewBox="0 0 64 64" fill="none">
             <path d="M16 20L20 56C20.2 58.2 22 60 24.2 60H39.8C42 60 43.8 58.2 44 56L48 20" fill="url(#trashMetal)" opacity="0.85" />
             <path d="M16 20L20 56C20.2 58.2 22 60 24.2 60H39.8C42 60 43.8 58.2 44 56L48 20" stroke="#94A3B8" strokeWidth="2" />
-            
             {itemsInTrash > 0 && (
               <g className="animate-pulse">
-                <circle cx="26" cy="24" r="5.5" fill="#EF4444" opacity="0.9" />
-                <circle cx="38" cy="25" r="5" fill="#3B82F6" opacity="0.9" />
-                <circle cx="32" cy="21" r="6" fill="#F59E0B" opacity="0.9" />
-                <circle cx="31" cy="27" r="4.5" fill="#10B981" opacity="0.9" />
-                <circle cx="37" cy="30" r="4" fill="#A855F7" opacity="0.9" />
+                <circle cx="26" cy="24" r="5" fill="#EF4444" opacity="0.9" />
+                <circle cx="38" cy="25" r="4.5" fill="#3B82F6" opacity="0.9" />
+                <circle cx="32" cy="21" r="5.5" fill="#F59E0B" opacity="0.9" />
               </g>
             )}
-
             <ellipse cx="32" cy="20" rx="17" ry="4" fill="#CBD5E1" stroke="#64748B" strokeWidth="2" />
-
             <defs>
               <linearGradient id="trashMetal" x1="16" y1="20" x2="48" y2="60" gradientUnits="userSpaceOnUse">
                 <stop stopColor="#E2E8F0" stopOpacity="0.95" />
@@ -247,111 +198,39 @@ export default function MacDock() {
     }
   ];
 
-  // Precompute unmagnified baseline item slot offsets relative to dock center
-  const itemSlotsRef = useRef(null);
-  if (!itemSlotsRef.current) {
-    const slots = dockApps.map((item) => ({
-      id: item.id,
-      type: item.type,
-      slotWidth: item.type === 'app' ? 54.4 : 15.4
-    }));
-    const totalWidth = slots.reduce((sum, s) => sum + s.slotWidth, 0);
-    let curr = 0;
-    itemSlotsRef.current = slots.map((s) => {
-      const centerOffset = curr + s.slotWidth / 2 - totalWidth / 2;
-      curr += s.slotWidth;
-      return { id: s.id, type: s.type, centerOffset };
-    });
-  }
-
-  // Animation Loop via requestAnimationFrame
-  const updatePhysics = useCallback(() => {
-    if (targetMouseX.current === null) {
-      setScales({});
-      rafId.current = null;
-      return;
-    }
-
-    if (currentMouseX.current === null) {
-      currentMouseX.current = targetMouseX.current;
-    } else {
-      // Smooth lerp easing (0.2 factor) for fluid Apple momentum motion
-      currentMouseX.current += (targetMouseX.current - currentMouseX.current) * 0.22;
-    }
-
-    const mouseX = currentMouseX.current;
-    const dockCenterScreenX = dockCenterXRef.current;
-    const stdDev = 68; // Spread of magnification
-    const maxScale = 1.55;
-
-    const newScales = {};
-    itemSlotsRef.current.forEach((slot) => {
-      if (slot.type === 'divider') return;
-      
-      // Calculate item screen X center (INVARIANT to dock container resizing)
-      const itemScreenX = dockCenterScreenX + slot.centerOffset;
-      const dist = Math.abs(mouseX - itemScreenX);
-      const scale = 1 + (maxScale - 1) * Math.exp(-(dist * dist) / (2 * stdDev * stdDev));
-      newScales[slot.id] = Math.max(1, scale);
-    });
-
-    setScales(newScales);
-    rafId.current = requestAnimationFrame(updatePhysics);
-  }, []);
-
-  const handleMouseEnter = () => {
-    setIsHovering(true);
+  const handleMouseMove = (e) => {
     if (dockRef.current) {
       const rect = dockRef.current.getBoundingClientRect();
-      dockCenterXRef.current = rect.left + rect.width / 2;
-    } else {
-      dockCenterXRef.current = window.innerWidth / 2;
-    }
-  };
-
-  const handleMouseMove = (e) => {
-    targetMouseX.current = e.clientX;
-    if (!rafId.current) {
-      rafId.current = requestAnimationFrame(updatePhysics);
+      setMouseX(e.clientX - rect.left);
     }
   };
 
   const handleMouseLeave = () => {
-    setIsHovering(false);
-    targetMouseX.current = null;
-    currentMouseX.current = null;
+    setMouseX(null);
     setHoveredId(null);
-    if (rafId.current) {
-      cancelAnimationFrame(rafId.current);
-      rafId.current = null;
-    }
-    setScales({});
   };
 
-  useEffect(() => {
-    return () => {
-      if (rafId.current) cancelAnimationFrame(rafId.current);
-    };
-  }, []);
+  const getIconScale = (index) => {
+    if (mouseX === null || !dockRef.current) return 1;
+    const iconWidth = 48; 
+    const iconCenter = index * (iconWidth + 6) + iconWidth / 2 + 16;
+    const distance = Math.abs(mouseX - iconCenter);
+    const maxScale = 1.5;
+    const baseScale = 1;
+    const stdDev = 60;
+    const scale = baseScale + (maxScale - baseScale) * Math.exp(-(distance * distance) / (2 * stdDev * stdDev));
+    return Math.max(1, scale);
+  };
 
   const handleAppClick = (appId) => {
-    playClickSound();
-    
+    playMacClick(isMuted);
     setBouncingId(appId);
     setTimeout(() => setBouncingId(null), 750);
-
-    setOpenApps((prev) => ({ ...prev, [appId]: true }));
-
-    if (appId === 'ae' || appId === 'ps' || appId === 'ai') {
-      setCreativeTab(appId);
-      setActiveModal('creative');
-    } else {
-      setActiveModal(appId);
-    }
+    onLaunchApp(appId);
   };
 
   const handleEmptyTrash = () => {
-    playTrashSound();
+    playTrashSound(isMuted);
     setItemsInTrash(0);
   };
 
@@ -360,20 +239,19 @@ export default function MacDock() {
       <div 
         ref={dockRef}
         className="mac-dock-container"
-        onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        {dockApps.map((item) => {
+        {dockApps.map((item, index) => {
           if (item.type === 'divider') {
             return <div key={item.id} className="mac-dock-divider" />;
           }
 
-          const scale = scales[item.id] || 1;
-          const iconSize = 48 * scale;
+          const scale = getIconScale(index);
+          const iconSize = 44 * scale;
           const isHovered = hoveredId === item.id;
           const isBouncing = bouncingId === item.id;
-          const isOpen = openApps[item.id];
+          const isOpen = openApps[item.id] || (item.id === 'ae' || item.id === 'ps' || item.id === 'ai' ? openApps['creative'] : false);
 
           return (
             <div
@@ -382,57 +260,75 @@ export default function MacDock() {
               style={{
                 width: `${iconSize}px`,
                 height: `${iconSize}px`,
-                transition: isHovering ? 'none' : 'width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                transition: mouseX === null ? 'width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
               }}
               onMouseEnter={() => setHoveredId(item.id)}
               onClick={() => handleAppClick(item.id)}
             >
-              {/* Tooltip on hover */}
-              {isHovered && isHovering && (
+              {isHovered && mouseX !== null && (
                 <div className="mac-dock-tooltip">
                   {item.name}
                 </div>
               )}
 
-              {/* Render Icon */}
               <div className="mac-dock-icon">
                 {item.renderIcon()}
               </div>
 
-              {/* Active Indicator Dot */}
               {isOpen && <div className="mac-dock-dot" />}
             </div>
           );
         })}
       </div>
 
-      {/* Render Active Modals */}
-      {activeModal === 'creative' && (
-        <CreativeStudioModal 
-          activeApp={creativeTab} 
-          onClose={() => setActiveModal(null)} 
+      {/* Render Active Window Modals */}
+      {openApps.finder && (
+        <FinderModal 
+          onSelectProject={onSelectProject} 
+          onClose={() => onCloseApp('finder')} 
         />
       )}
-      {activeModal === 'warning' && (
-        <DiagnosticsModal onClose={() => setActiveModal(null)} />
+      {openApps.terminal && (
+        <TerminalModal 
+          onClose={() => onCloseApp('terminal')} 
+        />
       )}
-      {activeModal === 'notes' && (
-        <QuickNotesModal onClose={() => setActiveModal(null)} />
+      {openApps.safari && (
+        <SafariModal 
+          onClose={() => onCloseApp('safari')} 
+        />
       )}
-      {activeModal === 'photos' && (
-        <PhotosModal onClose={() => setActiveModal(null)} />
+      {openApps['system-info'] && (
+        <SystemInfoModal 
+          onClose={() => onCloseApp('system-info')} 
+        />
       )}
-      {activeModal === 'instagram' && (
-        <InstagramModal onClose={() => setActiveModal(null)} />
+      {openApps.creative && (
+        <CreativeStudioModal 
+          activeApp={openApps.creativeApp || 'ae'} 
+          onClose={() => onCloseApp('creative')} 
+        />
       )}
-      {activeModal === 'mail' && (
-        <MailModal onClose={() => setActiveModal(null)} />
+      {openApps.warning && (
+        <DiagnosticsModal onClose={() => onCloseApp('warning')} />
       )}
-      {activeModal === 'trash' && (
+      {openApps.notes && (
+        <QuickNotesModal onClose={() => onCloseApp('notes')} />
+      )}
+      {openApps.photos && (
+        <PhotosModal onClose={() => onCloseApp('photos')} />
+      )}
+      {openApps.instagram && (
+        <InstagramModal onClose={() => onCloseApp('instagram')} />
+      )}
+      {openApps.mail && (
+        <MailModal onClose={() => onCloseApp('mail')} />
+      )}
+      {openApps.trash && (
         <TrashModal 
           itemsInTrash={itemsInTrash} 
           onEmptyTrash={handleEmptyTrash} 
-          onClose={() => setActiveModal(null)} 
+          onClose={() => onCloseApp('trash')} 
         />
       )}
     </>

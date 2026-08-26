@@ -1,35 +1,51 @@
-/* macOS Dock Styling & Modals */
+/* macOS Sequoia Styling System */
 
+/* Wallpaper Theme Background Gradients */
+.wallpaper-sequoia {
+  background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+}
+
+.wallpaper-sonoma {
+  background: radial-gradient(circle at 60% 30%, #b45309 0%, #be123c 45%, #311042 100%);
+}
+
+.wallpaper-neon {
+  background: radial-gradient(circle at 30% 40%, #030712 0%, #1e1b4b 50%, #0284c7 100%);
+}
+
+.wallpaper-aurora {
+  background: radial-gradient(circle at 70% 30%, #022c22 0%, #115e59 45%, #020617 100%);
+}
+
+/* macOS Dock Styling & Magnification */
 .mac-dock-container {
   position: fixed;
-  bottom: 1rem;
+  bottom: 0.85rem;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 9999;
+  z-index: 9990;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0.4rem 0.65rem;
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(28px) saturate(200%);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 0.35rem 0.6rem;
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(32px) saturate(210%);
+  -webkit-backdrop-filter: blur(32px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   box-shadow: 
-    0 20px 40px -10px rgba(0, 0, 0, 0.25),
+    0 20px 40px -10px rgba(0, 0, 0, 0.3),
     0 10px 15px -5px rgba(0, 0, 0, 0.15),
-    inset 0 1px 1px rgba(255, 255, 255, 0.7);
-  transition: padding 0.2s ease, border-radius 0.2s ease;
+    inset 0 1px 1px rgba(255, 255, 255, 0.6);
   user-select: none;
 }
 
-/* Dark mode adaptive subtle rim */
 @media (prefers-color-scheme: dark) {
   .mac-dock-container {
-    background: rgba(30, 30, 35, 0.45);
+    background: rgba(18, 18, 24, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: 
-      0 20px 50px -10px rgba(0, 0, 0, 0.5),
+      0 20px 50px -10px rgba(0, 0, 0, 0.6),
       inset 0 1px 1px rgba(255, 255, 255, 0.25);
   }
 }
@@ -40,7 +56,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  margin: 0 0.2rem;
+  margin: 0 0.18rem;
   cursor: pointer;
   outline: none;
   transform-origin: bottom center;
@@ -52,9 +68,9 @@
   height: 100%;
   border-radius: 0.95rem;
   box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.2),
-    0 1px 3px rgba(0, 0, 0, 0.12);
-  transition: filter 0.2s ease;
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: filter 0.15s ease;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -62,19 +78,19 @@
 }
 
 .mac-dock-icon:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.1);
 }
 
 .mac-dock-icon:active {
-  filter: brightness(0.92);
+  filter: brightness(0.9);
 }
 
 /* App bounce animation on launch */
 @keyframes macDockBounce {
   0% { transform: translateY(0); }
-  25% { transform: translateY(-24px); }
+  25% { transform: translateY(-22px); }
   50% { transform: translateY(0); }
-  75% { transform: translateY(-10px); }
+  75% { transform: translateY(-8px); }
   100% { transform: translateY(0); }
 }
 
@@ -85,47 +101,40 @@
 /* Active indicator dot underneath icon */
 .mac-dock-dot {
   position: absolute;
-  bottom: -0.38rem;
+  bottom: -0.35rem;
   width: 4px;
   height: 4px;
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* Vertical Separator Divider Line */
 .mac-dock-divider {
   width: 1px;
-  height: 2.8rem;
-  margin: 0 0.45rem;
+  height: 2.6rem;
+  margin: 0 0.4rem;
   background: rgba(255, 255, 255, 0.35);
   align-self: center;
   box-shadow: 0.5px 0 0 rgba(0, 0, 0, 0.15);
 }
 
-@media (prefers-color-scheme: dark) {
-  .mac-dock-divider {
-    background: rgba(255, 255, 255, 0.18);
-  }
-}
-
 /* Sleek macOS Dark Tooltip */
 .mac-dock-tooltip {
   position: absolute;
-  top: -2.6rem;
+  top: -2.5rem;
   left: 50%;
   transform: translateX(-50%);
-  padding: 0.28rem 0.7rem;
-  background: rgba(23, 23, 23, 0.82);
+  padding: 0.25rem 0.65rem;
+  background: rgba(20, 20, 24, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   color: #ffffff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 500;
-  letter-spacing: 0.01em;
-  border-radius: 0.5rem;
+  border-radius: 0.45rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   white-space: nowrap;
   pointer-events: none;
   z-index: 1000;
@@ -140,7 +149,7 @@
   transform: translateX(-50%);
   border-width: 4px 4px 0 4px;
   border-style: solid;
-  border-color: rgba(23, 23, 23, 0.82) transparent transparent transparent;
+  border-color: rgba(20, 20, 24, 0.85) transparent transparent transparent;
 }
 
 @keyframes macTooltipFadeIn {
@@ -152,13 +161,13 @@
 .mac-window-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10000;
-  background: rgba(0, 0, 0, 0.4);
+  z-index: 9980;
+  background: rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 1rem;
   animation: macWindowOverlayFade 0.2s ease-out;
 }
 
@@ -169,12 +178,11 @@
 
 .mac-window {
   width: 100%;
-  max-width: 680px;
   background: #ffffff;
   border-radius: 0.85rem;
   box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(0, 0, 0, 0.08);
+    0 25px 50px -12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -188,13 +196,13 @@
 }
 
 .mac-window-titlebar {
-  height: 40px;
-  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  height: 38px;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
   border-bottom: 1px solid #cbd5e1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
+  padding: 0 0.85rem;
   user-select: none;
 }
 
@@ -253,16 +261,16 @@
 .mac-btn-expand:hover { color: #004d0d; }
 
 .mac-window-title {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #475569;
+  color: #334155;
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
 
 .mac-window-body {
-  padding: 1.5rem;
-  max-height: 75vh;
+  padding: 1.25rem;
+  max-height: 78vh;
   overflow-y: auto;
 }

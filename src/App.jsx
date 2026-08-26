@@ -11,7 +11,7 @@ import MacDock from './components/MacDock';
 import OfficeCoutureFolder from './components/OfficeCoutureFolder';
 import ProjectModal from './components/ProjectModal';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
-import { playBootChime, playMacClick } from './utils/macAudioEngine';
+import { playBootChime } from './utils/macAudioEngine';
 
 export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -81,13 +81,13 @@ export default function App() {
   };
 
   return (
-    <div className={isDarkMode ? 'dark' : ''}>
+    <div className={`w-screen h-screen max-h-screen overflow-hidden fixed inset-0 ${isDarkMode ? 'dark' : ''}`}>
       <MacBookDeviceFrame 
         isHardwareFrame={isHardwareFrame} 
         onToggleFrameView={() => setIsHardwareFrame(!isHardwareFrame)}
       >
-        {/* macOS Desktop Canvas */}
-        <div className={`w-full min-h-screen ${wallpaperClasses[wallpaper] || 'wallpaper-sequoia'} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}>
+        {/* macOS Desktop Canvas — Strictly Fits Inside Screen Bounds with NO SCROLLING */}
+        <div className={`w-full h-full max-h-full ${wallpaperClasses[wallpaper] || 'wallpaper-sequoia'} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}>
           
           {/* Top macOS Translucent Menu Bar */}
           <MacMenuBar
@@ -131,7 +131,7 @@ export default function App() {
           />
 
           {/* Main Desktop Center Content Stage */}
-          <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-0 my-auto">
+          <div className="flex-1 flex flex-col items-center justify-center p-2 relative z-0 my-auto overflow-hidden">
             <OfficeCoutureFolder 
               onSelectProject={(project) => setSelectedProject(project)}
             />

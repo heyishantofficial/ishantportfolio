@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './nexusCyberdeck.css';
 import { Play, Pause, SkipBack, SkipForward, Minus, Maximize2, X, RefreshCw, Volume1, Volume2, VolumeX, Shuffle, Repeat } from 'lucide-react';
 
-export default function NexusCyberdeckPlayer({ onClose, masterVolume = 50, isMuted = false, onIsPlayingChange }) {
+export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMuted = false, onIsPlayingChange }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progressWidth, setProgressWidth] = useState(0);
   const [currentTimeStr, setCurrentTimeStr] = useState("0:00");

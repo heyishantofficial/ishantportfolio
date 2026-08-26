@@ -22,7 +22,7 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [wallpaper, setWallpaper] = useState('video');
   const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(20);
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
   const [isHardwareFrame, setIsHardwareFrame] = useState(false);
 

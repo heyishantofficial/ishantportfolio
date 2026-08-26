@@ -13,7 +13,7 @@ export default function MacMenuBar({
   onToggleSpotlight,
   isMuted,
   onToggleMute,
-  volume = 50,
+  volume = 20,
   onVolumeChange,
   isHardwareFrame,
   onToggleFrameView

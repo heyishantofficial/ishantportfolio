@@ -404,17 +404,6 @@ export default function App() {
             >
               {/* Word-by-word Animated Quote Heading on Lock Screen */}
               <AnimatedQuoteHeading />
-              {/* Touch ID / Lock Fingerprint Icon */}
-              <div className="relative group cursor-pointer mb-4" onClick={handleBootSystem}>
-                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-xl border border-white/40 text-white flex items-center justify-center shadow-xl transition-transform duration-300 group-hover:scale-110">
-                  <Fingerprint className="w-8 h-8 text-white animate-pulse" />
-                </div>
-              </div>
-
-              {/* User Name */}
-              <h1 className="font-sans font-bold text-xl sm:text-2xl text-white tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] mb-1">
-                Ishant Chauhan
-              </h1>
 
               {/* Helper Subtitle */}
               <p className="text-xs font-sans text-white/80 drop-shadow-md mb-4 font-normal tracking-wide">

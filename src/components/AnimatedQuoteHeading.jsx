@@ -41,7 +41,7 @@ export default function AnimatedQuoteHeading() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="text-center max-w-3xl px-4 mb-4 select-none relative z-10"
+      className="text-center max-w-3xl px-4 mb-3 select-none relative z-10"
     >
       <h1 className="font-serif-title text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] flex flex-wrap justify-center gap-x-2.5 gap-y-1">
         {words.map((word, index) => {
@@ -61,14 +61,6 @@ export default function AnimatedQuoteHeading() {
           );
         })}
       </h1>
-      <motion.p 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.5, duration: 0.6 }}
-        className="font-mono text-[10px] sm:text-xs text-amber-200/90 uppercase tracking-[0.25em] font-semibold mt-2.5 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
-      >
-        — Ishant Chauhan // Creator Manifesto
-      </motion.p>
     </motion.div>
   );
 }

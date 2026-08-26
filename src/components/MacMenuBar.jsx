@@ -153,14 +153,7 @@ export default function MacMenuBar({
         {/* Right Section: Hardware View Toggle, Sound, Battery, Wi-Fi, Spotlight, Control Center, Clock */}
         <div className="flex items-center gap-2.5 font-medium text-[11px]">
           
-          {/* Hardware Frame Switcher */}
-          <button 
-            onClick={onToggleFrameView}
-            className="px-2 py-0.5 rounded bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 transition-all font-semibold flex items-center gap-1 cursor-pointer border border-slate-900/10 dark:border-white/10 text-[10px]"
-            title="Switch between Full Screen Desktop & MacBook Hardware Frame"
-          >
-            <span>{isHardwareFrame ? '🖥️ Fullscreen Desktop' : '💻 MacBook Frame'}</span>
-          </button>
+
 
           {/* Transparent Minimal Volume Menu Bar Control */}
           <div className="relative">

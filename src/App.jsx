@@ -8,7 +8,6 @@ import MacMenuBar from './components/MacMenuBar';
 import MacControlCenter from './components/MacControlCenter';
 import MacSpotlight from './components/MacSpotlight';
 import MacDesktopIcons from './components/MacDesktopIcons';
-import MacBookDeviceFrame from './components/MacBookDeviceFrame';
 import MacDock from './components/MacDock';
 
 import OfficeCoutureFolder from './components/OfficeCoutureFolder';
@@ -24,7 +23,6 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(20);
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
-  const [isHardwareFrame, setIsHardwareFrame] = useState(false);
 
   const videoRef = useRef(null);
   const [showControlCenter, setShowControlCenter] = useState(false);
@@ -253,10 +251,7 @@ export default function App() {
 
   return (
     <div className={`w-screen h-screen max-h-screen overflow-hidden fixed inset-0 ${isDarkMode ? 'dark' : ''}`}>
-      <MacBookDeviceFrame 
-        isHardwareFrame={isHardwareFrame} 
-        onToggleFrameView={() => setIsHardwareFrame(!isHardwareFrame)}
-      >
+
         {/* macOS Desktop Canvas — Strictly Fits Inside Screen Bounds with NO SCROLLING */}
         <div className={`w-full h-full max-h-full ${wallpaperClasses[wallpaper] || 'wallpaper-video'} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}>
           
@@ -290,8 +285,6 @@ export default function App() {
             onToggleMute={() => setIsMuted(!isMuted)}
             volume={volume}
             onVolumeChange={handleVolumeChange}
-            isHardwareFrame={isHardwareFrame}
-            onToggleFrameView={() => setIsHardwareFrame(!isHardwareFrame)}
           />
 
           {/* Control Center Dropdown */}
@@ -369,7 +362,7 @@ export default function App() {
           </AnimatePresence>
 
         </div>
-      </MacBookDeviceFrame>
+
 
       {/* macOS Photorealistic Login Screen Overlay */}
       <AnimatePresence>

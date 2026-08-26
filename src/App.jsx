@@ -19,7 +19,7 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [wallpaper, setWallpaper] = useState('custom');
+  const [wallpaper, setWallpaper] = useState('video');
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(20);
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
@@ -320,7 +320,6 @@ export default function App() {
 
           {/* Main Desktop Center Content Stage */}
           <div className="flex-1 flex flex-col items-center justify-center p-2 relative z-0 my-auto overflow-hidden">
-            <AnimatedQuoteHeading />
             <OfficeCoutureFolder 
               onSelectProject={(project) => setSelectedProject(project)}
             />
@@ -374,13 +373,10 @@ export default function App() {
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[99999] bg-black/10 flex flex-col items-center justify-between text-white select-none overflow-hidden p-6"
           >
-            {/* Dedicated Looping Lock Screen Video Background */}
-            <video
-              src={lockVideoSrc} preload="auto"
-              autoPlay
-              loop
-              playsInline
-              muted
+            {/* User Custom Photo Background for Lock Screen */}
+            <img
+              src="/bg-poc.jpg"
+              alt="Lock Screen Photo Background"
               className="absolute inset-0 w-full h-full object-cover z-0 opacity-100 pointer-events-none"
             />
             
@@ -404,8 +400,10 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col items-center justify-center my-auto z-10"
+              className="flex flex-col items-center justify-center my-auto z-10 space-y-3"
             >
+              {/* Word-by-word Animated Quote Heading on Lock Screen */}
+              <AnimatedQuoteHeading />
               {/* Touch ID / Lock Fingerprint Icon */}
               <div className="relative group cursor-pointer mb-4" onClick={handleBootSystem}>
                 <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-xl border border-white/40 text-white flex items-center justify-center shadow-xl transition-transform duration-300 group-hover:scale-110">

@@ -16,7 +16,7 @@ import {
 import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
 
 export default function MacDock({ 
-  openApps = { finder: true, notes: true },
+  openApps = {},
   onLaunchApp,
   onCloseApp,
   activeProject,

@@ -18,7 +18,7 @@ import { playBootChime } from './utils/macAudioEngine';
 
 export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
-  const [showCyberdeck, setShowCyberdeck] = useState(true);
+  const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [wallpaper, setWallpaper] = useState('video');
   const [isMuted, setIsMuted] = useState(false);
@@ -30,11 +30,11 @@ export default function App() {
   const [showControlCenter, setShowControlCenter] = useState(false);
   const [showSpotlight, setShowSpotlight] = useState(false);
 
-  // Open apps state object
+  // Open apps state object — Nothing open by default on login
   const [openApps, setOpenApps] = useState({
-    finder: true,
+    finder: false,
     notes: false,
-    ipod: true
+    ipod: false
   });
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');

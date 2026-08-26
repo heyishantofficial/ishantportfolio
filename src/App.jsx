@@ -56,6 +56,57 @@ export default function App() {
   const [isAppReady, setIsAppReady] = useState(false);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(25);
+  const [bgVideoSrc, setBgVideoSrc] = useState('/bg-video.mp4');
+  const [lockVideoSrc, setLockVideoSrc] = useState('/lock-video.mp4');
+  const [isCacheWarmed, setIsCacheWarmed] = useState(false);
+
+  // Pre-fetch video files into local RAM Blob URLs & warm browser cache for first-time visitors
+  useEffect(() => {
+    let isMounted = true;
+    const hasReloadedFirstTime = sessionStorage.getItem('has_warmed_video_cache_v2');
+
+    const cacheAndPreloadVideos = async () => {
+      try {
+        const [bgRes, lockRes] = await Promise.all([
+          fetch('/bg-video.mp4'),
+          fetch('/lock-video.mp4')
+        ]);
+
+        if (bgRes.ok && lockRes.ok) {
+          const [bgBlob, lockBlob] = await Promise.all([
+            bgRes.blob(),
+            lockRes.blob()
+          ]);
+
+          if (isMounted) {
+            const bgUrl = URL.createObjectURL(bgBlob);
+            const lockUrl = URL.createObjectURL(lockBlob);
+            setBgVideoSrc(bgUrl);
+            setLockVideoSrc(lockUrl);
+            setIsCacheWarmed(true);
+            setIsVideoLoaded(true);
+            setLoadingProgress(100);
+
+            // First time visitor cache warmup reload
+            if (!hasReloadedFirstTime) {
+              sessionStorage.setItem('has_warmed_video_cache_v2', 'true');
+              setTimeout(() => {
+                window.location.reload();
+              }, 300);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Video pre-fetch error:', err);
+      }
+    };
+
+    cacheAndPreloadVideos();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
 
   // Smooth macOS Startup Progress & Preload
@@ -213,7 +264,7 @@ export default function App() {
           {wallpaper === 'video' && (
             <video
               ref={videoRef}
-              src="/bg-video.mp4"
+              src={bgVideoSrc} preload="auto"
               autoPlay
               loop
               playsInline
@@ -331,7 +382,7 @@ export default function App() {
           >
             {/* Dedicated Looping Lock Screen Video Background */}
             <video
-              src="/lock-video.mp4"
+              src={lockVideoSrc} preload="auto"
               autoPlay
               loop
               playsInline

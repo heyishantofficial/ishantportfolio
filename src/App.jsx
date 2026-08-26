@@ -23,6 +23,7 @@ export default function App() {
   const [wallpaper, setWallpaper] = useState('video');
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
+  const [isIpodPlaying, setIsIpodPlaying] = useState(false);
   const [isHardwareFrame, setIsHardwareFrame] = useState(false);
 
   const videoRef = useRef(null);
@@ -111,16 +112,32 @@ export default function App() {
     return () => window.removeEventListener('click', handleFirstInteraction);
   }, [isMuted, isAppReady]);
 
-  // Sync background video volume & mute state
+  // Smooth Volume Ducking (fading out background video waves when iPod plays) & Master Volume Sync
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.volume = volume / 100;
-      videoRef.current.muted = isMuted || volume === 0;
-      if (!isMuted && volume > 0) {
-        videoRef.current.play().catch(() => {});
+    if (!videoRef.current) return;
+
+    // Target background volume: 0 if muted or iPod is actively playing music, otherwise master volume %
+    const targetVol = (isMuted || isIpodPlaying || volume === 0) ? 0 : (volume / 100);
+
+    const interval = setInterval(() => {
+      if (!videoRef.current) return;
+      const currentVol = videoRef.current.volume;
+      const step = 0.04; // Smooth ~300ms fade step
+
+      if (Math.abs(currentVol - targetVol) <= step) {
+        videoRef.current.volume = targetVol;
+        videoRef.current.muted = targetVol === 0;
+        clearInterval(interval);
+      } else if (currentVol < targetVol) {
+        videoRef.current.muted = false;
+        videoRef.current.volume = Math.min(targetVol, currentVol + step);
+      } else {
+        videoRef.current.volume = Math.max(targetVol, currentVol - step);
       }
-    }
-  }, [isMuted, volume, wallpaper]);
+    }, 30);
+
+    return () => clearInterval(interval);
+  }, [isMuted, volume, isIpodPlaying, wallpaper]);
 
   const handleVolumeChange = (newVol) => {
     setVolume(newVol);
@@ -292,6 +309,9 @@ export default function App() {
               >
                 <NexusCyberdeckPlayer 
                   onClose={() => handleCloseApp("ipod")}
+                  masterVolume={volume}
+                  isMuted={isMuted}
+                  onIsPlayingChange={(playing) => setIsIpodPlaying(playing)}
                 />
               </motion.div>
             )}

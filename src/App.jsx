@@ -34,7 +34,7 @@ export default function App() {
   const [desktopContextMenu, setDesktopContextMenu] = useState(null);
 
   const videoRef = useRef(null);
-  const passwordInputRef = useRef(null);
+  const nameInputRef = useRef(null);
   const [showControlCenter, setShowControlCenter] = useState(false);
   const [showSpotlight, setShowSpotlight] = useState(false);
 
@@ -48,7 +48,7 @@ export default function App() {
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
   const [loginTimeStr, setLoginTimeStr] = useState('');
-  const [viewerName, setViewerName] = useState('Ishant Guest');
+  const [viewerName, setViewerName] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
@@ -140,7 +140,7 @@ export default function App() {
     if (!viewerName || !viewerName.trim()) {
       setLoginError('⚠️ Please enter your name to log in!');
       setIsShaking(true);
-      if (passwordInputRef.current) passwordInputRef.current.focus();
+      if (nameInputRef.current) nameInputRef.current.focus();
       setTimeout(() => setIsShaking(false), 500);
       return;
     }
@@ -519,14 +519,14 @@ export default function App() {
               <span className="ml-1 tracking-tight font-medium">{loginTimeStr || 'Sat Aug 26 16:54'}</span>
             </div>
 
-            {/* Center User Login Card — Vertically Centered on Screen */}
+            {/* Center User Login Card — Positioned in upper blue sky zone above green hills */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col items-center justify-center my-auto z-10 space-y-3 w-full max-w-2xl text-center"
+              className="flex flex-col items-center justify-start mt-6 sm:mt-12 mb-auto z-10 space-y-2.5 w-full max-w-2xl text-center"
             >
-              {/* Quote Heading */}
+              {/* One-Time Morphing Entrance & Mouse-Reactive Quote Heading */}
               <AnimatedQuoteHeading />
 
               {/* Helper Subtitle */}
@@ -534,11 +534,11 @@ export default function App() {
                 Enter your name to log in
               </p>
 
-              {/* Name Input Form */}
-              <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-56 sm:w-64 max-w-[270px]">
+              {/* Liquid Glass macOS Input Form */}
+              <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-52 sm:w-60 max-w-[250px]">
                 <div className={`w-full relative flex items-center ${isShaking ? 'animate-shake' : ''}`}>
                   <input
-                    ref={passwordInputRef}
+                    ref={nameInputRef}
                     type="text"
                     value={viewerName}
                     onChange={(e) => {
@@ -547,35 +547,35 @@ export default function App() {
                     }}
                     placeholder="Enter Your Name..."
                     autoFocus
-                    className={`w-full py-2 pl-4 pr-10 rounded-full bg-black/40 backdrop-blur-xl border text-white placeholder-white/50 font-sans text-xs shadow-[0_6px_24px_rgba(0,0,0,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300/80 transition-all ${
-                      loginError ? 'border-amber-400 ring-2 ring-amber-400/80' : 'border-white/40'
+                    className={`w-full py-1.5 pl-4 pr-9 rounded-full mac-liquid-glass-input text-white placeholder-white/50 font-sans text-xs shadow-[0_6px_24px_rgba(0,0,0,0.25)] focus:outline-none focus:ring-2 focus:ring-amber-300/70 focus:border-amber-300/80 transition-all ${
+                      loginError ? 'border-amber-400 ring-2 ring-amber-400/60' : ''
                     }`}
                   />
                   <button
                     type="submit"
-                    className="absolute right-1 w-6 h-6 rounded-full bg-white/20 hover:bg-white/35 active:scale-90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/30 shadow-sm"
-                    title="Unlock System"
+                    className="absolute right-1 w-5.5 h-5.5 rounded-full bg-white/20 hover:bg-white/35 active:scale-90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/30 shadow-sm"
+                    title="Unlock"
                   >
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
               </form>
 
               {/* Validation Error Message */}
               {loginError && (
-                <p className="font-mono text-[11px] text-amber-300 font-bold animate-fadeIn bg-black/50 px-3 py-1 rounded-full border border-amber-500/40">
+                <p className="font-mono text-[11px] text-amber-300 font-bold animate-fadeIn">
                   {loginError}
                 </p>
               )}
 
-              {/* Click to Unlock Prompt Button */}
+              {/* Click to Unlock Liquid Glass Prompt Button */}
               <button
                 type="button"
                 onClick={handleBootSystem}
-                className="mt-2 px-5 py-1.5 rounded-full mac-liquid-glass-btn text-white/90 font-mono text-[11px] transition-all cursor-pointer active:scale-95 hover:bg-white/25 font-semibold flex items-center gap-1.5"
+                className="mt-2 px-4 py-1.5 rounded-full mac-liquid-glass-btn text-white/90 font-mono text-[11px] transition-all cursor-pointer active:scale-95 hover:bg-white/25 font-semibold flex items-center gap-1.5"
               >
                 <span>{isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName}` : 'Click to Unlock'}</span>
-                <span>🔓</span>
+                <span>🔒</span>
               </button>
             </motion.div>
 

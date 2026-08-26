@@ -11,6 +11,7 @@ import MacDock from './components/MacDock';
 
 import OfficeCoutureFolder from './components/OfficeCoutureFolder';
 import ProjectModal from './components/ProjectModal';
+import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
 import { playBootChime } from './utils/macAudioEngine';
 
@@ -18,7 +19,7 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [wallpaper, setWallpaper] = useState('video');
+  const [wallpaper, setWallpaper] = useState('custom');
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(20);
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
@@ -319,6 +320,7 @@ export default function App() {
 
           {/* Main Desktop Center Content Stage */}
           <div className="flex-1 flex flex-col items-center justify-center p-2 relative z-0 my-auto overflow-hidden">
+            <AnimatedQuoteHeading />
             <OfficeCoutureFolder 
               onSelectProject={(project) => setSelectedProject(project)}
             />

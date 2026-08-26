@@ -51,13 +51,9 @@ export default function MacMenuBar({
 
   const handleUnlock = (e) => {
     e.preventDefault();
-    if (password.trim() === systemPassword) {
-      setIsLocked(false);
-      setPassword('');
-      setLockError(false);
-    } else {
-      setLockError(true);
-    }
+    setIsLocked(false);
+    setPassword('');
+    setLockError(false);
   };
 
   return (

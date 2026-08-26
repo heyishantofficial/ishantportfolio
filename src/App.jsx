@@ -133,12 +133,12 @@ export default function App() {
     };
   }, [isVideoLoaded, isAppReady]);
 
-  // STRICT LOGIN UNLOCK FUNCTION WITH PASSWORD VERIFICATION
+  // LOGIN UNLOCK FUNCTION (NAME LOGIN)
   const handleBootSystem = (e) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    if (!passwordInput || passwordInput.trim() !== systemPassword) {
-      setLoginError(`⚠️ Incorrect Password! (Default: ishucreationz)`);
+    if (!viewerName || !viewerName.trim()) {
+      setLoginError('⚠️ Please enter your name to log in!');
       setIsShaking(true);
       if (passwordInputRef.current) passwordInputRef.current.focus();
       setTimeout(() => setIsShaking(false), 500);
@@ -158,7 +158,6 @@ export default function App() {
     setTimeout(() => {
       setIsAppReady(true);
       setIsLoggingIn(false);
-      setPasswordInput('');
     }, 450);
   };
 
@@ -532,24 +531,24 @@ export default function App() {
 
               {/* Helper Subtitle */}
               <p className="text-[11px] sm:text-xs font-sans text-white/80 drop-shadow-md mb-1.5 font-medium tracking-wide">
-                Enter Password to Unlock (Password: <code className="text-amber-300 font-mono font-bold">{systemPassword}</code>)
+                Enter your name to log in
               </p>
 
-              {/* Password Input Form */}
+              {/* Name Input Form */}
               <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-56 sm:w-64 max-w-[270px]">
                 <div className={`w-full relative flex items-center ${isShaking ? 'animate-shake' : ''}`}>
                   <input
                     ref={passwordInputRef}
-                    type="password"
-                    value={passwordInput}
+                    type="text"
+                    value={viewerName}
                     onChange={(e) => {
-                      setPasswordInput(e.target.value);
+                      setViewerName(e.target.value);
                       if (loginError) setLoginError('');
                     }}
-                    placeholder="Enter Password..."
+                    placeholder="Enter Your Name..."
                     autoFocus
-                    className={`w-full py-2 pl-4 pr-10 rounded-full bg-black/40 backdrop-blur-xl border text-white placeholder-white/50 font-mono text-xs shadow-[0_6px_24px_rgba(0,0,0,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300/80 transition-all ${
-                      loginError ? 'border-rose-400 ring-2 ring-rose-400/80' : 'border-white/40'
+                    className={`w-full py-2 pl-4 pr-10 rounded-full bg-black/40 backdrop-blur-xl border text-white placeholder-white/50 font-sans text-xs shadow-[0_6px_24px_rgba(0,0,0,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300/80 transition-all ${
+                      loginError ? 'border-amber-400 ring-2 ring-amber-400/80' : 'border-white/40'
                     }`}
                   />
                   <button
@@ -564,7 +563,7 @@ export default function App() {
 
               {/* Validation Error Message */}
               {loginError && (
-                <p className="font-mono text-[11px] text-rose-300 font-bold animate-fadeIn bg-rose-950/60 px-3 py-1 rounded-full border border-rose-500/40">
+                <p className="font-mono text-[11px] text-amber-300 font-bold animate-fadeIn bg-black/50 px-3 py-1 rounded-full border border-amber-500/40">
                   {loginError}
                 </p>
               )}
@@ -575,8 +574,8 @@ export default function App() {
                 onClick={handleBootSystem}
                 className="mt-2 px-5 py-1.5 rounded-full mac-liquid-glass-btn text-white/90 font-mono text-[11px] transition-all cursor-pointer active:scale-95 hover:bg-white/25 font-semibold flex items-center gap-1.5"
               >
-                <span>{isLoggingIn ? 'Unlocking...' : 'Unlock System'}</span>
-                <span>🔒</span>
+                <span>{isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName}` : 'Click to Unlock'}</span>
+                <span>🔓</span>
               </button>
             </motion.div>
 

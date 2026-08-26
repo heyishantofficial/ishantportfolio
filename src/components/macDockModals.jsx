@@ -74,231 +74,205 @@ export function Mac3DFolderIcon({ title, itemsCount, onClick, isSelected }) {
 }
 
 
-// 1. Finder App Modal
+// 1. Finder App Modal (1:1 Replica of Photo 1)
 export function FinderModal({ onSelectProject, onClose }) {
-  const [activeSidebar, setActiveSidebar] = useState('projects');
-  const [selectedTag, setSelectedTag] = useState('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItem, setSelectedItem] = useState(PROJECTS_DATA[0]);
+  const [activeSidebar, setActiveSidebar] = useState("downloads");
+  const [selectedFolder, setSelectedFolder] = useState("geist-font");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const tags = ['ALL', 'Vibecoded', 'React', 'Content Systems', 'Personal Branding'];
+  const todayFolders = [
+    { id: "geist-font", title: "geist-font", items: "6 Items", projId: "brainjot" },
+    { id: "PulseBoard", title: "PulseBoard", items: "12 Items", projId: "instacollect" },
+    { id: "Atlas", title: "Atlas", items: "8 Items", projId: "notch-finder" }
+  ];
 
-  const filteredProjects = PROJECTS_DATA.filter((p) => {
-    const matchesTag = selectedTag === 'ALL' || p.tags.some(t => t.toLowerCase().includes(selectedTag.toLowerCase()));
-    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          p.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesTag && matchesSearch;
-  });
+  const yesterdayFolders = [
+    { id: "AEUX_0.8.2", title: "AEUX_0.8.2", items: "4 Items", projId: "databeauty" },
+    { id: "Invoices", title: "Invoices", items: "48 Items", projId: "talkntype" },
+    { id: "Liquid", title: "Liquid", items: "2 Items", projId: "office-couture" }
+  ];
+
+  const prevDaysFolders = [
+    { id: "Vibecoded", title: "Vibecoded Apps", items: "6 Items", projId: "brainjot" },
+    { id: "Cyberdeck", title: "Cyberdeck Player", items: "10 Items", projId: "instacollect" },
+    { id: "ResumeDoc", title: "Ishant Resume", items: "1 Item", projId: "resume" }
+  ];
+
+  const handleFolderClick = (folder) => {
+    setSelectedFolder(folder.id);
+    const targetProject = PROJECTS_DATA.find(p => p.id === folder.projId) || PROJECTS_DATA[0];
+    if (onSelectProject) {
+      onSelectProject(targetProject);
+    }
+  };
 
   return (
-    <MacWindow title="Finder — Ishant's Workspace" icon={Folder} onClose={onClose} width="max-w-4xl">
-      <div className="flex h-[480px] bg-[#f6f6f6] text-slate-800 font-sans select-none -m-6 rounded-b-xl overflow-hidden border-t border-slate-200">
+    <MacWindow title="Downloads — Finder" icon={Folder} onClose={onClose} width="max-w-5xl">
+      <div className="flex flex-col md:flex-row h-[520px] max-h-[75vh] select-none overflow-hidden -m-4 sm:-m-5 rounded-b-[1.4rem]">
         
-        {/* Finder Sidebar */}
-        <div className="w-48 bg-slate-200/70 border-r border-slate-300/70 p-3 flex flex-col justify-between shrink-0 font-sans text-xs">
+        {/* Photo 1 Translucent Frosted Sidebar */}
+        <div className="w-full md:w-52 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border-r border-white/50 dark:border-white/10 p-3.5 flex flex-col justify-between shrink-0 font-sans text-xs">
           <div className="space-y-4">
+            {/* Favourites */}
             <div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2">
-                Favorites
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">
+                Favourites
               </div>
               <div className="space-y-1">
-                <button 
-                  onClick={() => setActiveSidebar('projects')}
-                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
-                    activeSidebar === 'projects' ? 'bg-blue-500 text-white font-semibold shadow-sm' : 'hover:bg-slate-300/60 text-slate-700'
-                  }`}
-                >
-                  <Folder className={`w-3.5 h-3.5 ${activeSidebar === 'projects' ? 'text-white' : 'text-blue-500'}`} />
-                  <span>Projects</span>
-                </button>
-
-                <button 
-                  onClick={() => setActiveSidebar('vibecoded')}
-                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
-                    activeSidebar === 'vibecoded' ? 'bg-blue-500 text-white font-semibold shadow-sm' : 'hover:bg-slate-300/60 text-slate-700'
-                  }`}
-                >
-                  <Sparkles className={`w-3.5 h-3.5 ${activeSidebar === 'vibecoded' ? 'text-white' : 'text-purple-500'}`} />
-                  <span>Vibecoded Suite</span>
-                </button>
-
-                <button 
-                  onClick={() => setActiveSidebar('resume')}
-                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
-                    activeSidebar === 'resume' ? 'bg-blue-500 text-white font-semibold shadow-sm' : 'hover:bg-slate-300/60 text-slate-700'
-                  }`}
-                >
-                  <FileText className={`w-3.5 h-3.5 ${activeSidebar === 'resume' ? 'text-white' : 'text-amber-500'}`} />
-                  <span>Resume & Bio</span>
-                </button>
+                {[
+                  { id: "downloads", label: "Downloads", icon: Download },
+                  { id: "documents", label: "Documents", icon: FileText },
+                  { id: "desktop", label: "Desktop", icon: Cpu },
+                  { id: "applications", label: "Applications", icon: Sparkles }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const isActive = activeSidebar === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSidebar(item.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl font-medium transition-all ${
+                        isActive 
+                          ? "bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white font-bold shadow-sm backdrop-blur-xl border border-white/90" 
+                          : "hover:bg-white/40 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300"
+                      }`}
+                    >
+                      <IconComp className={`w-3.5 h-3.5 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-500"}`} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
+            {/* Locations */}
             <div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2">
-                Tags
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">
+                Locations
               </div>
-              <div className="space-y-0.5 px-1">
-                {tags.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setSelectedTag(t)}
-                    className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium flex items-center justify-between ${
-                      selectedTag === t ? 'bg-slate-300/90 font-bold text-slate-900' : 'text-slate-600 hover:bg-slate-300/50'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${
-                        t === 'ALL' ? 'bg-slate-400' : t === 'Vibecoded' ? 'bg-cyan-500' : t === 'React' ? 'bg-blue-500' : 'bg-emerald-500'
-                      }`} />
-                      {t}
-                    </span>
-                    {selectedTag === t && <Check className="w-3 h-3 text-slate-700" />}
-                  </button>
-                ))}
+              <div className="space-y-1">
+                {[
+                  { id: "icloud", label: "iCloud Drive", icon: Globe },
+                  { id: "byjwxn", label: "byJWXN", icon: Cpu },
+                  { id: "airdrop", label: "AirDrop", icon: Sparkles },
+                  { id: "network", label: "Network", icon: Globe }
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSidebar(item.id)}
+                      className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 font-medium transition-all"
+                    >
+                      <IconComp className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-300/60 flex items-center gap-2">
+          <div className="pt-3 border-t border-slate-300/40 dark:border-slate-700/40 flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center">
               IC
             </div>
             <div className="overflow-hidden">
-              <div className="font-bold text-[11px] text-slate-900 truncate">{PROFILE_INFO.name}</div>
+              <div className="font-bold text-[11px] text-slate-800 dark:text-slate-200 truncate">{PROFILE_INFO.name}</div>
               <div className="text-[9px] text-slate-500 truncate">MacBook Pro M3</div>
             </div>
           </div>
         </div>
 
-        {/* Finder Main Content */}
-        <div className="flex-1 flex flex-col bg-white overflow-hidden">
-          <div className="h-10 border-b border-slate-200 bg-slate-100/90 px-3 flex items-center justify-between shrink-0">
-            <span className="text-xs text-slate-600 font-medium">
-              {filteredProjects.length} Items
-            </span>
+        {/* Right Main Grid View Matching Photo 1 */}
+        <div className="flex-1 flex flex-col bg-white/20 dark:bg-slate-950/20 backdrop-blur-xl overflow-hidden">
+          {/* Header Bar with < > controls and Downloads Title */}
+          <div className="h-12 px-4 flex items-center justify-between border-b border-white/30 dark:border-white/10 shrink-0">
+            <div className="flex items-center gap-3">
+              {/* Frosted Navigation Pill Buttons */}
+              <div className="flex items-center bg-white/50 dark:bg-white/10 p-0.5 rounded-full border border-white/60 dark:border-white/15 shadow-sm">
+                <button className="w-6 h-6 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-white/60 transition-colors text-xs font-bold">
+                  ‹
+                </button>
+                <div className="w-[1px] h-3 bg-slate-300 dark:bg-slate-700" />
+                <button className="w-6 h-6 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-white/60 transition-colors text-xs font-bold">
+                  ›
+                </button>
+              </div>
+              <h1 className="font-sans font-extrabold text-base text-slate-900 dark:text-slate-100 tracking-tight">
+                {activeSidebar === "downloads" ? "Downloads" : activeSidebar.toUpperCase()}
+              </h1>
+            </div>
 
+            {/* Search Input */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
-              <input 
-                type="text" 
-                placeholder="Search Finder..." 
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-7 pr-3 py-1 bg-white border border-slate-300 rounded-md text-xs w-40 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="pl-8 pr-3 py-1 bg-white/60 dark:bg-white/10 border border-white/70 dark:border-white/15 rounded-full text-xs w-36 focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
           </div>
 
-          {activeSidebar === 'resume' ? (
-            <div className="flex-1 p-5 overflow-y-auto font-sans text-slate-800">
-              <div className="max-w-xl mx-auto space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="border-b border-slate-200 pb-3">
-                  <span className="text-[10px] font-mono font-bold text-blue-600 uppercase tracking-widest block mb-1">
-                    // CREATOR & BUILDER
-                  </span>
-                  <h2 className="text-xl font-extrabold text-slate-900">{PROFILE_INFO.name}</h2>
-                  <p className="text-xs text-slate-600 mt-0.5">{PROFILE_INFO.roleTitle}</p>
-                  <div className="text-[11px] text-slate-500 mt-1 font-mono">{PROFILE_INFO.location} • {PROFILE_INFO.email}</div>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider mb-1">Vision</h3>
-                  <p className="text-xs text-slate-700 leading-relaxed">{PROFILE_INFO.tagline}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider mb-2">Core Pillars</h3>
-                  <div className="space-y-2">
-                    {PROFILE_INFO.pillars.map((p) => (
-                      <div key={p.number} className="p-2.5 bg-white rounded-xl border border-slate-200 text-xs">
-                        <div className="font-bold text-blue-700">{p.number} — {p.title}</div>
-                        <div className="text-slate-600 mt-0.5">{p.description}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          {/* Grouped Folders Area */}
+          <div className="flex-1 p-5 overflow-y-auto space-y-6">
+            {/* Section 1: Today */}
+            <div>
+              <h3 className="font-sans font-bold text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
+                Today
+              </h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                {todayFolders.map((folder) => (
+                  <Mac3DFolderIcon
+                    key={folder.id}
+                    title={folder.title}
+                    itemsCount={folder.items}
+                    isSelected={selectedFolder === folder.id}
+                    onClick={() => handleFolderClick(folder)}
+                  />
+                ))}
               </div>
             </div>
-          ) : (
-            <div className="flex-1 flex overflow-hidden">
-              <div className="flex-1 p-3 overflow-y-auto grid grid-cols-2 gap-2.5 align-content-start">
-                {filteredProjects.map((proj) => {
-                  const isSelected = selectedItem?.id === proj.id;
-                  return (
-                    <div
-                      key={proj.id}
-                      onClick={() => setSelectedItem(proj)}
-                      onDoubleClick={() => onSelectProject && onSelectProject(proj)}
-                      className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                        isSelected 
-                          ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-300' 
-                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
-                      }`}
-                    >
-                      <div>
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white mb-2 shadow-sm font-bold text-xs">
-                          {proj.title[0]}
-                        </div>
-                        <div className="font-bold text-xs text-slate-900 truncate">{proj.title}</div>
-                        <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5">{proj.summary}</div>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {proj.tags.slice(0, 2).map((t) => (
-                          <span key={t} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+
+            {/* Section 2: Yesterday */}
+            <div>
+              <h3 className="font-sans font-bold text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
+                Yesterday
+              </h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                {yesterdayFolders.map((folder) => (
+                  <Mac3DFolderIcon
+                    key={folder.id}
+                    title={folder.title}
+                    itemsCount={folder.items}
+                    isSelected={selectedFolder === folder.id}
+                    onClick={() => handleFolderClick(folder)}
+                  />
+                ))}
               </div>
-
-              {selectedItem && (
-                <div className="w-56 border-l border-slate-200 bg-slate-50 p-3.5 flex flex-col justify-between overflow-y-auto shrink-0 text-xs">
-                  <div className="space-y-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 text-white flex items-center justify-center font-bold text-xl shadow-md mx-auto">
-                      {selectedItem.title[0]}
-                    </div>
-
-                    <div className="text-center">
-                      <h3 className="font-bold text-xs text-slate-900">{selectedItem.title}</h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{selectedItem.tagline}</p>
-                    </div>
-
-                    <div className="border-t border-slate-200 pt-2.5 space-y-2">
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase">Impact</span>
-                        <p className="font-semibold text-emerald-700 text-[10px] mt-0.5">{selectedItem.metrics}</p>
-                      </div>
-
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase">Tech Stack</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {selectedItem.techStack.map((ts) => (
-                            <span key={ts} className="text-[9px] font-mono px-1 py-0.5 bg-blue-100 text-blue-800 rounded">
-                              {ts}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => onSelectProject && onSelectProject(selectedItem)}
-                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow transition-colors flex items-center justify-center gap-1 cursor-pointer mt-3"
-                  >
-                    <span>Open Details</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
             </div>
-          )}
 
+            {/* Section 3: Previous 7 Days */}
+            <div>
+              <h3 className="font-sans font-bold text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
+                Previous 7 Days
+              </h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                {prevDaysFolders.map((folder) => (
+                  <Mac3DFolderIcon
+                    key={folder.id}
+                    title={folder.title}
+                    itemsCount={folder.items}
+                    isSelected={selectedFolder === folder.id}
+                    onClick={() => handleFolderClick(folder)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </MacWindow>

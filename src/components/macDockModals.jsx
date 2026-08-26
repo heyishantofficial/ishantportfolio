@@ -41,32 +41,32 @@ export function MacWindow({ title, icon: IconComponent, onClose, onMinimize, chi
   );
 }
 
-// 3D macOS Blue Folder Icon Matching Photo 1
+// 3D macOS Sequoia Sky Blue Folder Icon matching Image 2
 export function Mac3DFolderIcon({ title, itemsCount, onClick, isSelected }) {
   return (
     <div 
       onClick={onClick}
       className={`group p-3 rounded-2xl transition-all duration-200 cursor-pointer flex flex-col items-center justify-center text-center ${
         isSelected 
-          ? "bg-white/60 dark:bg-white/15 border border-white/80 dark:border-white/20 shadow-lg backdrop-blur-xl scale-105" 
-          : "hover:bg-white/40 dark:hover:bg-white/10 hover:shadow-md backdrop-blur-md border border-transparent"
+          ? "bg-white/50 dark:bg-white/20 border border-white/80 dark:border-white/30 shadow-md backdrop-blur-xl scale-[1.02]" 
+          : "hover:bg-white/30 dark:hover:bg-white/10 border border-transparent"
       }`}
     >
       {/* 3D Blue Folder Graphic */}
-      <div className="relative w-16 h-14 mb-2 transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-0.5">
-        {/* Back Tab */}
-        <div className="absolute top-0 left-1 w-6 h-4 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-t-md shadow-sm" />
-        {/* Front Pocket */}
-        <div className="absolute bottom-0 inset-x-0 h-11 bg-gradient-to-b from-[#5194ff] via-[#3b82f6] to-[#2563eb] rounded-xl shadow-md border border-blue-300/50 flex items-center justify-center overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-3 bg-gradient-to-b from-white/35 to-transparent rounded-t-xl" />
-          <div className="w-7 h-1 bg-white/40 rounded-full blur-[0.5px]" />
+      <div className="relative w-16 h-13 mb-2 transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-0.5">
+        {/* Back Top Tab */}
+        <div className="absolute top-0 left-1.5 w-7 h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-md shadow-xs" />
+        {/* Main 3D Folder Body */}
+        <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-b from-[#60a5fa] via-[#3b82f6] to-[#1d4ed8] rounded-xl shadow-lg border border-blue-300/70 flex flex-col items-center justify-center overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-2.5 bg-gradient-to-b from-white/45 to-transparent rounded-t-xl" />
+          <div className="w-8 h-1 bg-white/50 rounded-full blur-[0.3px] opacity-80" />
         </div>
       </div>
 
-      <div className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate max-w-[110px]">
+      <div className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[110px] tracking-tight">
         {title}
       </div>
-      <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+      <div className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
         {itemsCount}
       </div>
     </div>
@@ -74,7 +74,7 @@ export function Mac3DFolderIcon({ title, itemsCount, onClick, isSelected }) {
 }
 
 
-// 1. Finder App Modal (1:1 Replica of Photo 1)
+// 1. Finder App Modal (Exact 1:1 Replica of Image 2)
 export function FinderModal({ onSelectProject, onClose }) {
   const [activeSidebar, setActiveSidebar] = useState("downloads");
   const [selectedFolder, setSelectedFolder] = useState("geist-font");
@@ -107,15 +107,25 @@ export function FinderModal({ onSelectProject, onClose }) {
   };
 
   return (
-    <MacWindow title="Downloads — Finder" icon={Folder} onClose={onClose} width="max-w-5xl">
-      <div className="flex flex-col md:flex-row h-[520px] max-h-[75vh] select-none overflow-hidden -m-4 sm:-m-5 rounded-b-[1.4rem]">
-        
-        {/* Photo 1 Translucent Frosted Sidebar */}
-        <div className="w-full md:w-52 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border-r border-white/50 dark:border-white/10 p-3.5 flex flex-col justify-between shrink-0 font-sans text-xs">
-          <div className="space-y-4">
-            {/* Favourites */}
+    <div className="mac-window-overlay" onClick={onClose}>
+      <div 
+        className="w-full max-w-5xl h-[560px] max-h-[82vh] bg-white/45 dark:bg-slate-900/40 backdrop-blur-3xl border border-white/70 dark:border-white/20 shadow-[0_30px_90px_rgba(0,0,0,0.3)] rounded-3xl overflow-hidden flex select-none font-sans text-slate-900 dark:text-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Left Translucent Frosted Sidebar with embedded Traffic Lights */}
+        <div className="w-56 bg-white/40 dark:bg-white/10 backdrop-blur-3xl border-r border-white/50 dark:border-white/15 p-4 flex flex-col justify-between shrink-0 text-xs">
+          <div className="space-y-5">
+            
+            {/* Top Left Window Controls (Red, Yellow, Green Dots) */}
+            <div className="flex items-center gap-2 pt-1 pb-2 px-1">
+              <button className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:opacity-80 transition-opacity cursor-pointer" onClick={onClose} title="Close" />
+              <button className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:opacity-80 transition-opacity cursor-pointer" onClick={onClose} title="Minimize" />
+              <button className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:opacity-80 transition-opacity cursor-pointer" onClick={onClose} title="Maximize" />
+            </div>
+
+            {/* Favourites Section */}
             <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">
+              <div className="text-[11px] font-medium text-slate-400 dark:text-slate-400 mb-2.5 px-2">
                 Favourites
               </div>
               <div className="space-y-1">
@@ -131,13 +141,13 @@ export function FinderModal({ onSelectProject, onClose }) {
                     <button
                       key={item.id}
                       onClick={() => setActiveSidebar(item.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl font-medium transition-all ${
+                      className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-2xl font-semibold transition-all ${
                         isActive 
-                          ? "bg-white/80 dark:bg-white/20 text-slate-900 dark:text-white font-bold shadow-sm backdrop-blur-xl border border-white/90" 
-                          : "hover:bg-white/40 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300"
+                          ? "bg-white/80 dark:bg-white/25 text-slate-900 dark:text-white font-bold shadow-sm backdrop-blur-xl border border-white/90 dark:border-white/30" 
+                          : "hover:bg-white/40 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200"
                       }`}
                     >
-                      <IconComp className={`w-3.5 h-3.5 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-500"}`} />
+                      <IconComp className={`w-4 h-4 ${isActive ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"}`} />
                       <span>{item.label}</span>
                     </button>
                   );
@@ -145,9 +155,9 @@ export function FinderModal({ onSelectProject, onClose }) {
               </div>
             </div>
 
-            {/* Locations */}
+            {/* Locations Section */}
             <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">
+              <div className="text-[11px] font-medium text-slate-400 dark:text-slate-400 mb-2.5 px-2">
                 Locations
               </div>
               <div className="space-y-1">
@@ -162,9 +172,9 @@ export function FinderModal({ onSelectProject, onClose }) {
                     <button
                       key={item.id}
                       onClick={() => setActiveSidebar(item.id)}
-                      className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 font-medium transition-all"
+                      className="w-full flex items-center gap-3 px-3.5 py-2 rounded-2xl text-slate-700 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 font-semibold transition-all"
                     >
-                      <IconComp className="w-3.5 h-3.5 text-slate-400" />
+                      <IconComp className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                       <span>{item.label}</span>
                     </button>
                   );
@@ -173,8 +183,9 @@ export function FinderModal({ onSelectProject, onClose }) {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-300/40 dark:border-slate-700/40 flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center">
+          {/* User Profile Footer */}
+          <div className="pt-3 border-t border-slate-300/40 dark:border-slate-700/40 flex items-center gap-2.5 px-1">
+            <div className="w-7 h-7 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center shadow">
               IC
             </div>
             <div className="overflow-hidden">
@@ -184,47 +195,47 @@ export function FinderModal({ onSelectProject, onClose }) {
           </div>
         </div>
 
-        {/* Right Main Grid View Matching Photo 1 */}
-        <div className="flex-1 flex flex-col bg-white/20 dark:bg-slate-950/20 backdrop-blur-xl overflow-hidden">
-          {/* Header Bar with < > controls and Downloads Title */}
-          <div className="h-12 px-4 flex items-center justify-between border-b border-white/30 dark:border-white/10 shrink-0">
-            <div className="flex items-center gap-3">
+        {/* Right Main Grid View Matching Image 2 */}
+        <div className="flex-1 flex flex-col bg-white/20 dark:bg-slate-950/20 backdrop-blur-2xl overflow-hidden">
+          {/* Header Bar with < | > navigation controls and Downloads Title */}
+          <div className="h-14 px-6 flex items-center justify-between border-b border-white/30 dark:border-white/10 shrink-0">
+            <div className="flex items-center gap-4">
               {/* Frosted Navigation Pill Buttons */}
-              <div className="flex items-center bg-white/50 dark:bg-white/10 p-0.5 rounded-full border border-white/60 dark:border-white/15 shadow-sm">
-                <button className="w-6 h-6 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-white/60 transition-colors text-xs font-bold">
+              <div className="flex items-center bg-white/50 dark:bg-white/15 px-2.5 py-1 rounded-full border border-white/70 dark:border-white/20 shadow-xs gap-1.5">
+                <button className="text-slate-700 dark:text-slate-200 hover:text-black transition-colors text-xs font-extrabold">
                   ‹
                 </button>
-                <div className="w-[1px] h-3 bg-slate-300 dark:bg-slate-700" />
-                <button className="w-6 h-6 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-white/60 transition-colors text-xs font-bold">
+                <div className="w-[1px] h-3 bg-slate-400/50 dark:bg-slate-600" />
+                <button className="text-slate-700 dark:text-slate-200 hover:text-black transition-colors text-xs font-extrabold">
                   ›
                 </button>
               </div>
-              <h1 className="font-sans font-extrabold text-base text-slate-900 dark:text-slate-100 tracking-tight">
+              <h1 className="font-sans font-extrabold text-lg text-slate-900 dark:text-slate-100 tracking-tight">
                 {activeSidebar === "downloads" ? "Downloads" : activeSidebar.toUpperCase()}
               </h1>
             </div>
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1 bg-white/60 dark:bg-white/10 border border-white/70 dark:border-white/15 rounded-full text-xs w-36 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="pl-8 pr-3 py-1 bg-white/50 dark:bg-white/15 border border-white/70 dark:border-white/20 rounded-full text-xs w-40 focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
           </div>
 
           {/* Grouped Folders Area */}
-          <div className="flex-1 p-5 overflow-y-auto space-y-6">
+          <div className="flex-1 p-6 overflow-y-auto space-y-6">
             {/* Section 1: Today */}
             <div>
               <h3 className="font-sans font-bold text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
                 Today
               </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                 {todayFolders.map((folder) => (
                   <Mac3DFolderIcon
                     key={folder.id}
@@ -242,7 +253,7 @@ export function FinderModal({ onSelectProject, onClose }) {
               <h3 className="font-sans font-bold text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
                 Yesterday
               </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                 {yesterdayFolders.map((folder) => (
                   <Mac3DFolderIcon
                     key={folder.id}
@@ -260,7 +271,7 @@ export function FinderModal({ onSelectProject, onClose }) {
               <h3 className="font-sans font-bold text-xs text-slate-600 dark:text-slate-400 mb-3 px-1">
                 Previous 7 Days
               </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                 {prevDaysFolders.map((folder) => (
                   <Mac3DFolderIcon
                     key={folder.id}
@@ -275,7 +286,7 @@ export function FinderModal({ onSelectProject, onClose }) {
           </div>
         </div>
       </div>
-    </MacWindow>
+    </div>
   );
 }
 

@@ -301,11 +301,11 @@ export default function App() {
           <AnimatePresence>
             {showCyberdeck && (
               <motion.div 
-                initial={{ opacity: 0, scale: 0.9, y: 30 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                initial={{ opacity: 0, scale: 0.75, y: 30 }}
+                animate={{ opacity: 1, scale: 0.82, y: 0 }}
+                exit={{ opacity: 0, scale: 0.75, y: 20 }}
                 transition={{ type: 'spring', damping: 24, stiffness: 280 }}
-                className="fixed bottom-20 right-6 z-50"
+                className="fixed bottom-14 right-4 z-50 pointer-events-auto origin-bottom-right"
               >
                 <NexusCyberdeckPlayer 
                   onClose={() => handleCloseApp("ipod")}

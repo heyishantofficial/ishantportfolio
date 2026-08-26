@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Wifi, Battery, Search, Sliders, Volume2, VolumeX, Moon, Sun, 
+  Wifi, Battery, Search, Sliders, Volume2, Volume1, VolumeX, Moon, Sun, 
   Lock, RotateCcw, Power, Check, Sparkles, Terminal, Folder, FileText, Globe
 } from 'lucide-react';
 import { PROFILE_INFO } from '../data/projectsData';
@@ -13,11 +13,14 @@ export default function MacMenuBar({
   onToggleSpotlight,
   isMuted,
   onToggleMute,
+  volume = 50,
+  onVolumeChange,
   isHardwareFrame,
   onToggleFrameView
 }) {
   const [timeStr, setTimeStr] = useState('');
   const [showAppleMenu, setShowAppleMenu] = useState(false);
+  const [showVolumeMenu, setShowVolumeMenu] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [password, setPassword] = useState('');
   const [lockError, setLockError] = useState(false);
@@ -159,14 +162,87 @@ export default function MacMenuBar({
             <span>{isHardwareFrame ? '🖥️ Fullscreen Desktop' : '💻 MacBook Frame'}</span>
           </button>
 
-          {/* Mute Toggle */}
-          <button 
-            onClick={onToggleMute}
-            className="p-1 rounded hover:bg-white/30 dark:hover:bg-white/10 cursor-pointer"
-            title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
-          >
-            {isMuted ? <VolumeX className="w-3.5 h-3.5 text-rose-500" /> : <Volume2 className="w-3.5 h-3.5" />}
-          </button>
+          {/* Interactive Volume Menu Bar Control */}
+          <div className="relative">
+            <button 
+              onClick={() => {
+                setShowVolumeMenu(!showVolumeMenu);
+                setShowAppleMenu(false);
+              }}
+              className="px-1.5 py-0.5 rounded hover:bg-white/30 dark:hover:bg-white/10 cursor-pointer flex items-center gap-1 transition-colors"
+              title={`Volume: ${isMuted ? 'Muted' : `${volume}%`} (Click to adjust)`}
+            >
+              {isMuted || volume === 0 ? (
+                <VolumeX className="w-3.5 h-3.5 text-rose-500" />
+              ) : volume < 50 ? (
+                <Volume1 className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+              )}
+              <span className="text-[10px] font-mono font-bold tracking-tight opacity-90">
+                {isMuted || volume === 0 ? 'Muted' : `${volume}%`}
+              </span>
+            </button>
+
+            {/* Volume Control Popover Menu */}
+            {showVolumeMenu && (
+              <div 
+                className="absolute right-0 top-7 w-64 bg-white/85 dark:bg-slate-900/90 backdrop-blur-3xl rounded-2xl p-3 shadow-2xl border border-white/50 dark:border-slate-700/60 z-[9999] text-slate-800 dark:text-slate-100 font-sans animate-in fade-in slide-in-from-top-1 duration-150 select-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-2.5 pb-1.5 border-b border-slate-200/50 dark:border-slate-700/50">
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="w-4 h-4 text-blue-500" />
+                    <span className="font-extrabold text-xs">Sound Volume</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                    {isMuted || volume === 0 ? 'Muted (0%)' : `${volume}%`}
+                  </span>
+                </div>
+
+                {/* Volume Range Slider Bar */}
+                <div className="flex items-center gap-2.5 mb-3">
+                  <button
+                    onClick={onToggleMute}
+                    className="p-1 rounded hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                    title={isMuted ? "Unmute" : "Mute"}
+                  >
+                    {isMuted || volume === 0 ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4 text-blue-500" />}
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={isMuted ? 0 : volume}
+                    onChange={(e) => onVolumeChange && onVolumeChange(Number(e.target.value))}
+                    className="w-full accent-blue-500 cursor-pointer h-1.5 rounded-lg bg-slate-200 dark:bg-slate-700"
+                  />
+                </div>
+
+                {/* Quick Presets */}
+                <div className="grid grid-cols-3 gap-1.5 text-[10px] font-bold font-mono">
+                  <button
+                    onClick={() => onVolumeChange && onVolumeChange(0)}
+                    className="py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-center transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-700/50"
+                  >
+                    0% (Mute)
+                  </button>
+                  <button
+                    onClick={() => onVolumeChange && onVolumeChange(50)}
+                    className="py-1.5 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-500/25 text-center transition-colors cursor-pointer border border-blue-500/20"
+                  >
+                    50% (Default)
+                  </button>
+                  <button
+                    onClick={() => onVolumeChange && onVolumeChange(100)}
+                    className="py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-center transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-700/50"
+                  >
+                    100% (Max)
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Battery Status */}
           <div className="hidden sm:flex items-center gap-1">

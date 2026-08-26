@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Wifi, Volume2, Music, Sun, Moon, Sparkles, Sliders, Check, ShieldCheck, Airplay
+  Wifi, Volume2, VolumeX, Music, Sun, Moon, Sparkles, Sliders, Check, ShieldCheck, Airplay
 } from 'lucide-react';
 import { playMacClick } from '../utils/macAudioEngine';
 
@@ -110,20 +110,34 @@ export default function MacControlCenter({
         </span>
       </div>
 
-      {/* Mute Audio Option */}
-      <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between shadow-sm text-xs">
-        <div className="flex items-center gap-2">
-          <Volume2 className="w-4 h-4 text-blue-500" />
-          <span className="font-bold">Sound Effects</span>
+      {/* Sound Volume Control Tile */}
+      <div className="p-3 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-sm text-xs space-y-2">
+        <div className="flex items-center justify-between font-bold">
+          <div className="flex items-center gap-2">
+            <Volume2 className="w-4 h-4 text-blue-500" />
+            <span>Sound Volume</span>
+          </div>
+          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            {isMuted || volume === 0 ? 'Muted' : `${volume}%`}
+          </span>
         </div>
-        <button
-          onClick={onToggleMute}
-          className={`px-3 py-1 rounded-full text-[10px] font-bold transition-colors cursor-pointer ${
-            isMuted ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
-          }`}
-        >
-          {isMuted ? 'Muted' : 'Enabled'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleMute}
+            className="p-1 rounded hover:bg-slate-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            title={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted || volume === 0 ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4 text-blue-500" />}
+          </button>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={isMuted ? 0 : volume}
+            onChange={(e) => onVolumeChange && onVolumeChange(Number(e.target.value))}
+            className="w-full accent-blue-500 cursor-pointer h-1.5 rounded-lg bg-slate-200 dark:bg-slate-700"
+          />
+        </div>
       </div>
 
     </div>

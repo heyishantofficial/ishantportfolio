@@ -22,6 +22,7 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [wallpaper, setWallpaper] = useState('video');
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(50);
   const [isHardwareFrame, setIsHardwareFrame] = useState(false);
 
   const videoRef = useRef(null);
@@ -110,15 +111,25 @@ export default function App() {
     return () => window.removeEventListener('click', handleFirstInteraction);
   }, [isMuted, isAppReady]);
 
-  // Sync background video mute state with global sound toggle
+  // Sync background video volume & mute state
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.muted = isMuted;
-      if (!isMuted) {
+      videoRef.current.volume = volume / 100;
+      videoRef.current.muted = isMuted || volume === 0;
+      if (!isMuted && volume > 0) {
         videoRef.current.play().catch(() => {});
       }
     }
-  }, [isMuted, wallpaper]);
+  }, [isMuted, volume, wallpaper]);
+
+  const handleVolumeChange = (newVol) => {
+    setVolume(newVol);
+    if (newVol > 0 && isMuted) {
+      setIsMuted(false);
+    } else if (newVol === 0 && !isMuted) {
+      setIsMuted(true);
+    }
+  };
 
   // Global Keyboard Shortcuts (Cmd + K, Cmd + Space, Esc)
   useEffect(() => {
@@ -209,6 +220,8 @@ export default function App() {
             onToggleSpotlight={() => setShowSpotlight(!showSpotlight)}
             isMuted={isMuted}
             onToggleMute={() => setIsMuted(!isMuted)}
+            volume={volume}
+            onVolumeChange={handleVolumeChange}
             isHardwareFrame={isHardwareFrame}
             onToggleFrameView={() => setIsHardwareFrame(!isHardwareFrame)}
           />

@@ -11,34 +11,30 @@ export default function OfficeCoutureFolder({ onSelectProject }) {
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col items-center justify-center relative select-none font-sans py-2">
       
-      {/* 3D Sky Blue Folder Stage Component */}
-      <div className="relative flex flex-col items-center group">
-        
-        <div 
-          onClick={() => setIsOpen(!isOpen)}
-          className="relative w-[260px] sm:w-[340px] cursor-pointer apple-pressable"
-        >
+      {/* 3D Sky Blue Folder Stage Component - Small & Row Layout */}
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative flex flex-row items-center gap-3 sm:gap-4 group cursor-pointer apple-pressable p-2 rounded-2xl hover:bg-white/5 transition-all"
+      >
+        {/* Small Folder Image */}
+        <div className="relative w-[130px] sm:w-[160px] shrink-0">
           <img
             src={customIshantFolderImg}
             alt="Ishant Chauhan inside Sky Blue Folder"
-            className="w-full h-auto object-contain block relative z-20 drop-shadow-2xl pointer-events-none transition-transform duration-500 group-hover:-translate-y-1.5"
+            className="w-full h-auto object-contain block relative z-20 drop-shadow-xl pointer-events-none transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-105"
           />
         </div>
 
-        {/* Folder Label */}
-        <div 
-          className="mt-2 flex items-center gap-2 select-none cursor-pointer apple-pressable px-3 py-1.5 rounded-full bg-white/20 dark:bg-black/30 backdrop-blur-md border border-white/30 dark:border-white/10 shadow-sm" 
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block" />
-          <span className="font-sans font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">
+        {/* Side-by-side Pill Label */}
+        <div className="flex items-center gap-2 select-none px-3.5 py-2 rounded-full bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm transition-all group-hover:border-white/40">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block shrink-0" />
+          <span className="font-sans font-bold text-sm sm:text-base text-slate-100">
             Vibecoded Apps Suite
           </span>
-          <span className="font-mono text-xs text-slate-500 dark:text-slate-400 font-semibold">
+          <span className="font-mono text-xs text-slate-400 font-semibold shrink-0">
             ({vibecodedFolder.items.length})
           </span>
         </div>
-
       </div>
 
       {/* Unfolded Folder Drawer */}

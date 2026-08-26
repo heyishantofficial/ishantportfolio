@@ -1,6 +1,13 @@
 /* macOS Sequoia Styling System */
 
 /* Wallpaper Theme Background Gradients */
+.wallpaper-custom {
+  background-image: url('/bg-photo.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .wallpaper-sequoia {
   background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
 }

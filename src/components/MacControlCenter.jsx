@@ -14,6 +14,7 @@ export default function MacControlCenter({
   onToggleMute
 }) {
   const wallpapers = [
+    { id: 'custom', name: 'Custom Photo', bgClass: 'wallpaper-custom' },
     { id: 'sequoia', name: 'Sequoia Sky', bgClass: 'bg-gradient-to-br from-indigo-900 via-sky-800 to-slate-900' },
     { id: 'sonoma', name: 'Sonoma Sunset', bgClass: 'bg-gradient-to-br from-amber-600 via-rose-700 to-purple-900' },
     { id: 'neon', name: 'Cyberpunk Neon', bgClass: 'bg-gradient-to-br from-slate-950 via-purple-950 to-blue-950' },
@@ -71,6 +72,7 @@ export default function MacControlCenter({
             <button
               key={wp.id}
               onClick={() => { playMacClick(isMuted); onChangeWallpaper(wp.id); }}
+              style={wp.id === 'custom' ? { backgroundImage: "url('/bg-photo.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
               className={`p-2 rounded-lg text-left text-[11px] font-semibold text-white ${wp.bgClass} flex items-center justify-between shadow-sm cursor-pointer hover:opacity-90 transition-opacity ${
                 wallpaper === wp.id ? 'ring-2 ring-blue-500' : ''
               }`}

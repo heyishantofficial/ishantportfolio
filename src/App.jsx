@@ -17,7 +17,7 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [wallpaper, setWallpaper] = useState('sequoia');
+  const [wallpaper, setWallpaper] = useState('custom');
   const [isMuted, setIsMuted] = useState(false);
   const [isHardwareFrame, setIsHardwareFrame] = useState(false);
 
@@ -74,6 +74,7 @@ export default function App() {
   };
 
   const wallpaperClasses = {
+    custom: 'wallpaper-custom',
     sequoia: 'wallpaper-sequoia',
     sonoma: 'wallpaper-sonoma',
     neon: 'wallpaper-neon',
@@ -87,7 +88,7 @@ export default function App() {
         onToggleFrameView={() => setIsHardwareFrame(!isHardwareFrame)}
       >
         {/* macOS Desktop Canvas — Strictly Fits Inside Screen Bounds with NO SCROLLING */}
-        <div className={`w-full h-full max-h-full ${wallpaperClasses[wallpaper] || 'wallpaper-sequoia'} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}>
+        <div className={`w-full h-full max-h-full ${wallpaperClasses[wallpaper] || 'wallpaper-custom'} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}>
           
           {/* Top macOS Translucent Menu Bar */}
           <MacMenuBar

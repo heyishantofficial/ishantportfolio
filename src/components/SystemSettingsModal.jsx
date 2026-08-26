@@ -121,24 +121,29 @@ export default function SystemSettingsModal({
     <MacWindow title="System Settings — macOS Sequoia" icon={Sliders} onClose={onClose} width="max-w-4xl">
       <div className="flex flex-col md:flex-row h-[520px] max-h-[78vh] select-none overflow-hidden -m-4 sm:-m-5 rounded-b-[1.4rem]">
         
-        {/* System Settings Password Security Gate */}
+        {/* Photorealistic Liquid Glass Password Security Gate */}
         {!isSettingsUnlocked ? (
-          <div className="w-full h-full bg-slate-900/90 backdrop-blur-2xl p-6 flex flex-col items-center justify-center text-center text-white space-y-4">
-            <div className="w-16 h-16 rounded-full bg-blue-600/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shadow-xl">
-              <Lock className="w-8 h-8" />
+          <div className="w-full h-full bg-gradient-to-b from-slate-900/80 via-slate-950/85 to-slate-950/90 backdrop-blur-3xl p-8 flex flex-col items-center justify-center text-center text-white space-y-5 select-none relative overflow-hidden">
+            {/* Ambient Glass Glow Effects */}
+            <div className="absolute w-72 h-72 bg-blue-500/15 rounded-full blur-3xl pointer-events-none -top-10 -left-10" />
+            <div className="absolute w-72 h-72 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -bottom-10 -right-10" />
+
+            {/* 3D Liquid Glass Lock Disc Icon */}
+            <div className="w-20 h-20 rounded-full mac-liquid-glass-btn flex items-center justify-center shadow-[0_12px_40px_rgba(0,0,0,0.4)] border border-white/40 ring-4 ring-white/10 relative z-10">
+              <Lock className="w-9 h-9 text-white drop-shadow-md" />
             </div>
 
-            <div>
-              <h3 className="text-base font-extrabold tracking-tight text-slate-100">
+            <div className="relative z-10 space-y-1 max-w-sm">
+              <h3 className="text-lg font-extrabold tracking-tight text-white drop-shadow-md">
                 System Settings is Locked
               </h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                System Settings requires password authentication to access desktop wallpapers and preferences.
+              <p className="text-xs text-white/70 font-sans leading-relaxed">
+                Enter your admin password to unlock System Settings, wallpaper controls, and preferences.
               </p>
             </div>
 
-            {/* Password Gate Input Form */}
-            <form onSubmit={handleUnlockSettings} className="w-full max-w-xs space-y-3 pt-2">
+            {/* Liquid Glass Input Form */}
+            <form onSubmit={handleUnlockSettings} className="w-full max-w-xs space-y-3 pt-2 relative z-10">
               <div className={`relative flex items-center ${isShaking ? "animate-shake" : ""}`}>
                 <input
                   type="password"
@@ -149,38 +154,38 @@ export default function SystemSettingsModal({
                     if (settingsAuthError) setSettingsAuthError("");
                   }}
                   autoFocus
-                  className={`w-full py-2 pl-4 pr-10 rounded-xl bg-slate-800/90 border text-xs text-white placeholder-slate-500 font-mono shadow-inner focus:outline-none focus:ring-2 transition-all ${
-                    settingsAuthError ? "border-rose-500 ring-2 ring-rose-500/50" : "border-slate-700 focus:ring-blue-500"
+                  className={`w-full py-2.5 pl-4 pr-10 rounded-2xl mac-liquid-glass-input text-xs text-white placeholder-white/50 font-mono shadow-[0_8px_32px_rgba(0,0,0,0.3)] focus:outline-none focus:ring-2 transition-all border border-white/30 ${
+                    settingsAuthError ? "border-rose-400 ring-2 ring-rose-400/80" : "focus:ring-amber-300/80"
                   }`}
                 />
                 <button
                   type="submit"
-                  className="absolute right-1.5 w-6 h-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="absolute right-1.5 w-7 h-7 rounded-xl bg-white/20 hover:bg-white/35 text-white flex items-center justify-center transition-all cursor-pointer border border-white/30 shadow-sm"
                   title="Unlock Settings"
                 >
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
 
               {settingsAuthError && (
-                <div className="text-[11px] font-mono text-rose-400 bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/30">
+                <div className="text-[11px] font-mono text-rose-300 bg-rose-950/70 px-3 py-1.5 rounded-xl border border-rose-500/40 shadow-sm animate-fadeIn">
                   {settingsAuthError}
                 </div>
               )}
 
               <button
                 type="submit"
-                className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-2xl mac-liquid-glass-btn hover:bg-white/30 active:scale-95 text-white text-xs font-bold shadow-lg transition-all border border-white/40 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Unlock System Settings</span>
-                <Key className="w-3.5 h-3.5" />
+                <Key className="w-4 h-4" />
               </button>
             </form>
           </div>
         ) : (
           <>
             {/* Settings Left Sidebar */}
-            <div className="w-full md:w-56 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border-r border-white/50 dark:border-white/10 p-3.5 flex flex-col justify-between shrink-0 font-sans text-xs">
+            <div className="w-full md:w-56 bg-white/30 dark:bg-slate-900/40 backdrop-blur-3xl border-r border-white/40 dark:border-white/10 p-3.5 flex flex-col justify-between shrink-0 font-sans text-xs">
               <div className="space-y-4">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">
                   System Settings
@@ -203,7 +208,7 @@ export default function SystemSettingsModal({
                         onClick={() => { playMacClick(isMuted); setActiveTab(item.id); }}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-medium transition-all ${
                           isActive 
-                            ? "bg-white/90 dark:bg-white/20 text-slate-900 dark:text-white font-bold shadow-sm backdrop-blur-xl border border-white/90" 
+                            ? "bg-white/90 dark:bg-white/20 text-slate-900 dark:text-white font-bold shadow-md backdrop-blur-xl border border-white/80 dark:border-white/30" 
                             : "hover:bg-white/40 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300"
                         }`}
                       >
@@ -217,12 +222,12 @@ export default function SystemSettingsModal({
 
               <div className="pt-3 border-t border-slate-300/40 dark:border-slate-700/40 flex items-center justify-between px-2 text-[10px] text-slate-500">
                 <span>macOS Sequoia v15.0</span>
-                <span className="font-mono text-emerald-600 font-bold">M3 Max</span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">M3 Max</span>
               </div>
             </div>
 
             {/* Settings Right Main Content Area */}
-            <div className="flex-1 bg-white/20 dark:bg-slate-950/20 backdrop-blur-xl overflow-y-auto p-5 space-y-6">
+            <div className="flex-1 bg-white/15 dark:bg-slate-950/30 backdrop-blur-2xl overflow-y-auto p-5 space-y-6">
               
               {/* TAB 1: Main Desktop Wallpaper */}
               {activeTab === "wallpaper" && (
@@ -238,8 +243,8 @@ export default function SystemSettingsModal({
                     </div>
 
                     {/* Upload Wallpaper Button */}
-                    <label className="cursor-pointer px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all shrink-0">
-                      <Upload className="w-3.5 h-3.5" />
+                    <label className="cursor-pointer px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md transition-all shrink-0 border border-white/30">
+                      <Upload className="w-4 h-4" />
                       <span>Upload Image</span>
                       <input 
                         type="file" 
@@ -309,8 +314,8 @@ export default function SystemSettingsModal({
                     </div>
 
                     {/* Upload Lock Wallpaper Button */}
-                    <label className="cursor-pointer px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all shrink-0">
-                      <Upload className="w-3.5 h-3.5" />
+                    <label className="cursor-pointer px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md transition-all shrink-0 border border-white/30">
+                      <Upload className="w-4 h-4" />
                       <span>Upload Lock Image</span>
                       <input 
                         type="file" 
@@ -380,7 +385,7 @@ export default function SystemSettingsModal({
                   </div>
 
                   {/* Password Status Card */}
-                  <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/10 border border-white/60 dark:border-white/10 space-y-3">
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-3 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
@@ -398,7 +403,7 @@ export default function SystemSettingsModal({
                   </div>
 
                   {/* Update Password Form */}
-                  <form onSubmit={handleSavePassword} className="p-4 rounded-2xl bg-white/60 dark:bg-white/10 border border-white/60 dark:border-white/10 space-y-3.5">
+                  <form onSubmit={handleSavePassword} className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-3.5 shadow-sm">
                     <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Change Workstation Password</div>
 
                     {passwordStatusMsg && (
@@ -448,7 +453,7 @@ export default function SystemSettingsModal({
 
                     <button
                       type="submit"
-                      className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+                      className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
                     >
                       Update Password
                     </button>
@@ -504,7 +509,7 @@ export default function SystemSettingsModal({
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-white/50 dark:bg-white/10 border border-white/60 space-y-4 max-w-md">
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-4 max-w-md shadow-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Mute Audio</span>
                       <button 
@@ -545,7 +550,7 @@ export default function SystemSettingsModal({
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-white/50 dark:bg-white/10 border border-white/60 space-y-2 text-xs font-sans text-slate-800 dark:text-slate-200 max-w-md">
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2 text-xs font-sans text-slate-800 dark:text-slate-200 max-w-md shadow-sm">
                     <div className="flex justify-between py-1 border-b border-slate-200/50">
                       <span className="font-semibold text-slate-500">Chip</span>
                       <span className="font-mono font-bold text-blue-600 dark:text-blue-400">Apple M3 Max</span>

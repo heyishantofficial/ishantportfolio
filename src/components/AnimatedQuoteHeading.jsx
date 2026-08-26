@@ -10,8 +10,8 @@ export default function AnimatedQuoteHeading() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.12,
-        delayChildren: 0.2
+        staggerChildren: 0.1,
+        delayChildren: 0.15
       }
     }
   };
@@ -19,7 +19,7 @@ export default function AnimatedQuoteHeading() {
   const wordVariants = {
     hidden: { 
       opacity: 0, 
-      y: 20,
+      y: 18,
       filter: "blur(8px)",
       scale: 0.9
     },
@@ -41,9 +41,9 @@ export default function AnimatedQuoteHeading() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="text-center max-w-3xl px-4 mb-3 select-none relative z-10"
+      className="text-center max-w-7xl w-full px-2 mb-3 select-none relative z-10 flex justify-center"
     >
-      <h1 className="font-serif-title text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.8)] flex flex-wrap justify-center gap-x-2.5 gap-y-1">
+      <h1 className="font-serif-title text-base sm:text-2xl md:text-3xl lg:text-4xl xl:text-[2.65rem] font-extrabold text-white tracking-tight leading-none drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)] flex flex-nowrap whitespace-nowrap justify-center gap-x-1.5 sm:gap-x-2.5">
         {words.map((word, index) => {
           const isHighlight = word.toLowerCase().includes("weird") || word.toLowerCase().includes("ones");
           return (

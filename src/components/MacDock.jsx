@@ -101,43 +101,6 @@ export default function MacDock({
     },
     { id: "divider-1", type: "divider" },
     {
-      id: "ae",
-      name: "Adobe After Effects",
-      type: "app",
-      renderIcon: () => (
-        <div className="w-full h-full bg-[#00003b] flex items-center justify-center relative rounded-[22%] shadow-inner border border-indigo-400/20">
-          <span className="font-extrabold text-[20px] tracking-tight text-[#9999ff] select-none font-sans drop-shadow-[0_2px_4px_rgba(153,153,255,0.4)]">
-            Ae
-          </span>
-        </div>
-      )
-    },
-    {
-      id: "ps",
-      name: "Adobe Photoshop",
-      type: "app",
-      renderIcon: () => (
-        <div className="w-full h-full bg-[#001e36] flex items-center justify-center relative rounded-[22%] shadow-inner border border-sky-400/20">
-          <span className="font-extrabold text-[20px] tracking-tight text-[#31a8ff] select-none font-sans drop-shadow-[0_2px_4px_rgba(49,168,255,0.4)]">
-            Ps
-          </span>
-        </div>
-      )
-    },
-    {
-      id: "ai",
-      name: "Adobe Illustrator",
-      type: "app",
-      renderIcon: () => (
-        <div className="w-full h-full bg-[#330000] flex items-center justify-center relative rounded-[22%] shadow-inner border border-amber-400/20">
-          <span className="font-extrabold text-[20px] tracking-tight text-[#ff9a00] select-none font-sans drop-shadow-[0_2px_4px_rgba(255,154,0,0.4)]">
-            Ai
-          </span>
-        </div>
-      )
-    },
-    { id: "divider-2", type: "divider" },
-    {
       id: "photos",
       name: "Photos",
       type: "app",
@@ -224,7 +187,7 @@ export default function MacDock({
           const iconSize = 44 * scale;
           const isHovered = hoveredId === item.id;
           const isBouncing = bouncingId === item.id;
-          const isOpen = openApps[item.id] || (item.id === 'ae' || item.id === 'ps' || item.id === 'ai' ? openApps['creative'] : false);
+          const isOpen = openApps[item.id];
 
           return (
             <div

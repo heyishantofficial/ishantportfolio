@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, X, Wifi, Battery, ArrowRight, Fingerprint } from 'lucide-react';
 import ishantPhotoImg from './assets/ishant-photo.png';
+import lockAvatarImg from './assets/lock-avatar.png';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import MacMenuBar from './components/MacMenuBar';
@@ -331,9 +332,9 @@ export default function App() {
               <div className="relative group cursor-pointer mb-3" onClick={handleBootSystem}>
                 <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-white/80 shadow-[0_15px_35px_rgba(0,0,0,0.6)] overflow-hidden bg-slate-800/60 backdrop-blur-md flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
                   <img 
-                    src={ishantPhotoImg} 
+                    src={lockAvatarImg} 
                     alt="Ishant Chauhan" 
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-cover object-center"
                   />
                 </div>
                 {/* Touch ID Icon Overlay Badge */}

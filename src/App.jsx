@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import MacMenuBar from './components/MacMenuBar';
@@ -17,10 +17,11 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [wallpaper, setWallpaper] = useState('custom');
+  const [wallpaper, setWallpaper] = useState('video');
   const [isMuted, setIsMuted] = useState(false);
   const [isHardwareFrame, setIsHardwareFrame] = useState(false);
 
+  const videoRef = useRef(null);
   const [showControlCenter, setShowControlCenter] = useState(false);
   const [showSpotlight, setShowSpotlight] = useState(false);
 
@@ -32,15 +33,29 @@ export default function App() {
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
 
-  // Trigger Boot Chime on first click/interaction
+  // Trigger Boot Chime & Video Sound on first click/interaction
   useEffect(() => {
     const handleFirstInteraction = () => {
       playBootChime(isMuted);
+      if (videoRef.current) {
+        videoRef.current.muted = isMuted;
+        videoRef.current.play().catch(() => {});
+      }
       window.removeEventListener('click', handleFirstInteraction);
     };
     window.addEventListener('click', handleFirstInteraction);
     return () => window.removeEventListener('click', handleFirstInteraction);
   }, [isMuted]);
+
+  // Sync background video mute state with global sound toggle
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+      if (!isMuted) {
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [isMuted, wallpaper]);
 
   // Global Keyboard Shortcuts (Cmd + K, Cmd + Space, Esc)
   useEffect(() => {
@@ -74,6 +89,7 @@ export default function App() {
   };
 
   const wallpaperClasses = {
+    video: 'wallpaper-video',
     custom: 'wallpaper-custom',
     sequoia: 'wallpaper-sequoia',
     sonoma: 'wallpaper-sonoma',
@@ -88,7 +104,20 @@ export default function App() {
         onToggleFrameView={() => setIsHardwareFrame(!isHardwareFrame)}
       >
         {/* macOS Desktop Canvas — Strictly Fits Inside Screen Bounds with NO SCROLLING */}
-        <div className={`w-full h-full max-h-full ${wallpaperClasses[wallpaper] || 'wallpaper-custom'} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}>
+        <div className={`w-full h-full max-h-full ${wallpaperClasses[wallpaper] || 'wallpaper-video'} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}>
+          
+          {/* Background Video element when video wallpaper is active */}
+          {wallpaper === 'video' && (
+            <video
+              ref={videoRef}
+              src="/bg-video.mp4"
+              autoPlay
+              loop
+              playsInline
+              muted={isMuted}
+              className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-90"
+            />
+          )}
           
           {/* Top macOS Translucent Menu Bar */}
           <MacMenuBar

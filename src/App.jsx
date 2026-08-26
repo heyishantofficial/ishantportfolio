@@ -291,9 +291,9 @@ export default function App() {
         {!isAppReady && (
           <motion.div
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.06, filter: 'blur(20px)' }}
+            exit={{ opacity: 0, scale: 1.06, filter: 'none' }}
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[99999] bg-black/20 backdrop-blur-md flex flex-col items-center justify-between text-white select-none overflow-hidden p-6"
+            className="fixed inset-0 z-[99999] bg-black/10 flex flex-col items-center justify-between text-white select-none overflow-hidden p-6"
           >
             {/* Dedicated Looping Lock Screen Video Background */}
             <video
@@ -302,11 +302,11 @@ export default function App() {
               loop
               playsInline
               muted
-              className="absolute inset-0 w-full h-full object-cover z-0 opacity-95 pointer-events-none"
+              className="absolute inset-0 w-full h-full object-cover z-0 opacity-100 pointer-events-none"
             />
             
-            {/* Soft ambient overlay for UI contrast */}
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] z-0 pointer-events-none" />
+            {/* Soft ambient gradient for UI contrast without blur */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 z-0 pointer-events-none" />
             {/* Top Right macOS System Status Indicators */}
             <div className="w-full flex items-center justify-end gap-3 text-[11px] font-sans text-white/90 drop-shadow-sm font-medium z-10 pt-1 px-2">
               <span className="px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-[10px] font-mono tracking-wider font-semibold">

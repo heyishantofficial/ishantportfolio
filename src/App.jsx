@@ -106,6 +106,32 @@ export default function App() {
     };
   }, []);
 
+  // Smooth macOS Startup Progress
+  useEffect(() => {
+    if (isAppReady) return;
+
+    const interval = setInterval(() => {
+      setLoadingProgress((prev) => {
+        if (prev >= 90 && !isVideoLoaded) return 90;
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + Math.floor(Math.random() * 15 + 10);
+      });
+    }, 120);
+
+    const fallbackTimer = setTimeout(() => {
+      setIsVideoLoaded(true);
+      setLoadingProgress(100);
+    }, 2500);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(fallbackTimer);
+    };
+  }, [isVideoLoaded, isAppReady]);
+
   // STRICT LOGIN UNLOCK FUNCTION
   // Unlocks ONLY when viewerName has at least 1 non-empty character and unlock is triggered
   const handleBootSystem = (e) => {
@@ -134,6 +160,18 @@ export default function App() {
       setIsLoggingIn(false);
     }, 450);
   };
+
+  // Safe background video audio sync (NO click listener that unlocks the app)
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (isAppReady && videoRef.current) {
+        videoRef.current.muted = isMuted;
+        videoRef.current.play().catch(() => {});
+      }
+    };
+    window.addEventListener('click', handleFirstInteraction);
+    return () => window.removeEventListener('click', handleFirstInteraction);
+  }, [isMuted, isAppReady]);
 
   // Smooth Volume Sync
   useEffect(() => {
@@ -249,6 +287,7 @@ export default function App() {
           onToggleMute={() => setIsMuted(!isMuted)}
           volume={volume}
           onVolumeChange={handleVolumeChange}
+          onLockScreen={() => setIsAppReady(false)}
         />
 
         {/* Control Center Dropdown */}
@@ -439,7 +478,7 @@ export default function App() {
 
               {/* Validation Error Message */}
               {loginError && (
-                <p className="font-mono text-xs text-amber-300 font-bold animate-fadeIn">
+                <p className="font-mono text-xs text-amber-300 font-bold animate-fadeIn mt-1">
                   {loginError}
                 </p>
               )}
@@ -456,7 +495,14 @@ export default function App() {
 
             {/* Bottom macOS Action Buttons */}
             <div className="flex items-center justify-center gap-10 z-10 pb-4">
-              <div className="flex flex-col items-center cursor-pointer group" onClick={() => nameInputRef.current && nameInputRef.current.focus()}>
+              <div 
+                className="flex flex-col items-center cursor-pointer group" 
+                onClick={() => {
+                  setViewerName('');
+                  setLoginError('');
+                  if (nameInputRef.current) nameInputRef.current.focus();
+                }}
+              >
                 <div className="w-10 h-10 rounded-full bg-white/15 border border-white/30 backdrop-blur-xl text-white flex items-center justify-center shadow-lg group-hover:bg-white/25 group-hover:scale-105 transition-all">
                   <X className="w-4 h-4" />
                 </div>
@@ -465,7 +511,14 @@ export default function App() {
                 </span>
               </div>
 
-              <div className="flex flex-col items-center cursor-pointer group" onClick={() => nameInputRef.current && nameInputRef.current.focus()}>
+              <div 
+                className="flex flex-col items-center cursor-pointer group" 
+                onClick={() => {
+                  setViewerName('');
+                  setLoginError('');
+                  if (nameInputRef.current) nameInputRef.current.focus();
+                }}
+              >
                 <div className="w-10 h-10 rounded-full bg-white/15 border border-white/30 backdrop-blur-xl text-white flex items-center justify-center shadow-lg group-hover:bg-white/25 group-hover:scale-105 transition-all">
                   <User className="w-4 h-4" />
                 </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { 
-  AlertTriangle, FileText, Image as ImageIcon, 
+  AlertTriangle, FileText, Image as ImageIcon, Download, 
   Mail, Trash2, Layers, CheckCircle2, Send, RefreshCw, Sparkles, ExternalLink,
   Terminal, Globe, Cpu, Folder, Search, Check, ChevronRight, X, Copy, RotateCcw
 } from 'lucide-react';

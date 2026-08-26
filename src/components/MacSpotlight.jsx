@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Folder, Terminal, FileText, Globe, Sparkles, ChevronRight, X } from 'lucide-react';
+import { Search, Folder, Music, Terminal, FileText, Globe, Sparkles, ChevronRight, X } from 'lucide-react';
 import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
 import { playSpotlightSound, playMacClick } from '../utils/macAudioEngine';
 
@@ -16,6 +16,7 @@ export default function MacSpotlight({ onClose, onLaunchApp, onSelectProject, is
     { id: 'app-terminal', title: 'Terminal Shell (zsh)', type: 'app', action: () => onLaunchApp('terminal'), icon: Terminal },
     { id: 'app-safari', title: 'Safari Web Browser', type: 'app', action: () => onLaunchApp('safari'), icon: Globe },
     { id: 'app-notes', title: 'Notes Scratchpad', type: 'app', action: () => onLaunchApp('notes'), icon: FileText },
+    { id: "app-ipod", title: "iPod Classic Music Player", type: "app", action: () => onLaunchApp("ipod"), icon: Music },
     { id: 'app-system', title: 'About This Mac', type: 'app', action: () => onLaunchApp('system-info'), icon: Sparkles },
     ...PROJECTS_DATA.map(p => ({
       id: `proj-${p.id}`,

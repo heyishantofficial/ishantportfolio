@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Wifi, Volume2, Sun, Moon, Sparkles, Sliders, Check, ShieldCheck, Airplay
+  Wifi, Volume2, Music, Sun, Moon, Sparkles, Sliders, Check, ShieldCheck, Airplay
 } from 'lucide-react';
 import { playMacClick } from '../utils/macAudioEngine';
 
@@ -11,7 +11,9 @@ export default function MacControlCenter({
   wallpaper, 
   onChangeWallpaper,
   isMuted,
-  onToggleMute
+  onToggleMute,
+  showCyberdeck,
+  onToggleCyberdeck
 }) {
   const wallpapers = [
     { id: 'video', name: 'Live Video 🔊', bgClass: 'wallpaper-video' },
@@ -83,6 +85,29 @@ export default function MacControlCenter({
             </button>
           ))}
         </div>
+      </div>
+
+            {/* iPod Classic Player Tile */}
+      <div 
+        onClick={() => { playMacClick(isMuted); onToggleCyberdeck && onToggleCyberdeck(); }}
+        className={`p-2.5 rounded-xl border flex items-center justify-between shadow-sm cursor-pointer transition-all mb-3 ${
+          showCyberdeck 
+            ? "bg-gradient-to-r from-pink-600 via-rose-600 to-indigo-600 text-white border-pink-400/40 shadow-md" 
+            : "bg-white/80 dark:bg-slate-800/80 border-slate-200/60 dark:border-slate-700/60"
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-full bg-pink-500 text-white flex items-center justify-center shrink-0 shadow">
+            <Music className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="font-bold text-xs">iPod Classic Player</div>
+            <div className="text-[10px] opacity-80">{showCyberdeck ? "Active on Screen" : "Click to Show"}</div>
+          </div>
+        </div>
+        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${showCyberdeck ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>
+          {showCyberdeck ? "ON" : "OFF"}
+        </span>
       </div>
 
       {/* Mute Audio Option */}

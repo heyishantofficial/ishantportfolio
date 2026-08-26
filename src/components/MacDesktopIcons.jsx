@@ -58,6 +58,13 @@ export default function MacDesktopIcons({ onOpenApp, isMuted }) {
       badge: 'CONTACT'
     },
     {
+      id: "ipod",
+      name: "iPod Classic.app",
+      icon: Music,
+      iconBg: "bg-gradient-to-tr from-pink-500 via-rose-500 to-slate-700",
+      badge: "IPOD"
+    },
+    {
       id: 'trash',
       name: 'Trash Bin',
       icon: Trash2,

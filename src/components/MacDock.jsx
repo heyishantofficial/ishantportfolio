@@ -96,6 +96,22 @@ export default function MacDock({
         </div>
       )
     },
+    {
+      id: "ipod",
+      name: "iPod Classic Music",
+      type: "app",
+      renderIcon: () => (
+        <div className="w-full h-full bg-gradient-to-b from-slate-200 via-slate-100 to-slate-300 flex flex-col items-center justify-between p-1 relative rounded-[22%] shadow-md border border-slate-300">
+          <div className="w-full h-4 bg-slate-900 rounded-[3px] border border-slate-700 flex items-center justify-between px-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+            <span className="text-[7px] font-mono text-emerald-400 font-bold tracking-tighter">iPod</span>
+          </div>
+          <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 shadow-inner flex items-center justify-center relative my-0.5">
+            <div className="w-2 h-2 rounded-full bg-slate-300 border border-slate-400"></div>
+          </div>
+        </div>
+      )
+    },
     { id: 'divider-1', type: 'divider' },
     {
       id: 'ae',

@@ -455,7 +455,7 @@ export default function NexusCyberdeckPlayer({ onClose }) {
           ref={iframeRef}
           id="yt-player-iframe"
           className="w-1 h-1 border-0"
-          src={`https://www.youtube.com/embed/videoseries?si=wZpUvQDLhFD5G0-O&list=${ytPlaylistId}&autoplay=1&enablejsapi=1`} 
+          src={`https://www.youtube.com/embed/videoseries?si=wZpUvQDLhFD5G0-O&list=${ytPlaylistId}&autoplay=0&enablejsapi=1`} 
           title="YouTube background audio stream" 
           allow="autoplay"
         />

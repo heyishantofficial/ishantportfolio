@@ -1,75 +1,49 @@
-import React, { useState } from 'react';
-import { 
-  Folder, FileText, Terminal, Layers, Sparkles, Mail, Trash2, Globe, Music
-} from 'lucide-react';
-import { playMacClick } from '../utils/macAudioEngine';
+import React, { useState } from "react";
+import { playMacClick } from "../utils/macAudioEngine";
 
 export default function MacDesktopIcons({ onOpenApp, isMuted }) {
   const [selectedId, setSelectedId] = useState(null);
 
   const desktopShortcuts = [
     {
-      id: 'finder',
-      name: 'Projects Workspace',
-      icon: Folder,
-      iconBg: 'bg-gradient-to-tr from-blue-500 to-indigo-600',
-      badge: 'FILES'
+      id: "finder",
+      name: "Projects Workspace",
+      imgSrc: "/icons/Finder.png"
     },
     {
-      id: 'resume',
-      name: 'Resume & Bio.pdf',
-      icon: FileText,
-      iconBg: 'bg-gradient-to-tr from-amber-500 to-orange-600',
-      badge: 'PDF'
+      id: "resume",
+      name: "Resume & Bio.pdf",
+      imgSrc: "/icons/Folder.png"
     },
     {
-      id: 'terminal',
-      name: 'Terminal.app',
-      icon: Terminal,
-      iconBg: 'bg-gradient-to-tr from-slate-800 to-slate-950',
-      badge: 'SHELL'
+      id: "terminal",
+      name: "Terminal.app",
+      imgSrc: "/icons/Terminal.png"
     },
     {
-      id: 'creative',
-      name: 'Creative Studio',
-      icon: Layers,
-      iconBg: 'bg-gradient-to-tr from-purple-600 to-indigo-700',
-      badge: 'SUITE'
+      id: "creative",
+      name: "Creative Studio",
+      imgSrc: "/icons/Photos.png"
     },
     {
-      id: 'safari',
-      name: 'Safari Browser',
-      icon: Globe,
-      iconBg: 'bg-gradient-to-tr from-sky-500 to-blue-600',
-      badge: 'WEB'
+      id: "safari",
+      name: "Safari Browser",
+      imgSrc: "/icons/Safari.png"
     },
     {
-      id: 'notes',
-      name: 'Scratchpad.note',
-      icon: FileText,
-      iconBg: 'bg-gradient-to-tr from-yellow-400 to-amber-500',
-      badge: 'NOTE'
+      id: "notes",
+      name: "Notes.app",
+      imgSrc: "/icons/Notes.png"
     },
     {
-      id: 'mail',
-      name: 'Mail Contact',
-      icon: Mail,
-      iconBg: 'bg-gradient-to-tr from-cyan-500 to-blue-600',
-      badge: 'CONTACT'
+      id: "mail",
+      name: "Mail Contact",
+      imgSrc: "/icons/Mail.png"
     },
     {
-      id: "ipod",
-      name: "iPod Classic.app",
-      icon: Music,
-      iconBg: "bg-gradient-to-tr from-pink-500 via-rose-500 to-slate-700",
-      badge: "IPOD"
-    },
-    {
-      id: 'trash',
-      name: 'Trash Bin',
-      icon: Trash2,
-      iconBg: 'bg-gradient-to-tr from-slate-400 to-slate-600',
-      badge: 'BIN'
+      id: "trash",
+      name: "Trash Bin",
+      imgSrc: "/icons/Bin.png"
     }
   ];
 
@@ -85,11 +59,10 @@ export default function MacDesktopIcons({ onOpenApp, isMuted }) {
 
   return (
     <div 
-      className="absolute top-12 left-6 bottom-20 flex flex-col flex-wrap gap-4 z-[10] select-none pointer-events-auto"
+      className="absolute top-12 left-6 bottom-20 flex flex-col flex-wrap gap-5 z-[10] select-none pointer-events-auto"
       onClick={() => setSelectedId(null)}
     >
       {desktopShortcuts.map((item) => {
-        const IconComp = item.icon;
         const isSelected = selectedId === item.id;
 
         return (
@@ -97,19 +70,23 @@ export default function MacDesktopIcons({ onOpenApp, isMuted }) {
             key={item.id}
             onClick={(e) => { e.stopPropagation(); handleClick(item.id); }}
             onDoubleClick={(e) => { e.stopPropagation(); handleDoubleClick(item.id); }}
-            className={`w-24 p-2 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+            className={`w-24 p-2 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
               isSelected 
-                ? 'bg-blue-500/30 backdrop-blur-md ring-2 ring-blue-400' 
-                : 'hover:bg-white/10 hover:backdrop-blur-sm'
+                ? "bg-white/30 backdrop-blur-md ring-2 ring-white/60 shadow-lg scale-105" 
+                : "hover:bg-white/10 hover:backdrop-blur-sm"
             }`}
           >
-            {/* Desktop Icon 3D Glass Badge */}
-            <div className={`w-12 h-12 rounded-2xl ${item.iconBg} flex items-center justify-center text-white shadow-lg mb-1.5 transform hover:scale-105 transition-transform`}>
-              <IconComp className="w-6 h-6 drop-shadow" />
+            {/* Real macOS Icon PNG */}
+            <div className="w-14 h-14 relative flex items-center justify-center mb-1.5 transform hover:scale-105 transition-transform">
+              <img
+                src={item.imgSrc}
+                alt={item.name}
+                className="w-full h-full object-contain drop-shadow-xl select-none"
+              />
             </div>
 
             {/* Label */}
-            <span className="text-[11px] font-semibold text-white tracking-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-2 px-1">
+            <span className="text-[11px] font-semibold text-white tracking-tight drop-shadow-[0_1.5px_4px_rgba(0,0,0,0.9)] line-clamp-2 px-1">
               {item.name}
             </span>
           </div>

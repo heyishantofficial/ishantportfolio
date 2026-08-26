@@ -56,10 +56,6 @@ function InteractiveChar({ char, isYellowScript, mousePos }) {
     }
   }, [mousePos, isYellowScript]);
 
-  if (char === ' ') {
-    return <span className="inline-block w-2 sm:w-3.5">&nbsp;</span>;
-  }
-
   return (
     <span
       ref={charRef}
@@ -67,7 +63,7 @@ function InteractiveChar({ char, isYellowScript, mousePos }) {
       className={`inline-block select-none transition-transform duration-100 ease-out ${
         isYellowScript 
           ? 'font-script text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-wide text-yellow-400 drop-shadow-md' 
-          : 'font-serif-title italic text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-normal text-white drop-shadow-lg'
+          : 'font-playfair italic text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-normal text-white drop-shadow-lg'
       }`}
     >
       {char}
@@ -112,8 +108,8 @@ export default function AnimatedQuoteHeading() {
   const blurVal = Math.max(0, (1 - animProgress) * 12);
   const opacityVal = Math.pow(animProgress, 0.5);
 
-  const part1 = "I believe the best ideas usually start as".split('');
-  const part2 = "weird ones.".split('');
+  const whiteWords = ["I", "believe", "the", "best", "ideas", "usually", "start", "as"];
+  const yellowWords = ["weird", "ones."];
 
   return (
     <div
@@ -126,30 +122,34 @@ export default function AnimatedQuoteHeading() {
         opacity: opacityVal
       }}
     >
-      <h1 className="leading-tight sm:leading-snug flex flex-wrap items-center justify-center gap-y-1">
-        {/* White Serif Part */}
-        <span className="inline-flex flex-wrap justify-center mr-2">
-          {part1.map((char, index) => (
-            <InteractiveChar
-              key={`p1-${index}`}
-              char={char}
-              isYellowScript={false}
-              mousePos={mousePos}
-            />
-          ))}
-        </span>
+      <h1 className="leading-snug sm:leading-tight flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-3 gap-y-2 max-w-4xl">
+        {/* White Playfair Display Part */}
+        {whiteWords.map((word, wIdx) => (
+          <span key={`w-${wIdx}`} className="inline-flex whitespace-nowrap">
+            {word.split('').map((char, cIdx) => (
+              <InteractiveChar
+                key={`w-${wIdx}-${cIdx}`}
+                char={char}
+                isYellowScript={false}
+                mousePos={mousePos}
+              />
+            ))}
+          </span>
+        ))}
 
         {/* Bright Yellow Cursive Script Part */}
-        <span className="inline-flex justify-center">
-          {part2.map((char, index) => (
-            <InteractiveChar
-              key={`p2-${index}`}
-              char={char}
-              isYellowScript={true}
-              mousePos={mousePos}
-            />
-          ))}
-        </span>
+        {yellowWords.map((word, wIdx) => (
+          <span key={`y-${wIdx}`} className="inline-flex whitespace-nowrap">
+            {word.split('').map((char, cIdx) => (
+              <InteractiveChar
+                key={`y-${wIdx}-${cIdx}`}
+                char={char}
+                isYellowScript={true}
+                mousePos={mousePos}
+              />
+            ))}
+          </span>
+        ))}
       </h1>
     </div>
   );

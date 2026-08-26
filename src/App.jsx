@@ -440,12 +440,12 @@ export default function App() {
               <AnimatedQuoteHeading />
 
               {/* Helper Subtitle */}
-              <p className="text-xs sm:text-sm font-sans text-white/90 drop-shadow-md mb-2 font-medium tracking-wide">
+              <p className="text-[11px] sm:text-xs font-sans text-white/80 drop-shadow-md mb-1.5 font-medium tracking-wide">
                 Enter your name to log in
               </p>
 
-              {/* Viewer Name Input Form */}
-              <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-64 sm:w-80">
+              {/* Liquid Glass macOS Input Form */}
+              <form onSubmit={handleBootSystem} className="relative flex items-center justify-center w-52 sm:w-60 max-w-[250px]">
                 <div className={`w-full relative flex items-center ${isShaking ? 'animate-shake' : ''}`}>
                   <input
                     ref={nameInputRef}
@@ -457,34 +457,35 @@ export default function App() {
                     }}
                     placeholder="Enter Your Name..."
                     autoFocus
-                    className={`w-full py-2.5 pl-5 pr-12 rounded-full bg-white/20 dark:bg-black/40 backdrop-blur-xl border ${
-                      loginError ? 'border-amber-400 ring-2 ring-amber-400/50' : 'border-white/40'
-                    } text-white placeholder-white/70 font-sans text-xs sm:text-sm shadow-[0_8px_24px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 focus:ring-amber-400/80 transition-all`}
+                    className={`w-full py-1.5 pl-4 pr-9 rounded-full mac-liquid-glass-input text-white placeholder-white/50 font-sans text-xs shadow-[0_6px_24px_rgba(0,0,0,0.25)] focus:outline-none focus:ring-2 focus:ring-amber-300/70 focus:border-amber-300/80 transition-all ${
+                      loginError ? 'border-amber-400 ring-2 ring-amber-400/60' : ''
+                    }`}
                   />
                   <button
                     type="submit"
-                    className="absolute right-1.5 w-7 h-7 rounded-full bg-amber-400/40 hover:bg-amber-400/60 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/30"
+                    className="absolute right-1 w-5.5 h-5.5 rounded-full bg-white/20 hover:bg-white/35 active:scale-90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/30 shadow-sm"
                     title="Unlock"
                   >
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
               </form>
 
               {/* Validation Error Message */}
               {loginError && (
-                <p className="font-mono text-xs text-amber-300 font-bold animate-fadeIn mt-1">
+                <p className="font-mono text-[11px] text-amber-300 font-bold animate-fadeIn">
                   {loginError}
                 </p>
               )}
 
-              {/* Click to Unlock Prompt Button */}
+              {/* Click to Unlock Liquid Glass Prompt Button */}
               <button
                 type="button"
                 onClick={handleBootSystem}
-                className="mt-3 px-6 py-2 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white font-mono text-xs transition-all cursor-pointer shadow-lg backdrop-blur-md active:scale-95 font-semibold"
+                className="mt-2 px-4 py-1.5 rounded-full mac-liquid-glass-btn text-white/90 font-mono text-[11px] transition-all cursor-pointer active:scale-95 hover:bg-white/25 font-semibold flex items-center gap-1.5"
               >
-                {isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName} 🔓` : 'Click to Unlock 🔒'}
+                <span>{isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName}` : 'Click to Unlock'}</span>
+                <span>🔒</span>
               </button>
             </motion.div>
 

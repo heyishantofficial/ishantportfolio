@@ -34,11 +34,32 @@ html, body, #root {
 }
 
 .font-serif-title {
-  font-family: 'Instrument Serif', serif;
+  font-family: 'Playfair Display', 'Instrument Serif', serif;
+}
+
+.font-playfair {
+  font-family: 'Playfair Display', serif;
 }
 
 .font-script {
   font-family: 'Caveat', 'Playfair Display', cursive, serif;
+}
+
+/* macOS Liquid Glass UI Material */
+.mac-liquid-glass-input {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(28px) saturate(210%);
+  -webkit-backdrop-filter: blur(28px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.22), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35);
+}
+
+.mac-liquid-glass-btn {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.18), inset 0 1px 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* Mouse-reactive text character physics styling */

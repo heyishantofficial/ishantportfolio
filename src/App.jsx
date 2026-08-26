@@ -271,7 +271,7 @@ export default function App() {
               onLoadedData={() => {
                 setIsVideoLoaded(true);
               }}
-              className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-100 transform scale-110 origin-center min-w-full min-h-full"
+              className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-100 scale-100 origin-center"
             />
           )}
           

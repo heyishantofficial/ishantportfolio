@@ -520,12 +520,12 @@ export default function App() {
               <span className="ml-1 tracking-tight font-medium">{loginTimeStr || 'Sat Aug 26 16:54'}</span>
             </div>
 
-            {/* Center User Login Card */}
+            {/* Center User Login Card — Vertically Centered on Screen */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col items-center justify-start mt-6 sm:mt-12 mb-auto z-10 space-y-2.5 w-full max-w-2xl text-center"
+              className="flex flex-col items-center justify-center my-auto z-10 space-y-3 w-full max-w-2xl text-center"
             >
               {/* Quote Heading */}
               <AnimatedQuoteHeading />

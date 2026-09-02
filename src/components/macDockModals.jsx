@@ -6,6 +6,7 @@ import {
   Globe, Cpu, Folder, Search, Check, ChevronRight, X, Copy, RotateCcw, Maximize2
 } from 'lucide-react';
 import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
+import SafariBrowser from './SafariBrowser';
 
 const InstagramIcon = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -298,97 +299,11 @@ export function FinderModal({ onSelectProject, onLaunchApp, onClose }) {
   );
 }
 
-// 3. Safari Browser Modal
-export function SafariModal({ onClose }) {
-  const [url, setUrl] = useState('https://ishant.vibecode.dev/projects');
-  const [activeTab, setActiveTab] = useState('portfolio');
-
-  return (
-    <MacWindow title="Safari — Apple Web Browser" icon={Globe} onClose={onClose} width="max-w-3xl">
-      <div className="flex flex-col h-[440px] bg-slate-50 -m-6 rounded-b-xl overflow-hidden font-sans border-t border-slate-200">
-        
-        {/* Safari Navigation Bar */}
-        <div className="h-10 bg-slate-200/90 border-b border-slate-300 px-3 flex items-center gap-3 shrink-0">
-          <div className="flex items-center gap-1 text-slate-500">
-            <button className="p-1 hover:bg-slate-300/60 rounded"><ChevronRight className="w-3.5 h-3.5 rotate-180" /></button>
-            <button className="p-1 hover:bg-slate-300/60 rounded"><ChevronRight className="w-3.5 h-3.5" /></button>
-          </div>
-
-          <div className="flex-1 bg-white border border-slate-300/80 rounded-lg px-3 py-1 text-xs text-slate-700 flex items-center justify-between font-mono shadow-inner">
-            <span className="truncate">{url}</span>
-            <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0 ml-2" />
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => { setUrl('https://ishant.vibecode.dev/projects'); setActiveTab('portfolio'); }}
-              className={`px-2 py-1 text-[11px] font-semibold rounded ${activeTab === 'portfolio' ? 'bg-white shadow text-blue-600' : 'text-slate-600'}`}
-            >
-              Portfolio
-            </button>
-            <button 
-              onClick={() => { setUrl('https://x.com/ishantvibecode'); setActiveTab('twitter'); }}
-              className={`px-2 py-1 text-[11px] font-semibold rounded ${activeTab === 'twitter' ? 'bg-white shadow text-blue-600' : 'text-slate-600'}`}
-            >
-              Twitter/X
-            </button>
-            <button 
-              onClick={() => { setUrl('https://github.com'); setActiveTab('github'); }}
-              className={`px-2 py-1 text-[11px] font-semibold rounded ${activeTab === 'github' ? 'bg-white shadow text-blue-600' : 'text-slate-600'}`}
-            >
-              GitHub
-            </button>
-          </div>
-        </div>
-
-        {/* Safari View Content */}
-        <div className="flex-1 p-6 overflow-y-auto bg-white flex flex-col items-center justify-center text-center">
-          {activeTab === 'portfolio' && (
-            <div className="max-w-md space-y-3">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-2xl mx-auto shadow-md">
-                ⚡
-              </div>
-              <h2 className="text-xl font-bold text-slate-900">Ishant Chauhan Portfolio Live Preview</h2>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Operating inside macOS Safari engine. Browse through Vibecoded Apps, Content Systems, and Brand Strategy cases directly.
-              </p>
-              <div className="pt-2 flex justify-center gap-3">
-                <a href={PROFILE_INFO.socials.github} target="_blank" rel="noreferrer" className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800">
-                  Open GitHub Repo
-                </a>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'twitter' && (
-            <div className="max-w-md space-y-3">
-              <div className="w-12 h-12 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-xl mx-auto">
-                𝕏
-              </div>
-              <h2 className="text-lg font-bold text-slate-900">@ishantvibecode on X</h2>
-              <p className="text-xs text-slate-600">Sharing daily Vibecoding breakdowns, AI workflows, and content systems.</p>
-              <a href={PROFILE_INFO.socials.twitter} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 bg-sky-500 text-white text-xs font-semibold rounded-lg hover:bg-sky-600">
-                Follow on Twitter/X
-              </a>
-            </div>
-          )}
-
-          {activeTab === 'github' && (
-            <div className="max-w-md space-y-3">
-              <ExternalLink className="w-12 h-12 text-slate-900 mx-auto" />
-              <h2 className="text-lg font-bold text-slate-900">GitHub Repositories</h2>
-              <p className="text-xs text-slate-600">Explore open source vibecoded projects, Swift apps, and React UI tools.</p>
-              <a href={PROFILE_INFO.socials.github} target="_blank" rel="noreferrer" className="inline-block px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800">
-                Visit GitHub Profile
-              </a>
-            </div>
-          )}
-        </div>
-
-      </div>
-    </MacWindow>
-  );
+// 3. Safari Browser Modal (Powered by macOS Sequoia Safari Engine)
+export function SafariModal({ onClose, onMinimize }) {
+  return <SafariBrowser onClose={onClose} onMinimize={onMinimize} />;
 }
+
 
 // 4. System Settings / About This Mac Modal
 export function SystemInfoModal({ onClose }) {

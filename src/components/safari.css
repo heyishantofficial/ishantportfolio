@@ -1,0 +1,649 @@
+/* ==========================================================================
+   macOS Sequoia Safari Browser Design System
+   Matches Apple Human Interface Guidelines:
+   - Vibrancy & Materials: backdrop-filter blur(24px) saturate(180%)
+   - Unified tabs with pill active states and spring feedback
+   - Smart search bar with SSL padlock and progress sweep
+   - Safari Start Page with Favorites, Privacy Report, and Siri Suggestions
+   - Reader View with authentic serif typography and paper themes
+   - Simulated Web Inspector with DOM tree and interactive Console REPL
+   ========================================================================== */
+
+.safari-window-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 520px;
+  background: #fbfbfd;
+  color: #1d1d1f;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  user-select: none;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+}
+
+.dark .safari-window-container {
+  background: #1c1c1e;
+  color: #f5f5f7;
+}
+
+/* --------------------------------------------------------------------------
+   Safari Toolbar & Chrome
+   -------------------------------------------------------------------------- */
+.safari-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(246, 246, 246, 0.82);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 30;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.dark .safari-toolbar {
+  background: rgba(40, 40, 42, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Traffic Light Window Buttons */
+.safari-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-right: 6px;
+  margin-right: 2px;
+}
+
+.safari-traffic-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 800;
+  color: transparent;
+  cursor: pointer;
+  transition: transform 0.08s ease, filter 0.15s ease;
+}
+
+.safari-traffic-btn:hover {
+  filter: brightness(0.92);
+}
+
+.safari-traffic-btn:active {
+  transform: scale(0.92);
+}
+
+.safari-traffic-lights:hover .safari-traffic-btn {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.safari-traffic-close {
+  background: #ff5f56;
+  border-color: #e0443e;
+}
+
+.safari-traffic-min {
+  background: #ffbd2e;
+  border-color: #dea123;
+}
+
+.safari-traffic-max {
+  background: #27c93f;
+  border-color: #1aab29;
+}
+
+/* Nav Action Buttons */
+.safari-btn-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+
+.dark .safari-btn-icon {
+  color: #9ca3af;
+}
+
+.safari-btn-icon:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+  color: #111827;
+}
+
+.dark .safari-btn-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.safari-btn-icon:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.safari-btn-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   Smart Search / Address Bar
+   -------------------------------------------------------------------------- */
+.safari-address-bar-wrapper {
+  flex: 1;
+  position: relative;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.safari-address-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 12.5px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark .safari-address-bar {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.safari-address-bar:focus-within {
+  background: #ffffff;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.25);
+}
+
+.dark .safari-address-bar:focus-within {
+  background: #252528;
+  border-color: #0a84ff;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
+}
+
+.safari-address-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 12.5px;
+  color: inherit;
+  font-family: inherit;
+  text-align: center;
+  padding: 0 4px;
+}
+
+.safari-address-bar:focus-within .safari-address-input {
+  text-align: left;
+}
+
+.safari-progress-sweep {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, #0071e3, #38bdf8, #60a5fa);
+  border-radius: 2px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(0, 113, 227, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   Dynamic Unified Tabs Bar
+   -------------------------------------------------------------------------- */
+.safari-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(238, 238, 240, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+  scrollbar-width: none;
+  z-index: 20;
+}
+
+.safari-tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.dark .safari-tabs-bar {
+  background: rgba(30, 30, 32, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.safari-tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  min-width: 140px;
+  max-width: 220px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  cursor: pointer;
+  color: #4b5563;
+  position: relative;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.dark .safari-tab-item {
+  color: #9ca3af;
+}
+
+.safari-tab-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #111827;
+}
+
+.dark .safari-tab-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f3f4f6;
+}
+
+.safari-tab-item.active {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  font-weight: 500;
+}
+
+.dark .safari-tab-item.active {
+  background: #3a3a3c;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.safari-tab-close-btn {
+  opacity: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  color: #6b7280;
+  transition: opacity 0.15s ease, background 0.12s ease;
+  margin-left: auto;
+}
+
+.safari-tab-item:hover .safari-tab-close-btn,
+.safari-tab-item.active .safari-tab-close-btn {
+  opacity: 0.8;
+}
+
+.safari-tab-close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #111827;
+}
+
+.dark .safari-tab-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.safari-tab-add-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  border: none;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.safari-tab-add-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #111827;
+}
+
+.dark .safari-tab-add-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Safari Start Page
+   -------------------------------------------------------------------------- */
+.safari-start-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 40px 24px;
+  background: 
+    radial-gradient(ellipse at 50% -20%, rgba(14, 165, 233, 0.12), transparent 70%),
+    radial-gradient(ellipse at 80% 80%, rgba(99, 102, 241, 0.08), transparent 60%),
+    #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dark .safari-start-page {
+  background: 
+    radial-gradient(ellipse at 50% -20%, rgba(14, 165, 233, 0.15), transparent 70%),
+    radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.1), transparent 60%),
+    #18181b;
+}
+
+.safari-start-container {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.safari-section-heading {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #111827;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dark .safari-section-heading {
+  color: #f3f4f6;
+}
+
+/* Favorites Grid */
+.safari-favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 20px 14px;
+  justify-items: center;
+}
+
+.safari-favorite-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: 6px;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  outline: none;
+}
+
+.safari-favorite-card:hover {
+  transform: scale(1.08) translateY(-2px);
+}
+
+.safari-favorite-card:active {
+  transform: scale(0.96);
+}
+
+.safari-favorite-icon-box {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.18s ease;
+  overflow: hidden;
+}
+
+.dark .safari-favorite-icon-box {
+  background: #27272a;
+  box-shadow: 
+    0 4px 14px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.safari-favorite-card:hover .safari-favorite-icon-box {
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.dark .safari-favorite-card:hover .safari-favorite-icon-box {
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.safari-favorite-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark .safari-favorite-label {
+  color: #d1d5db;
+}
+
+/* Privacy Report Banner */
+.safari-privacy-card {
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark .safari-privacy-card {
+  background: rgba(39, 39, 42, 0.7);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.3);
+}
+
+.safari-privacy-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px -4px rgba(0, 0, 0, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+   Safari Viewport & Iframe
+   -------------------------------------------------------------------------- */
+.safari-viewport {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dark .safari-viewport {
+  background: #121214;
+}
+
+.safari-iframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
+}
+
+/* Fallback Apple Error Screen */
+.safari-error-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  background: #fafafa;
+  color: #1f2937;
+}
+
+.dark .safari-error-screen {
+  background: #18181b;
+  color: #f3f4f6;
+}
+
+.safari-error-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(239, 68, 68, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: #ef4444;
+}
+
+/* --------------------------------------------------------------------------
+   Safari Reader Mode
+   -------------------------------------------------------------------------- */
+.safari-reader-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 48px 24px 80px;
+  transition: background 0.2s ease, color 0.2s ease;
+  font-family: -apple-system-ui-serif, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+.safari-reader-theme-light {
+  background: #ffffff;
+  color: #1f2328;
+}
+
+.safari-reader-theme-sepia {
+  background: #f8f1e3;
+  color: #493b2a;
+}
+
+.safari-reader-theme-gray {
+  background: #4a4a4c;
+  color: #e5e5e7;
+}
+
+.safari-reader-theme-dark {
+  background: #121212;
+  color: #d1d5db;
+}
+
+.safari-reader-article {
+  max-width: 680px;
+  margin: 0 auto;
+  line-height: 1.75;
+}
+
+.safari-reader-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.safari-reader-meta {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  opacity: 0.65;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid currentColor;
+}
+
+/* --------------------------------------------------------------------------
+   Safari Web Inspector Drawer
+   -------------------------------------------------------------------------- */
+.safari-inspector-drawer {
+  height: 240px;
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  background: #1e1e1e;
+  color: #d4d4d4;
+  display: flex;
+  flex-direction: column;
+  font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.25);
+  z-index: 40;
+}
+
+.safari-inspector-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: #252526;
+  border-bottom: 1px solid #333333;
+}
+
+.safari-inspector-tab {
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #969696;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.12s ease;
+}
+
+.safari-inspector-tab:hover {
+  color: #ffffff;
+}
+
+.safari-inspector-tab.active {
+  background: #37373d;
+  color: #ffffff;
+}
+
+.safari-inspector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}

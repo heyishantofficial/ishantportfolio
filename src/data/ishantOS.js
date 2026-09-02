@@ -18,6 +18,7 @@
 //   href         link only
 
 import { PROJECTS_DATA } from './projectsData';
+import { getStorageItem, setStorageItem } from '../utils/fsStorage';
 
 // ---------------------------------------------------------------------------
 // Case studies
@@ -935,14 +936,177 @@ export const TRASH_ITEMS = [
 
 const INDEX = new Map();
 const PARENTS = new Map();
+const fsListeners = new Set();
 
-(function indexTree(nodes, parentId = null) {
+export function subscribeFSEvents(listener) {
+  fsListeners.add(listener);
+  return () => fsListeners.delete(listener);
+}
+
+function notifyFSChange() {
+  fsListeners.forEach((fn) => {
+    try { fn(); } catch (err) { console.error('FS listener error:', err); }
+  });
+}
+
+function indexTree(nodes, parentId = null) {
   for (const node of nodes) {
     INDEX.set(node.id, node);
     PARENTS.set(node.id, parentId);
     if (node.children) indexTree(node.children, node.id);
   }
-})([HOME]);
+}
+
+indexTree([HOME]);
+
+// Persisted mutations tracking
+const STORAGE_KEY_CUSTOM = 'custom_nodes';
+const STORAGE_KEY_RENAMES = 'renamed_nodes';
+const STORAGE_KEY_DELETED = 'deleted_nodes';
+
+let customNodesCache = [];
+let renamesCache = {};
+let deletedCache = [];
+
+/**
+ * Loads persisted custom folders, uploaded files and renamed nodes
+ */
+export async function loadPersistedFS() {
+  try {
+    const [savedCustom, savedRenames, savedDeleted] = await Promise.all([
+      getStorageItem(STORAGE_KEY_CUSTOM, []),
+      getStorageItem(STORAGE_KEY_RENAMES, {}),
+      getStorageItem(STORAGE_KEY_DELETED, [])
+    ]);
+
+    customNodesCache = Array.isArray(savedCustom) ? savedCustom : [];
+    renamesCache = savedRenames && typeof savedRenames === 'object' ? savedRenames : {};
+    deletedCache = Array.isArray(savedDeleted) ? savedDeleted : [];
+
+    // Apply custom nodes
+    for (const item of customNodesCache) {
+      if (!item || !item.node || !item.parentId) continue;
+      const parent = INDEX.get(item.parentId);
+      if (parent && (!deletedCache.includes(item.node.id))) {
+        if (!parent.children) parent.children = [];
+        const existingIdx = parent.children.findIndex((c) => c.id === item.node.id);
+        if (existingIdx >= 0) {
+          parent.children[existingIdx] = item.node;
+        } else {
+          parent.children.push(item.node);
+        }
+        INDEX.set(item.node.id, item.node);
+        PARENTS.set(item.node.id, item.parentId);
+        if (item.node.children) indexTree(item.node.children, item.node.id);
+      }
+    }
+
+    // Apply renames
+    for (const [id, newName] of Object.entries(renamesCache)) {
+      const target = INDEX.get(id);
+      if (target && newName) {
+        target.name = newName;
+      }
+    }
+
+    // Apply deletions
+    for (const id of deletedCache) {
+      const parentId = PARENTS.get(id);
+      if (parentId) {
+        const parent = INDEX.get(parentId);
+        if (parent?.children) {
+          parent.children = parent.children.filter((c) => c.id !== id);
+        }
+      }
+      INDEX.delete(id);
+      PARENTS.delete(id);
+    }
+
+    notifyFSChange();
+  } catch (err) {
+    console.warn('Failed to load persisted filesystem:', err);
+  }
+}
+
+// Initial hydration in browser
+if (typeof window !== 'undefined') {
+  setTimeout(() => loadPersistedFS(), 50);
+}
+
+/**
+ * Dynamically register a new custom node (folder or uploaded file)
+ */
+export async function registerCustomNode(parentId, node) {
+  const parent = INDEX.get(parentId);
+  if (!parent) {
+    console.warn(`Parent ${parentId} not found for custom node`, node);
+    return false;
+  }
+
+  if (!parent.children) parent.children = [];
+  // Ensure unique ID
+  const existingIdx = parent.children.findIndex((c) => c.id === node.id);
+  if (existingIdx >= 0) {
+    parent.children[existingIdx] = node;
+  } else {
+    parent.children.push(node);
+  }
+
+  INDEX.set(node.id, node);
+  PARENTS.set(node.id, parentId);
+  if (node.children) indexTree(node.children, node.id);
+
+  // Save to persistence
+  customNodesCache = customNodesCache.filter((c) => c?.node?.id !== node.id);
+  customNodesCache.push({ parentId, node });
+  await setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache);
+
+  notifyFSChange();
+  return true;
+}
+
+/**
+ * Renames a folder or file node in the tree
+ */
+export async function renameNodeInTree(nodeId, newName) {
+  const node = INDEX.get(nodeId);
+  if (!node) return false;
+
+  node.name = newName;
+  renamesCache[nodeId] = newName;
+  await setStorageItem(STORAGE_KEY_RENAMES, renamesCache);
+
+  notifyFSChange();
+  return true;
+}
+
+/**
+ * Deletes a custom folder or file node from the tree
+ */
+export async function deleteNodeFromTree(nodeId) {
+  const parentId = PARENTS.get(nodeId);
+  if (parentId) {
+    const parent = INDEX.get(parentId);
+    if (parent?.children) {
+      parent.children = parent.children.filter((c) => c.id !== nodeId);
+    }
+  }
+
+  INDEX.delete(nodeId);
+  PARENTS.delete(nodeId);
+
+  // Update storage
+  customNodesCache = customNodesCache.filter((c) => c?.node?.id !== nodeId);
+  await setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache);
+
+  if (!deletedCache.includes(nodeId)) {
+    deletedCache.push(nodeId);
+    await setStorageItem(STORAGE_KEY_DELETED, deletedCache);
+  }
+
+  notifyFSChange();
+  return true;
+}
 
 export function findNode(id) {
   return INDEX.get(id) || null;

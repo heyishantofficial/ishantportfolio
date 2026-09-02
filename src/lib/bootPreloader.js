@@ -19,6 +19,7 @@ export const ICON_ASSETS = [
   '/icons/Folder.png',
   '/icons/Photos.png',
   '/icons/Safari.png',
+  '/icons/Chrome.png',
   '/icons/Notes.png',
   '/icons/Mail.png',
   '/icons/Bin.png',

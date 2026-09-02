@@ -12,7 +12,8 @@ const DEFAULT_SIZES = {
   pdf: { w: 720, h: 620 },
   mail: { w: 560, h: 520 },
   info: { w: 320, h: 470 },
-  trash: { w: 480, h: 460 }
+  trash: { w: 480, h: 460 },
+  media: { w: 760, h: 580 }
 };
 
 // A window opened at the same spot as the last one is invisible, so each new
@@ -148,6 +149,11 @@ export default function useWindowManager() {
       case 'link':
         window.open(resolved.href, '_blank', 'noopener,noreferrer');
         return null;
+      case 'image':
+      case 'video':
+      case 'audio':
+      case 'file':
+        return openWindow({ type: 'media', nodeId: resolved.id, ...options });
       default:
         return null;
     }

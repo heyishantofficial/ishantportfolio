@@ -1,5 +1,5 @@
-import React from 'react';
-import { FileText, Sparkles, Mail, Link2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileText, Sparkles, Mail, Link2, Image as ImageIcon, Film, Music, File } from 'lucide-react';
 
 /**
  * One icon renderer for every place a filesystem node is shown — Finder,
@@ -10,6 +10,7 @@ import { FileText, Sparkles, Mail, Link2 } from 'lucide-react';
  * they read as documents rather than as more folders.
  */
 export default function NodeIcon({ node, size = 48, className = '' }) {
+  const [imgError, setImgError] = useState(false);
   const px = `${size}px`;
 
   if (node.kind === 'folder') {
@@ -22,6 +23,23 @@ export default function NodeIcon({ node, size = 48, className = '' }) {
         style={{ width: px, height: px }}
         className={`object-contain drop-shadow-md select-none pointer-events-none ${className}`}
       />
+    );
+  }
+
+  if (node.kind === 'image' && (node.preview || node.dataUrl) && !imgError) {
+    return (
+      <span
+        style={{ width: px, height: px }}
+        aria-hidden="true"
+        className={`shrink-0 rounded-[18%] bg-white border border-black/10 shadow-sm flex items-center justify-center overflow-hidden p-0.5 ${className}`}
+      >
+        <img
+          src={node.preview || node.dataUrl}
+          alt={node.name}
+          onError={() => setImgError(true)}
+          className="w-full h-full object-cover rounded-[14%]"
+        />
+      </span>
     );
   }
 
@@ -38,11 +56,31 @@ export default function NodeIcon({ node, size = 48, className = '' }) {
     );
   }
 
-  const Glyph = node.kind === 'project' ? Sparkles : node.kind === 'mail' ? Mail : node.kind === 'link' ? Link2 : FileText;
+  let Glyph = FileText;
+  let tint = '#64748b';
 
-  // Case studies borrow their own accent so a folder of projects reads as a
-  // set of distinct things rather than a wall of identical sheets.
-  const tint = node.kind === 'project' ? (node.project?.accent || '#c0392b') : '#64748b';
+  if (node.kind === 'project') {
+    Glyph = Sparkles;
+    tint = node.project?.accent || '#c0392b';
+  } else if (node.kind === 'mail') {
+    Glyph = Mail;
+    tint = '#3b82f6';
+  } else if (node.kind === 'link') {
+    Glyph = Link2;
+    tint = '#10b981';
+  } else if (node.kind === 'image') {
+    Glyph = ImageIcon;
+    tint = '#8b5cf6';
+  } else if (node.kind === 'video') {
+    Glyph = Film;
+    tint = '#ec4899';
+  } else if (node.kind === 'audio') {
+    Glyph = Music;
+    tint = '#f59e0b';
+  } else if (node.kind === 'file') {
+    Glyph = File;
+    tint = '#64748b';
+  }
 
   return (
     <span
@@ -54,3 +92,4 @@ export default function NodeIcon({ node, size = 48, className = '' }) {
     </span>
   );
 }
+

@@ -404,6 +404,8 @@ export default function App() {
               onChangeWallpaper={(wp) => setWallpaper(wp)}
               isMuted={isMuted}
               onToggleMute={() => setIsMuted(!isMuted)}
+              volume={volume}
+              onVolumeChange={handleVolumeChange}
               showCyberdeck={showCyberdeck}
               onToggleCyberdeck={() => handleLaunchApp("ipod")}
             />

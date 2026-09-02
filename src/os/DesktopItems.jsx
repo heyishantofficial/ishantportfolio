@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import NodeIcon from './NodeIcon';
 import { DESKTOP_ORDER, findNode, itemCountLabel } from '../data/ishantOS';
+import { useFileSystem } from '../utils/useFileSystem';
 
 const HINT_KEY = 'ishantos.hint.dismissed';
 const POSITIONS_KEY = 'ishantos.desktop.positions';
@@ -47,7 +48,8 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
   const [showHint, setShowHint] = useState(false);
   const [activeDragId, setActiveDragId] = useState(null);
 
-  const items = DESKTOP_ORDER.map(findNode).filter(Boolean);
+  const { version } = useFileSystem();
+  const items = useMemo(() => DESKTOP_ORDER.map(findNode).filter(Boolean), [version]);
 
   const [positions, setPositions] = useState(() => {
     const saved = loadSavedPositions();

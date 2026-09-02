@@ -12,7 +12,7 @@ export default function MacControlCenter({
   onChangeWallpaper,
   isMuted,
   onToggleMute,
-  volume,
+  volume = 20,
   onVolumeChange,
   showCyberdeck,
   onToggleCyberdeck
@@ -33,9 +33,6 @@ export default function MacControlCenter({
     >
       <div className="flex items-center justify-between border-b border-black/[0.08] dark:border-white/[0.08] pb-2 mb-3">
         <span className="font-extrabold text-xs tracking-tight">macOS Control Center</span>
-        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
-          Sequoia v15.0
-        </span>
       </div>
 
       {/* Grid Controls */}
@@ -47,7 +44,7 @@ export default function MacControlCenter({
           </div>
           <div className="overflow-hidden">
             <div className="font-bold text-xs truncate">Wi-Fi</div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Vibecode-5G</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Hire Me 5G</div>
           </div>
         </div>
 
@@ -119,9 +116,6 @@ export default function MacControlCenter({
             <Volume2 className="w-4 h-4 text-blue-500" />
             <span>Sound Volume</span>
           </div>
-          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            {isMuted || volume === 0 ? 'Muted' : `${volume}%`}
-          </span>
         </div>
         <div className="flex items-center gap-2">
           <button

@@ -2,7 +2,7 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useStat
 import { AnimatePresence } from 'framer-motion';
 import useWindowManager from './useWindowManager';
 import FinderWindow from './FinderWindow';
-import { TextWindow, ProjectWindow, PdfWindow, MailWindow, InfoWindow, TrashWindow } from './ContentWindows';
+import { TextWindow, ProjectWindow, PdfWindow, MailWindow, InfoWindow, TrashWindow, MediaWindow } from './ContentWindows';
 import CommandPalette from './CommandPalette';
 import DesktopItems from './DesktopItems';
 import NodeIcon from './NodeIcon';
@@ -118,6 +118,7 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange }, 
       case 'mail': return <MailWindow key={win.id} {...shared} />;
       case 'info': return <InfoWindow key={win.id} {...shared} />;
       case 'trash': return <TrashWindow key={win.id} {...shared} />;
+      case 'media': return <MediaWindow key={win.id} {...shared} />;
       default: return null;
     }
   };

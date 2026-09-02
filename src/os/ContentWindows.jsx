@@ -251,6 +251,109 @@ export function PdfWindow(props) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Media / Preview — uploaded images, videos, audio, documents
+ * ------------------------------------------------------------------ */
+
+export function MediaWindow(props) {
+  const node = findNode(props.win.nodeId);
+  const [zoom, setZoom] = useState(1);
+  if (!node) return null;
+
+  const fileUrl = node.dataUrl || node.file || node.preview;
+  const isImage = node.kind === 'image';
+  const isVideo = node.kind === 'video';
+  const isAudio = node.kind === 'audio';
+
+  return (
+    <OSWindow {...chrome(props)} title={node.name} subtitle={node.description || 'Uploaded Asset'}>
+      <div className="h-full flex flex-col bg-slate-100 dark:bg-slate-950">
+        <div className="shrink-0 h-9 px-3 flex items-center gap-2 border-b border-black/10 dark:border-white/10 bg-white/70 dark:bg-slate-900/70">
+          {isImage && (
+            <>
+              <button
+                onClick={() => setZoom((z) => Math.max(0.25, +(z - 0.15).toFixed(2)))}
+                aria-label="Zoom out"
+                className="w-6 h-6 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[10px] font-mono w-10 text-center text-slate-500">{Math.round(zoom * 100)}%</span>
+              <button
+                onClick={() => setZoom((z) => Math.min(3, +(z + 0.15).toFixed(2)))}
+                aria-label="Zoom in"
+                className="w-6 h-6 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setZoom(1)}
+                className="px-2 py-0.5 rounded text-[10px] font-medium hover:bg-black/10 dark:hover:bg-white/10 text-slate-500"
+              >
+                Actual Size
+              </button>
+            </>
+          )}
+
+          <div className="ml-auto flex items-center gap-1.5">
+            {fileUrl && (
+              <a
+                href={fileUrl}
+                download={node.name}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold text-white bg-[var(--os-accent)] hover:brightness-110"
+              >
+                <Download className="w-3 h-3" /> Download
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
+          {isImage ? (
+            <img
+              src={fileUrl}
+              alt={node.name}
+              style={{ transform: `scale(${zoom})`, transformOrigin: 'center center', transition: 'transform 0.15s ease-out' }}
+              className="max-h-[85vh] max-w-[90vw] object-contain shadow-2xl rounded-md bg-transparent select-none"
+            />
+          ) : isVideo ? (
+            <video
+              src={fileUrl}
+              controls
+              autoPlay
+              className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl bg-black"
+            />
+          ) : isAudio ? (
+            <div className="flex flex-col items-center gap-4 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-black/10 dark:border-white/10 max-w-sm w-full">
+              <NodeIcon node={node} size={64} />
+              <div className="text-center">
+                <h4 className="text-[14px] font-bold text-slate-800 dark:text-white">{node.name}</h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">{node.description}</p>
+              </div>
+              <audio src={fileUrl} controls className="w-full mt-2" />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-black/10 dark:border-white/10 max-w-sm text-center">
+              <NodeIcon node={node} size={64} />
+              <h4 className="text-[14px] font-bold text-slate-800 dark:text-white">{node.name}</h4>
+              <p className="text-[12px] text-slate-500">{node.description || 'Generic File'}</p>
+              {fileUrl && (
+                <a
+                  href={fileUrl}
+                  download={node.name}
+                  className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-white bg-[#007aff] hover:bg-[#0069dc]"
+                >
+                  <Download className="w-4 h-4" /> Download File
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </OSWindow>
+  );
+}
+
+/* ------------------------------------------------------------------ *
  * Mail — a compose sheet that hands off to the visitor's real client
  * ------------------------------------------------------------------ */
 

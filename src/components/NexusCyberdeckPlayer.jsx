@@ -128,19 +128,80 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
   const [playlistTracks, setPlaylistTracks] = useState([
     {
       videoId: "iSO4OErJT7U",
-      title: "BOLLYWOOD NON STOP | AVNEET MUSIC | BOLLYWOOD 2000s",
+      title: "BOLLYWOOD NON STOP | AVNEET MUSIC | BOLLYWOOD CLASSICS | BOLLYWOOD 2000s",
       author: "AVNEET"
     },
     {
       videoId: "pU02OK1QHkU",
-      title: "Teri Chunariya Dil Le Gyi [Bass Boosted]",
+      title: "Teri Chunariya Dil Le Gyi [Bass Boosted] | Bass Boosted Hindi Romantic songs",
       author: "Abhi The Wanderer"
+    },
+    {
+      videoId: "Hu0ZrBRNglo",
+      title: "Levitating x Woh Ladki Jo - (Dj Ruchir Mashup)",
+      author: "Dj Ruchir"
+    },
+    {
+      videoId: "R4BsqPowUDo",
+      title: "Piya Ghar Aaya (Remix)",
+      author: "Asad Khan"
+    },
+    {
+      videoId: "wqaF_so8RJs",
+      title: "Mere Nishan",
+      author: "Mohammed"
+    },
+    {
+      videoId: "N5fvV08uRDY",
+      title: "Khud Ko Tere",
+      author: "Mahalakshmi"
+    },
+    {
+      videoId: "Nyj9eHWkPyM",
+      title: "12 Saal",
+      author: "Bilal Saeed"
+    },
+    {
+      videoId: "R7JjuceJzFY",
+      title: "BLUE EYES",
+      author: "Yo Yo Honey Singh"
+    },
+    {
+      videoId: "hhssZ5bDa8E",
+      title: "Challa",
+      author: "Rabbi Shergill"
+    },
+    {
+      videoId: "39fdxGmYfvg",
+      title: "Gulabi Aankhen",
+      author: "Sanam"
+    },
+    {
+      videoId: "4ZyW3TQZftA",
+      title: "Ab Tera Beta Mera Hai",
+      author: "Sunita Bagri"
     }
   ]);
 
   const nameRef = useRef(null);
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
+
+  // Helper to fetch individual track title via YouTube's official CORS-friendly oEmbed API
+  const fetchOEmbedMeta = async (videoId) => {
+    try {
+      const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          videoId,
+          title: data.title || `Track (${videoId})`,
+          author: (data.author_name || 'YouTube').replace(/ - Topic$/, '')
+        };
+      }
+    } catch (e) {}
+    return null;
+  };
 
   // Helper to fetch uncached YouTube playlist RSS feed
   const fetchLatestPlaylistFeed = async () => {
@@ -172,7 +233,7 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
             const fetchedTracks = entries.map(entry => {
               const vId = entry.getElementsByTagName("yt:videoId")[0]?.textContent || entry.querySelector("videoId")?.textContent || "";
               const t = entry.querySelector("title")?.textContent || "YouTube Track";
-              const a = entry.querySelector("author name")?.textContent || "YouTube Artist";
+              const a = (entry.querySelector("author name")?.textContent || "YouTube Artist").replace(/ - Topic$/, '');
               return { videoId: vId, title: t, author: a };
             });
             return fetchedTracks;
@@ -222,6 +283,18 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
       const latestTracks = await fetchLatestPlaylistFeed();
       if (latestTracks && latestTracks.length > 0) {
         setPlaylistTracks(latestTracks);
+      } else if (playerRef.current && typeof playerRef.current.getPlaylist === 'function') {
+        // Fallback: resolve IDs via oEmbed
+        const list = playerRef.current.getPlaylist();
+        if (Array.isArray(list) && list.length > 0) {
+          const resolved = await Promise.all(
+            list.map(async (vId) => {
+              const meta = await fetchOEmbedMeta(vId);
+              return meta || { videoId: vId, title: `Track (${vId})`, author: "YouTube" };
+            })
+          );
+          setPlaylistTracks(resolved);
+        }
       }
     } catch (err) {
       console.error("Refresh error:", err);
@@ -247,8 +320,15 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
           if (data) {
             if (data.title && data.title !== 'YouTube') {
               setYtLiveTitle(data.title);
+              if (data.video_id) {
+                setPlaylistTracks(prev => prev.map(t => 
+                  t.videoId === data.video_id && (!t.title || t.title.startsWith('Track ('))
+                    ? { ...t, title: data.title, author: data.author ? data.author.replace(/ - Topic$/, '') : t.author }
+                    : t
+                ));
+              }
             }
-            if (data.author) setYtLiveAuthor(data.author);
+            if (data.author) setYtLiveAuthor(data.author.replace(/ - Topic$/, ''));
             if (data.video_id) {
               setYtLiveThumbnail(`https://img.youtube.com/vi/${data.video_id}/hqdefault.jpg`);
             }
@@ -258,14 +338,25 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
           const list = targetPlayer.getPlaylist();
           if (Array.isArray(list) && list.length > 0) {
             setPlaylistTracks(prev => {
-              if (prev.length !== list.length) {
-                const updated = list.map(vId => {
-                  const found = prev.find(t => t.videoId === vId);
-                  return found || { videoId: vId, title: `Track (${vId})`, author: "YouTube" };
+              const updated = list.map(vId => {
+                const found = prev.find(t => t.videoId === vId);
+                return found || { videoId: vId, title: `Track (${vId})`, author: "YouTube" };
+              });
+
+              // Asynchronously resolve any unresolved tracks with real names via oEmbed
+              const unresolved = updated.filter(t => !t.title || t.title.startsWith('Track ('));
+              if (unresolved.length > 0) {
+                unresolved.forEach(async (t) => {
+                  const meta = await fetchOEmbedMeta(t.videoId);
+                  if (meta && meta.title) {
+                    setPlaylistTracks(curr => curr.map(item => 
+                      item.videoId === meta.videoId ? { ...item, title: meta.title, author: meta.author } : item
+                    ));
+                  }
                 });
-                return updated;
               }
-              return prev;
+
+              return updated;
             });
           }
         }

@@ -17,7 +17,6 @@ import { fetchSiteSettings, DEFAULT_SETTINGS } from './siteSettings';
 export const ICON_ASSETS = [
   '/icons/Finder.png',
   '/icons/Folder.png',
-  '/icons/Terminal.png',
   '/icons/Photos.png',
   '/icons/Safari.png',
   '/icons/Notes.png',

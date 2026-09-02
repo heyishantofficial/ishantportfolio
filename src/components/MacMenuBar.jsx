@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Wifi, Battery, Search, Sliders, Volume2, Volume1, VolumeX, Moon, Sun, 
-  Lock, RotateCcw, Power, Check, Sparkles, Terminal, Folder, FileText, Globe
+  Lock, RotateCcw, Power, Check, Sparkles, Folder, FileText, Globe
 } from 'lucide-react';
 import { PROFILE_INFO } from '../data/projectsData';
 import { playMacClick } from '../utils/macAudioEngine';
@@ -116,14 +116,6 @@ export default function MacMenuBar({
                 </button>
 
                 <button 
-                  onClick={() => handleAppAction('terminal')}
-                  className="w-full text-left px-3 py-1 hover:bg-blue-600 hover:text-white flex items-center gap-2"
-                >
-                  <Terminal className="w-3.5 h-3.5" />
-                  <span>Terminal Shell</span>
-                </button>
-
-                <button 
                   onClick={() => handleAppAction('notes')}
                   className="w-full text-left px-3 py-1 hover:bg-blue-600 hover:text-white flex items-center gap-2"
                 >
@@ -211,7 +203,6 @@ export default function MacMenuBar({
               onToggle={() => { playMacClick(isMuted); setOpenMenu(openMenu === 'help' ? null : 'help'); setShowAppleMenu(false); }}
               onClose={() => setOpenMenu(null)}
               items={[
-                { label: 'Open Terminal', action: () => handleAppAction('terminal') },
                 { label: 'Contact Ishant', action: () => openFromMenu('contact') }
               ]}
             />

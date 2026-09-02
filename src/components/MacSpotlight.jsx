@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Folder, Music, Terminal, FileText, Globe, Sparkles, X } from 'lucide-react';
+import { Search, Folder, Music, FileText, Globe, Sparkles, X } from 'lucide-react';
 import NodeIcon from '../os/NodeIcon';
 import { getPath, searchNodes } from '../data/ishantOS';
 import { playSpotlightSound, playMacClick } from '../utils/macAudioEngine';
@@ -27,7 +27,6 @@ export default function MacSpotlight({ onClose, onLaunchApp, onOpenNode, isMuted
   // find the Terminal as readily as it finds a case study.
   const apps = useMemo(() => ([
     { id: 'app-finder', title: 'Finder', subtitle: 'Browse everything on this Mac', group: 'APPLICATIONS', icon: Folder, action: () => onLaunchApp('finder') },
-    { id: 'app-terminal', title: 'Terminal', subtitle: 'zsh — try "help"', group: 'APPLICATIONS', icon: Terminal, action: () => onLaunchApp('terminal') },
     { id: 'app-safari', title: 'Safari', subtitle: "Ishant's internet", group: 'APPLICATIONS', icon: Globe, action: () => onLaunchApp('safari') },
     { id: 'app-notes', title: 'Notes', subtitle: 'Scratchpad', group: 'APPLICATIONS', icon: FileText, action: () => onLaunchApp('notes') },
     { id: 'app-ipod', title: 'Music', subtitle: 'iPod Classic', group: 'APPLICATIONS', icon: Music, action: () => onLaunchApp('ipod') },

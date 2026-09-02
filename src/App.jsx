@@ -311,7 +311,6 @@ export default function App() {
       linkedin: "LinkedIn Profile",
       instagram: "Instagram Profile",
       safari: "Safari Browser",
-      terminal: "Terminal Shell",
       photos: "Photos Library",
       mail: "Mail"
     };

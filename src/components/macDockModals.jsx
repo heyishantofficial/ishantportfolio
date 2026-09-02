@@ -3,7 +3,7 @@ import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, FileText, Image as ImageIcon, Download, 
   Mail, Trash2, Layers, CheckCircle2, Send, RefreshCw, Sparkles, ExternalLink,
-  Terminal, Globe, Cpu, Folder, Search, Check, ChevronRight, X, Copy, RotateCcw, Maximize2
+  Globe, Cpu, Folder, Search, Check, ChevronRight, X, Copy, RotateCcw, Maximize2
 } from 'lucide-react';
 import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
 
@@ -295,122 +295,6 @@ export function FinderModal({ onSelectProject, onLaunchApp, onClose }) {
         </div>
       </div>
     </div>
-  );
-}
-
-// 2. Interactive Terminal App Modal (Zsh Shell)
-export function TerminalModal({ onClose, onOpenPath }) {
-  const [history, setHistory] = useState([
-    { type: 'sys', text: 'Last login: Wed Aug 26 14:43:00 on ttys001' },
-    { type: 'sys', text: 'Type "help" for commands. Try "coffee", or "sudo".' }
-  ]);
-  const [inputVal, setInputVal] = useState('');
-  const bottomRef = useRef(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [history]);
-
-  const handleCommand = (e) => {
-    if (e.key === 'Enter') {
-      const cmd = inputVal.trim().toLowerCase();
-      const newHistory = [...history, { type: 'cmd', text: `ishant@macbook-pro ~ % ${inputVal}` }];
-
-      // Commands that open a window hand off to the folder layer, so the
-      // Terminal is a real way to navigate rather than a separate copy of the
-      // content.
-      const openers = {
-        work: 'work',
-        experience: 'experience',
-        projects: 'ai-lab',
-        ai: 'ai-lab',
-        'ai lab': 'ai-lab',
-        about: 'about-me',
-        random: 'random',
-        contact: 'contact',
-        resume: 'resume'
-      };
-
-      if (cmd === 'help') {
-        newHistory.push({ type: 'output', text: 'Available commands:\n\n  about        Who I am\n  experience   Where I have worked\n  work         Open the work folder\n  projects     Open the AI Lab\n  ai           Same as projects\n  random       The unserious folder\n  contact      Open contact\n  resume       Open Resume.pdf\n  neofetch     System specs & bio\n  skills       Tech stack & tools\n  coffee       Check dependencies\n  date         Current date & time\n  clear        Clear the screen' });
-      } else if (cmd === 'about') {
-        newHistory.push({ type: 'output', text: 'Creative Strategist.\nContent Producer.\nBrand Storyteller.\nBuilder.\nProfessional overthinker.' });
-      } else if (cmd === 'coffee') {
-        newHistory.push({ type: 'output', text: '\u2615 Dependency found.\n\nRecommended action:\nDrink coffee.' });
-      } else if (cmd === 'sudo' || cmd.startsWith('sudo ')) {
-        newHistory.push({ type: 'output', text: 'Nice try.' });
-      } else if (openers[cmd]) {
-        if (cmd === 'experience') {
-          newHistory.push({ type: 'output', text: '5+ years of making things people actually watch.\n\n  Emami                Brand & Creative Strategist   Feb 2026 \u2014 Present\n  CashKaro             Content & Growth Lead         Sep 2024 \u2014 Jan 2026\n  Monk Entertainment   Creative Producer             Mar 2024 \u2014 Aug 2024\n  Burner Digital       Content Producer and Editor   May 2022 \u2014 Feb 2024\n\nOpening EXPERIENCE...' });
-        } else {
-          newHistory.push({ type: 'output', text: `Opening ${cmd}...` });
-        }
-        if (onOpenPath) onOpenPath(openers[cmd]);
-      } else if (cmd === 'neofetch' || cmd === 'fastfetch') {
-        newHistory.push({ 
-          type: 'output', 
-          text: `
-  /\_/\\       ishant@macbook-pro-m3
- ( o.o )      ---------------------
-  > ^ <       OS: macOS Sequoia 15.0 (Vibecode Build)
-              Host: MacBookPro18,1 M3 Max 64GB
-              Kernel: Darwin 23.6.0
-              Uptime: 24/7 Builder Mode
-              Shell: zsh 5.9
-              Role: Content Producer & Vibecoder
-              Location: India / Worldwide
-              Email: ${PROFILE_INFO.email}
-          ` 
-        });
-      } else if (cmd === 'ls' || cmd === 'ls -la') {
-        const listText = PROJECTS_DATA.map(p => `• [${p.id}] ${p.title} (${p.metrics})`).join('\n');
-        newHistory.push({ type: 'output', text: `Vibecoded Projects:\n${listText}` });
-      } else if (cmd === 'skills') {
-        newHistory.push({ type: 'output', text: 'Languages & Tech:\n  React 19, JavaScript (ES2026), TailwindCSS v4, Vite, Framer Motion\n  Gemini AI API, Manifest V3, Web Audio API, Canvas Animation, Swift' });
-      } else if (cmd === 'whoami') {
-        newHistory.push({ type: 'output', text: `${PROFILE_INFO.name} — ${PROFILE_INFO.roleTitle}\n${PROFILE_INFO.tagline}` });
-      } else if (cmd === 'contact') {
-        newHistory.push({ type: 'output', text: `Email: ${PROFILE_INFO.email}\nTwitter: ${PROFILE_INFO.socials.twitter}\nLinkedIn: ${PROFILE_INFO.socials.linkedin}\nGitHub: ${PROFILE_INFO.socials.github}` });
-      } else if (cmd === 'clear') {
-        setHistory([]);
-        setInputVal('');
-        return;
-      } else if (cmd === 'date') {
-        newHistory.push({ type: 'output', text: new Date().toString() });
-      } else if (cmd !== '') {
-        newHistory.push({ type: 'output', text: `zsh: command not found: ${cmd}. Type "help" for list of commands.` });
-      }
-
-      setHistory(newHistory);
-      setInputVal('');
-    }
-  };
-
-  return (
-    <MacWindow title="Terminal — zsh — 80x24" icon={Terminal} onClose={onClose} width="max-w-2xl">
-      <div className="bg-[#1e1e1e] text-emerald-400 font-mono text-xs p-4 rounded-b-xl min-h-[360px] max-h-[480px] overflow-y-auto space-y-2 -m-6 border-t border-slate-800 shadow-inner select-text">
-        {history.map((item, idx) => (
-          <div key={idx} className="whitespace-pre-wrap leading-relaxed">
-            {item.type === 'sys' && <span className="text-slate-400">{item.text}</span>}
-            {item.type === 'cmd' && <span className="text-white font-bold">{item.text}</span>}
-            {item.type === 'output' && <span className="text-emerald-300">{item.text}</span>}
-          </div>
-        ))}
-
-        <div className="flex items-center gap-2 pt-1 text-white">
-          <span className="text-emerald-400 font-bold">ishant@macbook-pro ~ %</span>
-          <input 
-            type="text" 
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            onKeyDown={handleCommand}
-            autoFocus
-            className="flex-1 bg-transparent border-none outline-none text-emerald-300 font-mono text-xs focus:ring-0 p-0"
-          />
-        </div>
-        <div ref={bottomRef} />
-      </div>
-    </MacWindow>
   );
 }
 

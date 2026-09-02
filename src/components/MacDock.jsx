@@ -13,7 +13,6 @@ import {
   MailModal, 
   TrashModal,
   FinderModal,
-  TerminalModal,
   SafariModal,
   SystemInfoModal
 } from './macDockModals';
@@ -61,14 +60,6 @@ export default function MacDock({
       type: "app",
       renderIcon: () => (
         <img src="/icons/Finder.png" alt="Finder" className="w-full h-full object-contain drop-shadow-md select-none" />
-      )
-    },
-    {
-      id: "terminal",
-      name: "Terminal Shell",
-      type: "app",
-      renderIcon: () => (
-        <img src="/icons/Terminal.png" alt="Terminal" className="w-full h-full object-contain drop-shadow-md select-none" />
       )
     },
     {
@@ -246,12 +237,6 @@ export default function MacDock({
           onSelectProject={onSelectProject} 
           onLaunchApp={onLaunchApp}
           onClose={() => onCloseApp('finder')} 
-        />
-      )}
-      {openApps.terminal && (
-        <TerminalModal 
-          onClose={() => onCloseApp('terminal')} 
-          onOpenPath={onOpenPath}
         />
       )}
       {openApps.safari && (

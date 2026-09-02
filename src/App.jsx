@@ -69,6 +69,12 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', isDarkMode);
+    }
+  }, [isDarkMode]);
+
   const [isAppReady, setIsAppReady] = useState(false);
   const [isBootLoading, setIsBootLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -488,6 +494,25 @@ export default function App() {
                 className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
               >
                 <span>↻ Refresh</span>
+              </button>
+              <div className="my-1 border-t border-slate-300/40 dark:border-slate-700/40" />
+              <button 
+                onClick={() => {
+                  setDesktopContextMenu(null);
+                  window.dispatchEvent(new CustomEvent('ishantos:randomize-folders'));
+                }}
+                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
+              >
+                <span>🎲 Scatter Folders Randomly</span>
+              </button>
+              <button 
+                onClick={() => {
+                  setDesktopContextMenu(null);
+                  window.dispatchEvent(new CustomEvent('ishantos:reset-folders'));
+                }}
+                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
+              >
+                <span>🧹 Clean Up / Reset Grid</span>
               </button>
               <div className="my-1 border-t border-slate-300/40 dark:border-slate-700/40" />
               <button 

@@ -710,8 +710,8 @@ export function QuickNotesModal({ onClose }) {
 
   const handleDownloadResume = () => {
     const link = document.createElement("a");
-    link.href = "/resume.jpg";
-    link.download = "Ishant_Chauhan_Resume.jpg";
+    link.href = "/resume.pdf";
+    link.download = "Ishant_Chauhan_Resume.pdf";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

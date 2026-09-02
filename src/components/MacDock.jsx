@@ -64,7 +64,7 @@ export default function MacDock({
     },
     {
       id: "safari",
-      name: "Safari Browser",
+      name: "Chrome Browser",
       type: "app",
       renderIcon: () => (
         <img src="/icons/Chrome.png" alt="Browser" className="w-full h-full object-contain drop-shadow-md select-none" />

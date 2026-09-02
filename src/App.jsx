@@ -310,7 +310,7 @@ export default function App() {
       youtube: "YouTube Channel",
       linkedin: "LinkedIn Profile",
       instagram: "Instagram Profile",
-      safari: "Safari Browser",
+      safari: "Chrome Browser",
       photos: "Photos Library",
       mail: "Mail"
     };

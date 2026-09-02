@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -105,7 +105,118 @@ const PRIVACY_REPORT_DATA = [
   { name: 'TikTok Advertising Pixel', category: 'Fingerprinting', blockedCount: 3 }
 ];
 
+const MENU_BAR_H = 28;
+const DOCK_GUARD = 76;
+const MIN_W = 480;
+const MIN_H = 340;
+
+const getInitialBounds = () => {
+  if (typeof window === 'undefined') return { x: 80, y: 50, w: 980, h: 620 };
+  const w = Math.min(1040, Math.max(MIN_W, window.innerWidth - 60));
+  const h = Math.min(640, Math.max(MIN_H, window.innerHeight - MENU_BAR_H - DOCK_GUARD - 20));
+  const x = Math.max(16, Math.round((window.innerWidth - w) / 2));
+  const y = Math.max(MENU_BAR_H + 8, Math.round((window.innerHeight - DOCK_GUARD - h) / 2));
+  return { x, y, w, h };
+};
+
 export default function SafariBrowser({ onClose, onMinimize }) {
+  // Window geometry, drag, resize, maximize states
+  const [bounds, setBounds] = useState(getInitialBounds);
+  const [prevBounds, setPrevBounds] = useState(getInitialBounds);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
+
+  const dragState = useRef(null);
+  const resizeState = useRef(null);
+
+  // Dragging toolbar
+  const handleToolbarPointerDown = (e) => {
+    if (isMaximized) return;
+    if (e.target.closest('[data-no-drag]')) return;
+    dragState.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: bounds.x,
+      originY: bounds.y
+    };
+    setIsInteracting(true);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  // Resizing corner/edges
+  const handleResizePointerDown = (e, direction) => {
+    if (isMaximized) return;
+    e.stopPropagation();
+    resizeState.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: bounds.x,
+      originY: bounds.y,
+      originW: bounds.w,
+      originH: bounds.h,
+      direction
+    };
+    setIsInteracting(true);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = useCallback((e) => {
+    if (dragState.current) {
+      const { startX, startY, originX, originY } = dragState.current;
+      const newX = Math.min(Math.max(originX + e.clientX - startX, -bounds.w + 120), window.innerWidth - 120);
+      const newY = Math.min(Math.max(originY + e.clientY - startY, MENU_BAR_H), window.innerHeight - 60);
+      setBounds(prev => ({ ...prev, x: newX, y: newY }));
+    } else if (resizeState.current) {
+      const { startX, startY, originX, originY, originW, originH, direction } = resizeState.current;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      let newW = originW;
+      let newH = originH;
+      let newX = originX;
+      let newY = originY;
+
+      if (direction.includes('e')) {
+        newW = Math.max(MIN_W, Math.min(originW + deltaX, window.innerWidth - originX - 16));
+      }
+      if (direction.includes('s')) {
+        newH = Math.max(MIN_H, Math.min(originH + deltaY, window.innerHeight - originY - DOCK_GUARD));
+      }
+      if (direction.includes('w')) {
+        const possibleW = Math.max(MIN_W, originW - deltaX);
+        newX = originX + (originW - possibleW);
+        newW = possibleW;
+      }
+
+      setBounds({ x: newX, y: newY, w: newW, h: newH });
+    }
+  }, [bounds.w]);
+
+  const endGesture = useCallback(() => {
+    dragState.current = null;
+    resizeState.current = null;
+    setIsInteracting(false);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', endGesture);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', endGesture);
+    };
+  }, [handlePointerMove, endGesture]);
+
+  const toggleMaximize = () => {
+    if (!isMaximized) {
+      setPrevBounds(bounds);
+      setIsMaximized(true);
+    } else {
+      setIsMaximized(false);
+      setBounds(prevBounds);
+    }
+  };
+
   // Tabs State
   const [tabs, setTabs] = useState([
     {
@@ -137,7 +248,7 @@ export default function SafariBrowser({ onClose, onMinimize }) {
   ]);
 
   // Window state (maximize / fullscreen inside IshantOS)
-  const [isMaximized, setIsMaximized] = useState(false);
+
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showCertModal, setShowCertModal] = useState(false);
 
@@ -343,23 +454,49 @@ export default function SafariBrowser({ onClose, onMinimize }) {
   const canGoBack = activeTab && activeTab.historyIndex > 0;
   const canGoForward = activeTab && activeTab.historyIndex < activeTab.history.length - 1;
 
+  const windowStyle = isMaximized
+    ? {
+        top: MENU_BAR_H,
+        left: 8,
+        width: 'calc(100vw - 16px)',
+        height: `calc(100vh - ${MENU_BAR_H + DOCK_GUARD}px)`,
+        transition: isInteracting ? 'none' : 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+      }
+    : {
+        top: bounds.y,
+        left: bounds.x,
+        width: bounds.w,
+        height: bounds.h,
+        transition: isInteracting ? 'none' : 'box-shadow 0.2s ease'
+      };
+
   return (
-    <div className={`mac-window-overlay`} onClick={onClose}>
-      <div 
-        className={`safari-window-container ${isMaximized ? '!fixed !inset-4 !w-auto !h-auto !min-h-0 !z-[9999]' : 'max-w-5xl h-[620px]'}`} 
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Safari Unified Navigation Toolbar */}
-        <div className="safari-toolbar">
+    <div 
+      className="safari-floating-window" 
+      style={windowStyle}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Invisible shield to prevent iframe capturing mouse events during drag/resize */}
+      {isInteracting && (
+        <div className="absolute inset-0 z-50 bg-transparent select-none" />
+      )}
+
+      <div className="safari-window-container">
+        {/* Safari Unified Navigation Toolbar (Draggable) */}
+        <div 
+          className={`safari-toolbar ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
+          onPointerDown={handleToolbarPointerDown}
+          onDoubleClick={toggleMaximize}
+        >
           {/* Traffic Lights */}
-          <div className="safari-traffic-lights">
+          <div className="safari-traffic-lights" data-no-drag>
             <button className="safari-traffic-btn safari-traffic-close" onClick={onClose} title="Close">✕</button>
             <button className="safari-traffic-btn safari-traffic-min" onClick={onMinimize || onClose} title="Minimize">—</button>
-            <button className="safari-traffic-btn safari-traffic-max" onClick={() => setIsMaximized(v => !v)} title="Full Screen">⤢</button>
+            <button className="safari-traffic-btn safari-traffic-max" onClick={toggleMaximize} title={isMaximized ? "Restore" : "Full Screen"}>⤢</button>
           </div>
 
           {/* Navigation Controls */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5" data-no-drag>
             <button 
               className="safari-btn-icon" 
               onClick={goBack} 
@@ -386,7 +523,7 @@ export default function SafariBrowser({ onClose, onMinimize }) {
           </div>
 
           {/* Smart Search & Address Bar */}
-          <div className="safari-address-bar-wrapper">
+          <div className="safari-address-bar-wrapper" data-no-drag>
             <div className="safari-address-bar">
               {/* SSL Padlock */}
               <button 
@@ -478,7 +615,7 @@ export default function SafariBrowser({ onClose, onMinimize }) {
           </div>
 
           {/* Right Toolbar Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1" data-no-drag>
             {/* Privacy Report Quick Button */}
             <button 
               className="safari-btn-icon" 
@@ -513,7 +650,7 @@ export default function SafariBrowser({ onClose, onMinimize }) {
         </div>
 
         {/* Dynamic Unified Tabs Bar */}
-        <div className="safari-tabs-bar">
+        <div className="safari-tabs-bar" data-no-drag>
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
             return (
@@ -941,6 +1078,29 @@ export default function SafariBrowser({ onClose, onMinimize }) {
           </div>
         )}
       </div>
+
+      {/* Window Resize Handles */}
+      {!isMaximized && (
+        <>
+          <div 
+            onPointerDown={(e) => handleResizePointerDown(e, 'se')}
+            className="safari-resize-corner"
+            title="Resize"
+          />
+          <div 
+            onPointerDown={(e) => handleResizePointerDown(e, 'e')}
+            className="safari-resize-edge-e"
+          />
+          <div 
+            onPointerDown={(e) => handleResizePointerDown(e, 's')}
+            className="safari-resize-edge-s"
+          />
+          <div 
+            onPointerDown={(e) => handleResizePointerDown(e, 'w')}
+            className="safari-resize-edge-w"
+          />
+        </>
+      )}
     </div>
   );
 }

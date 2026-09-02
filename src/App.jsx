@@ -574,6 +574,9 @@ export default function App() {
                   className="flex flex-col items-center justify-center my-auto -translate-y-8 sm:-translate-y-12 z-10 space-y-4 text-center"
                 >
                   <div className="p-8 sm:p-10 rounded-3xl mac-liquid-glass-input border border-white/30 shadow-[0_16px_48px_rgba(0,0,0,0.4)] backdrop-blur-2xl flex flex-col items-center justify-center gap-5">
+                    <span className="font-mono text-xs font-bold tracking-wide text-white drop-shadow-md max-w-[17rem] leading-relaxed text-center">
+                      Loading Ishant&rsquo;s portfolio.dmg&hellip; hope it works.
+                    </span>
                     <CircularProgressCombined
                       value={loadingProgress}
                       size={80}
@@ -581,9 +584,6 @@ export default function App() {
                       aria-label="Loading portfolio assets"
                       className="text-black"
                     />
-                    <span className="font-mono text-xs font-bold tracking-wide text-white drop-shadow-md max-w-[17rem] leading-relaxed">
-                      Loading Ishant&rsquo;s portfolio.dmg&hellip; hope it works.
-                    </span>
                   </div>
                 </motion.div>
               ) : (

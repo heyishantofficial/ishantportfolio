@@ -6,6 +6,7 @@ import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
 import { findNode, getPath, itemCount, itemCountLabel, PROJECT_SEQUENCE, TRASH_ITEMS } from '../data/ishantOS';
 import { PROFILE_INFO } from '../data/projectsData';
+import { isYouTubeUrl, getYouTubeEmbedUrl } from '../utils/mediaHelpers';
 
 const chrome = (props) => ({
   win: props.win,
@@ -259,13 +260,16 @@ export function MediaWindow(props) {
   const [zoom, setZoom] = useState(1);
   if (!node) return null;
 
-  const fileUrl = node.dataUrl || node.file || node.preview;
+  const fileUrl = node.dataUrl || node.file || node.videoUrl || node.href || node.preview;
   const isImage = node.kind === 'image';
-  const isVideo = node.kind === 'video';
+  const isYt = isYouTubeUrl(node.videoUrl || node.href || fileUrl);
+  const ytEmbed = isYt ? getYouTubeEmbedUrl(node.videoUrl || node.href || fileUrl) : null;
+  const isVideo = node.kind === 'video' || isYt;
   const isAudio = node.kind === 'audio';
+  const externalLink = node.href || (isYt ? (node.href || fileUrl) : null);
 
   return (
-    <OSWindow {...chrome(props)} title={node.name} subtitle={node.description || 'Uploaded Asset'}>
+    <OSWindow {...chrome(props)} title={node.name} subtitle={node.description || (isYt ? 'YouTube Video' : 'Media Preview')}>
       <div className="h-full flex flex-col bg-slate-100 dark:bg-slate-950">
         <div className="shrink-0 h-9 px-3 flex items-center gap-2 border-b border-black/10 dark:border-white/10 bg-white/70 dark:bg-slate-900/70">
           {isImage && (
@@ -295,7 +299,17 @@ export function MediaWindow(props) {
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
-            {fileUrl && (
+            {externalLink && (
+              <a
+                href={externalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:bg-black/10 dark:hover:bg-white/10"
+              >
+                <ExternalLink className="w-3 h-3" /> {isYt ? 'Watch on YouTube' : 'Open in Browser'}
+              </a>
+            )}
+            {fileUrl && !isYt && !externalLink && (
               <a
                 href={fileUrl}
                 download={node.name}
@@ -316,12 +330,26 @@ export function MediaWindow(props) {
               className="max-h-[85vh] max-w-[90vw] object-contain shadow-2xl rounded-md bg-transparent select-none"
             />
           ) : isVideo ? (
-            <video
-              src={fileUrl}
-              controls
-              autoPlay
-              className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl bg-black"
-            />
+            ytEmbed ? (
+              <div className="w-full h-full p-2 sm:p-4 flex items-center justify-center">
+                <div className="w-full max-w-4xl aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-black/20">
+                  <iframe
+                    src={ytEmbed}
+                    title={node.name}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            ) : (
+              <video
+                src={fileUrl}
+                controls
+                autoPlay
+                className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl bg-black"
+              />
+            )
           ) : isAudio ? (
             <div className="flex flex-col items-center gap-4 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-black/10 dark:border-white/10 max-w-sm w-full">
               <NodeIcon node={node} size={64} />

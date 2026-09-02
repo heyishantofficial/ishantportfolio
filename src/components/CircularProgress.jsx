@@ -224,7 +224,7 @@ function CircularProgressTrack(props) {
       strokeLinecap="round"
       vectorEffect="non-scaling-stroke"
       {...trackProps}
-      className={cn("text-white/20", className)}
+      className={cn("text-black/20", className)}
     />
   );
 }
@@ -260,7 +260,7 @@ function CircularProgressRange(props) {
       vectorEffect="non-scaling-stroke"
       {...rangeProps}
       className={cn(
-        "origin-center text-amber-400 transition-all duration-300 ease-in-out",
+        "origin-center text-black transition-all duration-300 ease-in-out",
         context.state === "indeterminate" &&
           "motion-reduce:animate-none motion-safe:[animation:var(--animate-spin-around)]",
         className,
@@ -282,7 +282,7 @@ function CircularProgressValueText(props) {
       data-state={context.state}
       {...valueTextProps}
       className={cn(
-        "absolute inset-0 flex items-center justify-center font-medium text-sm",
+        "absolute inset-0 flex items-center justify-center font-mono font-bold text-sm text-black",
         className,
       )}
     >

@@ -552,7 +552,7 @@ export default function App() {
             {/* Top Right macOS System Status Indicators */}
             <div className="w-full flex items-center justify-end gap-3 text-[11px] font-sans text-white/90 drop-shadow-sm font-medium z-10 pt-1 px-2">
               <span className="px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-[10px] font-mono tracking-wider font-semibold">
-                U.S.
+                India
               </span>
               <div className="flex items-center gap-1">
                 <Battery className="w-4 h-4 text-white" />
@@ -571,7 +571,7 @@ export default function App() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9, filter: 'blur(8px)' }}
                   transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center justify-center my-auto z-10 space-y-4 text-center"
+                  className="flex flex-col items-center justify-center my-auto -translate-y-8 sm:-translate-y-12 z-10 space-y-4 text-center"
                 >
                   <div className="p-8 sm:p-10 rounded-3xl mac-liquid-glass-input border border-white/30 shadow-[0_16px_48px_rgba(0,0,0,0.4)] backdrop-blur-2xl flex flex-col items-center justify-center gap-5">
                     <CircularProgressCombined
@@ -579,7 +579,7 @@ export default function App() {
                       size={80}
                       thickness={6}
                       aria-label="Loading portfolio assets"
-                      className="text-amber-300"
+                      className="text-black"
                     />
                     <span className="font-mono text-xs font-bold tracking-wide text-white drop-shadow-md max-w-[17rem] leading-relaxed">
                       Loading Ishant&rsquo;s portfolio.dmg&hellip; hope it works.
@@ -592,7 +592,7 @@ export default function App() {
                   initial={{ opacity: 0, scale: 0.95, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center justify-start mt-6 sm:mt-12 mb-auto z-10 space-y-2.5 w-full max-w-2xl text-center"
+                  className="flex flex-col items-center justify-start mt-2 sm:mt-5 mb-auto z-10 space-y-2.5 w-full max-w-2xl text-center"
                 >
                   {/* One-Time Morphing Entrance & Mouse-Reactive Quote Heading */}
                   <AnimatedQuoteHeading />
@@ -655,7 +655,7 @@ export default function App() {
               <div 
                 className="flex flex-col items-center cursor-pointer group" 
                 onClick={() => {
-                  setPasswordInput('');
+                  setViewerName('');
                   setLoginError('');
                   if (nameInputRef.current) nameInputRef.current.focus();
                 }}
@@ -671,7 +671,7 @@ export default function App() {
               <div 
                 className="flex flex-col items-center cursor-pointer group" 
                 onClick={() => {
-                  setPasswordInput('');
+                  setViewerName('');
                   setLoginError('');
                   if (nameInputRef.current) nameInputRef.current.focus();
                 }}

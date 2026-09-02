@@ -109,7 +109,7 @@ export default function AnimatedQuoteHeading() {
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="text-center max-w-5xl w-full px-2 mb-4 select-none relative z-10 flex flex-col items-center justify-center font-montserrat"
+      className="text-center max-w-5xl w-full px-2 mb-2 select-none relative z-10 flex flex-col items-center justify-center font-montserrat"
       style={{
         filter: `blur(${blurVal.toFixed(1)}px)`,
         opacity: opacityVal

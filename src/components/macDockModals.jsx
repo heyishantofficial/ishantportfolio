@@ -52,15 +52,9 @@ export function Mac3DFolderIcon({ title, itemsCount, onClick, isSelected }) {
           : "hover:bg-white/30 dark:hover:bg-white/10 border border-transparent"
       }`}
     >
-      {/* 3D Blue Folder Graphic */}
-      <div className="relative w-16 h-13 mb-2 transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-0.5">
-        {/* Back Top Tab */}
-        <div className="absolute top-0 left-1.5 w-7 h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-md shadow-xs" />
-        {/* Main 3D Folder Body */}
-        <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-b from-[#60a5fa] via-[#3b82f6] to-[#1d4ed8] rounded-xl shadow-lg border border-blue-300/70 flex flex-col items-center justify-center overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-2.5 bg-gradient-to-b from-white/45 to-transparent rounded-t-xl" />
-          <div className="w-8 h-1 bg-white/50 rounded-full blur-[0.3px] opacity-80" />
-        </div>
+      {/* macOS Folder Icon */}
+      <div className="w-16 h-16 mb-1 transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-0.5">
+        <img src="/icons/Folder.png" alt="" className="w-full h-full object-contain drop-shadow-md select-none pointer-events-none" draggable={false} />
       </div>
 
       <div className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[110px] tracking-tight">

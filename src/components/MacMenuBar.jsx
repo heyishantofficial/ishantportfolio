@@ -50,7 +50,6 @@ export default function MacMenuBar({
 
   const handleUnlock = (e) => {
     e.preventDefault();
-    // Unlocks on any key or enter
     setIsLocked(false);
     setPassword('');
     setLockError(false);
@@ -262,10 +261,19 @@ export default function MacMenuBar({
               type="password" 
               placeholder="Enter password..."
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setLockError(false); }}
               autoFocus
-              className="px-4 py-2 bg-slate-800/80 border border-slate-700 rounded-full text-xs text-center w-60 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+              className={`px-4 py-2 bg-slate-800/80 border rounded-full text-xs text-center w-60 focus:outline-none focus:ring-2 font-mono transition-all ${
+                lockError 
+                  ? "border-rose-500 ring-2 ring-rose-500/50 text-rose-300 animate-shake" 
+                  : "border-slate-700 focus:ring-blue-500 text-white"
+              }`}
             />
+            {lockError && (
+              <span className="text-[11px] font-semibold text-rose-400 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/30">
+                Incorrect Password. Please try again.
+              </span>
+            )}
             <button 
               type="submit"
               className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-xs font-semibold shadow-lg transition-colors cursor-pointer"

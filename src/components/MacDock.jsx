@@ -32,7 +32,14 @@ export default function MacDock({
   isDarkMode,
   onToggleDarkMode,
   volume,
-  onChangeVolume
+  onChangeVolume,
+  systemPassword,
+  onUpdatePassword,
+  customUploadDesktop,
+  onUploadDesktopWallpaper,
+  customUploadLock,
+  onUploadLockWallpaper,
+  settingsInitialTab = "wallpaper"
 }) {
   const [mouseX, setMouseX] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
@@ -235,20 +242,6 @@ export default function MacDock({
           onClose={() => onCloseApp('safari')} 
         />
       )}
-      {openApps.settings && (
-        <SystemSettingsModal
-          wallpaper={wallpaper}
-          onChangeWallpaper={onChangeWallpaper}
-          lockWallpaper={lockWallpaper}
-          onChangeLockWallpaper={onChangeLockWallpaper}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={onToggleDarkMode}
-          volume={volume}
-          onChangeVolume={onChangeVolume}
-          isMuted={isMuted}
-          onClose={() => onCloseApp('settings')}
-        />
-      )}
       {openApps['system-info'] && (
         <SystemInfoModal 
           onClose={() => onCloseApp('system-info')} 
@@ -274,6 +267,28 @@ export default function MacDock({
       )}
       {openApps.mail && (
         <MailModal onClose={() => onCloseApp('mail')} />
+      )}
+      {openApps.settings && (
+        <SystemSettingsModal 
+          onClose={() => onCloseApp('settings')}
+          wallpaper={wallpaper}
+          onChangeWallpaper={onChangeWallpaper}
+          lockWallpaper={lockWallpaper}
+          onChangeLockWallpaper={onChangeLockWallpaper}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={onToggleDarkMode}
+          isMuted={isMuted}
+          onToggleMute={onToggleMute}
+          volume={volume}
+          onChangeVolume={onChangeVolume}
+          systemPassword={systemPassword}
+          onUpdatePassword={onUpdatePassword}
+          customUploadDesktop={customUploadDesktop}
+          onUploadDesktopWallpaper={onUploadDesktopWallpaper}
+          customUploadLock={customUploadLock}
+          onUploadLockWallpaper={onUploadLockWallpaper}
+          initialTab={settingsInitialTab}
+        />
       )}
       {openApps.trash && (
         <TrashModal 

@@ -81,6 +81,16 @@ html, body, #root {
   }
 }
 
+/* Circular Progress Animation */
+@keyframes spin-around {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+:root {
+  --animate-spin-around: spin-around 1.6s linear infinite;
+}
+
 /* Error Shake Animation for Input Field */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }

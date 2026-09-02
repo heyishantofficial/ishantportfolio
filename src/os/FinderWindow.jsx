@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   ChevronLeft, ChevronRight, Search, LayoutGrid, List as ListIcon,
   FileText, Sparkles, Mail, Link2, FileType2, Info, HardDrive, X,
-  Lock, Unlock, FolderPlus, Upload, Edit3, Trash2, ShieldCheck
+  Lock, Unlock, FolderPlus, Upload, Edit3, Trash2, ShieldCheck, Film
 } from 'lucide-react';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
@@ -11,6 +11,7 @@ import { useAdminAuth } from '../utils/useAdminAuth';
 import { useFileSystem } from '../utils/useFileSystem';
 import { readFileAsNode } from '../utils/fsStorage';
 import AdminAuthModal from '../components/AdminAuthModal';
+import AddWorkLinkModal from '../components/AddWorkLinkModal';
 
 const KIND_LABEL = {
   folder: 'Folder',
@@ -50,10 +51,11 @@ export default function FinderWindow({
 
   // Admin & FileSystem hooks
   const { isAdmin, lock } = useAdminAuth();
-  const { addFolder, addFile, renameNode, deleteNode, version } = useFileSystem();
+  const { addFolder, addFile, addWorkLink, renameNode, deleteNode, version } = useFileSystem();
 
   // Auth modal & pending action states
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [authPrompt, setAuthPrompt] = useState('');
   const [pendingUploadFiles, setPendingUploadFiles] = useState([]);
   const [pendingAction, setPendingAction] = useState(null);
@@ -182,6 +184,23 @@ export default function FinderWindow({
     }
   }, [isAdmin, addFile, currentId]);
 
+  const handleOpenAddLink = useCallback(() => {
+    if (!isAdmin) {
+      setAuthPrompt('Enter admin password to add work links, YouTube videos, and portfolio items.');
+      setPendingAction({ type: 'add-link' });
+      setShowAuthModal(true);
+      return;
+    }
+    setShowAddLinkModal(true);
+  }, [isAdmin]);
+
+  const handleAddLinkSubmit = useCallback(async (linkPayload) => {
+    const added = await addWorkLink(currentId, linkPayload);
+    if (added) {
+      setSelectedId(added.id);
+    }
+  }, [addWorkLink, currentId]);
+
   // File Uploading & Processing
   const processUploadedFiles = useCallback(async (files) => {
     for (const file of files) {
@@ -262,6 +281,9 @@ export default function FinderWindow({
       setPendingAction(null);
     } else if (pendingAction?.type === 'rename' && pendingAction.node) {
       startRenaming(pendingAction.node);
+      setPendingAction(null);
+    } else if (pendingAction?.type === 'add-link') {
+      setShowAddLinkModal(true);
       setPendingAction(null);
     }
   }, [pendingUploadFiles, pendingAction, processUploadedFiles, handleNewFolder, handleNewTextFile, startRenaming]);
@@ -453,6 +475,12 @@ export default function FinderWindow({
                 <span>Admin Mode Active</span>
               </div>
               <button
+                onClick={() => { handleOpenAddLink(); setShowAdminDropdown(false); }}
+                className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 transition-colors font-medium text-rose-600 dark:text-rose-400 hover:!text-white"
+              >
+                <Film className="w-3.5 h-3.5" /> Add Work Link / Video...
+              </button>
+              <button
                 onClick={() => { handleNewFolder(); setShowAdminDropdown(false); }}
                 className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 transition-colors"
               >
@@ -587,7 +615,13 @@ export default function FinderWindow({
                   {query ? `Nothing here matches "${query}".` : 'This folder is empty.'}
                 </p>
                 {isAdmin && !query && (
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2 justify-center">
+                    <button
+                      onClick={handleOpenAddLink}
+                      className="px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-gradient-to-r from-rose-500 to-amber-500 text-white hover:brightness-110 flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Film className="w-3.5 h-3.5" /> Add Work Link / Video
+                    </button>
                     <button
                       onClick={handleNewFolder}
                       className="px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-[#007aff] text-white hover:bg-[#0069dc] flex items-center gap-1.5 shadow-sm"
@@ -697,6 +731,12 @@ export default function FinderWindow({
               {isAdmin ? (
                 <>
                   <button
+                    onClick={() => { handleOpenAddLink(); setMenu(null); }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 font-medium text-rose-600 dark:text-rose-400 hover:!text-white"
+                  >
+                    <Film className="w-3.5 h-3.5" /> Add Work Link / Video...
+                  </button>
+                  <button
                     onClick={() => { handleNewFolder(); setMenu(null); }}
                     className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2"
                   >
@@ -723,16 +763,27 @@ export default function FinderWindow({
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => {
-                    setAuthPrompt('Enter admin password to create folders and files.');
-                    setShowAuthModal(true);
-                    setMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 text-amber-600 dark:text-amber-400"
-                >
-                  <Lock className="w-3.5 h-3.5" /> Admin Login to Edit...
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      handleOpenAddLink();
+                      setMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 text-rose-600 dark:text-rose-400"
+                  >
+                    <Film className="w-3.5 h-3.5" /> Add Work Link / Video...
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAuthPrompt('Enter admin password to create folders and files.');
+                      setShowAuthModal(true);
+                      setMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 text-amber-600 dark:text-amber-400"
+                  >
+                    <Lock className="w-3.5 h-3.5" /> Admin Login to Edit...
+                  </button>
+                </>
               )}
             </>
           ) : (
@@ -796,6 +847,14 @@ export default function FinderWindow({
         }}
         onSuccess={handleAuthSuccess}
         initialPrompt={authPrompt}
+      />
+
+      {/* Add Work Link / Video Modal */}
+      <AddWorkLinkModal
+        isOpen={showAddLinkModal}
+        onClose={() => setShowAddLinkModal(false)}
+        folderNode={node}
+        onAddLink={handleAddLinkSubmit}
       />
     </OSWindow>
   );

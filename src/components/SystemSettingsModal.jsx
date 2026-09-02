@@ -405,6 +405,47 @@ export default function SystemSettingsModal({
 
         </div>
       </div>
+
+      {/* Publish bar — pushes the current wallpaper choice out as the default for every visitor. */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 mt-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border-t border-white/60 dark:border-white/10 rounded-b-[1.4rem] font-sans select-none">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-800 dark:text-slate-100 leading-tight">
+              Set as the default for everyone
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+              {publishState === "error"
+                ? publishError
+                : publishState === "saved"
+                ? "Saved — every new visitor now loads this wallpaper."
+                : "Saves the current desktop + lock screen wallpaper for all future visitors."}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handlePublishDefaults}
+          disabled={publishState === "saving"}
+          className={`shrink-0 px-4 py-2 rounded-full text-[11px] font-semibold shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed ${
+            publishState === "saved"
+              ? "bg-emerald-600 text-white"
+              : publishState === "error"
+              ? "bg-rose-600 hover:bg-rose-500 text-white"
+              : "bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white"
+          }`}
+        >
+          {publishState === "saving" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          {publishState === "saved" && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+          {publishState === "saving"
+            ? "Publishing..."
+            : publishState === "saved"
+            ? "Published"
+            : publishState === "error"
+            ? "Retry"
+            : "Publish to all visitors"}
+        </button>
+      </div>
     </MacWindow>
   );
 }

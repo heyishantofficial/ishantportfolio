@@ -19,7 +19,24 @@ const SETTINGS_FILE = path.join(DATA_DIR, 'site-settings.json');
 // excluded: they are blob: URLs local to the admin's own browser, so they
 // cannot be served to anyone else.
 const VALID_WALLPAPERS = ['video', 'custom', 'sequoia', 'sonoma', 'neon', 'aurora'];
-const FALLBACK = { wallpaper: 'video', lockWallpaper: 'custom' };
+const FALLBACK = { 
+  wallpaper: 'video', 
+  lockWallpaper: 'custom',
+  socialLinks: {
+    youtube: 'https://youtube.com',
+    linkedin: 'https://linkedin.com',
+    instagram: 'https://instagram.com',
+    twitter: 'https://twitter.com',
+    github: 'https://github.com'
+  },
+  dashboardConfig: {
+    openLinksInNewTab: false,
+    dockMagnification: true,
+    soundEffects: true,
+    statusMessage: '● Vibecoding live & open for collaborations',
+    contactEmail: 'ishant.vibecode@gmail.com'
+  }
+};
 
 if (!process.env.ADMIN_PASSWORD) {
   console.warn('[settings] ADMIN_PASSWORD is not set — using the built-in default. Set it in your Dokploy env vars.');
@@ -40,6 +57,8 @@ async function readState() {
     return {
       wallpaper: VALID_WALLPAPERS.includes(parsed.wallpaper) ? parsed.wallpaper : FALLBACK.wallpaper,
       lockWallpaper: VALID_WALLPAPERS.includes(parsed.lockWallpaper) ? parsed.lockWallpaper : FALLBACK.lockWallpaper,
+      socialLinks: { ...FALLBACK.socialLinks, ...(parsed.socialLinks || {}) },
+      dashboardConfig: { ...FALLBACK.dashboardConfig, ...(parsed.dashboardConfig || {}) },
       updatedAt: parsed.updatedAt || null,
       // A password set through the UI overrides the env var.
       password: typeof parsed.password === 'string' && parsed.password ? parsed.password : null
@@ -71,14 +90,14 @@ async function requireAdmin(req, res) {
 }
 
 const app = express();
-app.use(express.json({ limit: '4kb' }));
+app.use(express.json({ limit: '16kb' }));
 
 // Public: every visitor reads the current global defaults on boot.
 // The stored password is never included in the response.
 app.get('/api/settings', async (_req, res) => {
-  const { wallpaper, lockWallpaper, updatedAt } = await readState();
+  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, updatedAt } = await readState();
   res.set('Cache-Control', 'no-store');
-  res.json({ wallpaper, lockWallpaper, updatedAt });
+  res.json({ wallpaper, lockWallpaper, socialLinks, dashboardConfig, updatedAt });
 });
 
 // Admin: unlock the System Settings panel.
@@ -87,22 +106,40 @@ app.post('/api/settings/verify', async (req, res) => {
   res.json({ ok: true });
 });
 
-// Admin: publish the current wallpaper as the default for every visitor.
+// Admin: publish settings as the default for every visitor.
 app.post('/api/settings', async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
 
-  const { wallpaper, lockWallpaper } = req.body || {};
-  if (!VALID_WALLPAPERS.includes(wallpaper) || !VALID_WALLPAPERS.includes(lockWallpaper)) {
+  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig } = req.body || {};
+  if (wallpaper && !VALID_WALLPAPERS.includes(wallpaper)) {
     return res.status(400).json({
       error: 'Uploaded wallpapers only exist in your own browser, so they cannot be published to visitors. Pick one of the built-in wallpapers.'
     });
   }
+  if (lockWallpaper && !VALID_WALLPAPERS.includes(lockWallpaper)) {
+    return res.status(400).json({
+      error: 'Uploaded lock wallpapers only exist in your own browser, so they cannot be published to visitors. Pick one of the built-in wallpapers.'
+    });
+  }
 
   const state = await readState();
-  const next = { ...state, wallpaper, lockWallpaper, updatedAt: new Date().toISOString() };
+  const next = { 
+    ...state, 
+    ...(wallpaper ? { wallpaper } : {}), 
+    ...(lockWallpaper ? { lockWallpaper } : {}), 
+    ...(socialLinks ? { socialLinks: { ...state.socialLinks, ...socialLinks } } : {}),
+    ...(dashboardConfig ? { dashboardConfig: { ...state.dashboardConfig, ...dashboardConfig } } : {}),
+    updatedAt: new Date().toISOString() 
+  };
   try {
     await writeState(next);
-    res.json({ wallpaper: next.wallpaper, lockWallpaper: next.lockWallpaper, updatedAt: next.updatedAt });
+    res.json({ 
+      wallpaper: next.wallpaper, 
+      lockWallpaper: next.lockWallpaper, 
+      socialLinks: next.socialLinks,
+      dashboardConfig: next.dashboardConfig,
+      updatedAt: next.updatedAt 
+    });
   } catch (err) {
     console.error('[settings] write failed:', err);
     res.status(500).json({ error: 'Could not save settings.' });

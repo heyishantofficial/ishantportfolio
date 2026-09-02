@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { 
-  Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2
+  Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2, Share2, Link, ExternalLink, LayoutGrid, User, RotateCcw, CheckCircle2
 } from "lucide-react";
 import { MacWindow } from "./macDockModals";
 import { playMacClick } from "../utils/macAudioEngine";
@@ -23,7 +23,11 @@ export default function SystemSettingsModal({
   onUploadDesktopWallpaper,
   customUploadLock,
   onUploadLockWallpaper,
-  initialTab = "wallpaper"
+  initialTab = "socials",
+  socialLinks,
+  onUpdateSocialLinks,
+  dashboardConfig,
+  onUpdateDashboardConfig
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   
@@ -32,6 +36,73 @@ export default function SystemSettingsModal({
   const [settingsPasswordInput, setSettingsPasswordInput] = useState("");
   const [settingsAuthError, setSettingsAuthError] = useState("");
   const [isShaking, setIsShaking] = useState(false);
+
+  // Social Links & Dashboard Config State
+  const [localSocials, setLocalSocials] = useState(socialLinks || {
+    youtube: 'https://youtube.com',
+    linkedin: 'https://linkedin.com',
+    instagram: 'https://instagram.com',
+    twitter: 'https://twitter.com',
+    github: 'https://github.com'
+  });
+
+  const [localDashboard, setLocalDashboard] = useState(dashboardConfig || {
+    openLinksInNewTab: false,
+    dockMagnification: true,
+    soundEffects: true,
+    statusMessage: '● Vibecoding live & open for collaborations',
+    contactEmail: 'ishant.vibecode@gmail.com'
+  });
+
+  const [socialsSavedNotice, setSocialsSavedNotice] = useState(false);
+  const [dockSavedNotice, setDockSavedNotice] = useState(false);
+
+  useEffect(() => {
+    if (socialLinks) setLocalSocials(socialLinks);
+  }, [socialLinks]);
+
+  useEffect(() => {
+    if (dashboardConfig) setLocalDashboard(dashboardConfig);
+  }, [dashboardConfig]);
+
+  const handleSocialChange = (key, val) => {
+    const next = { ...localSocials, [key]: val };
+    setLocalSocials(next);
+    if (onUpdateSocialLinks) onUpdateSocialLinks(next);
+  };
+
+  const handleDashboardChange = (key, val) => {
+    const next = { ...localDashboard, [key]: val };
+    setLocalDashboard(next);
+    if (onUpdateDashboardConfig) onUpdateDashboardConfig(next);
+  };
+
+  const handleSaveSocials = () => {
+    if (onUpdateSocialLinks) onUpdateSocialLinks(localSocials);
+    try {
+      localStorage.setItem('site_socialLinks', JSON.stringify(localSocials));
+      setSocialsSavedNotice(true);
+      setTimeout(() => setSocialsSavedNotice(false), 2000);
+    } catch {}
+  };
+
+  const handleSaveDashboard = () => {
+    if (onUpdateDashboardConfig) onUpdateDashboardConfig(localDashboard);
+    try {
+      localStorage.setItem('site_dashboardConfig', JSON.stringify(localDashboard));
+      setDockSavedNotice(true);
+      setTimeout(() => setDockSavedNotice(false), 2000);
+    } catch {}
+  };
+
+  const handleResetDesktopPositions = () => {
+    try {
+      localStorage.removeItem('ishantos.desktop.positions');
+      setDockSavedNotice(true);
+      setTimeout(() => setDockSavedNotice(false), 2000);
+      window.dispatchEvent(new Event('storage'));
+    } catch {}
+  };
 
   // Password Management State (Inside Settings)
   const [currentInput, setCurrentInput] = useState("");
@@ -96,8 +167,12 @@ export default function SystemSettingsModal({
       await saveSiteSettings({
         password: adminPassword.current,
         wallpaper,
-        lockWallpaper
+        lockWallpaper,
+        socialLinks: localSocials,
+        dashboardConfig: localDashboard
       });
+      if (onUpdateSocialLinks) onUpdateSocialLinks(localSocials);
+      if (onUpdateDashboardConfig) onUpdateDashboardConfig(localDashboard);
       setPublishState("saved");
       setTimeout(() => setPublishState("idle"), 2500);
     } catch (err) {
@@ -243,11 +318,14 @@ export default function SystemSettingsModal({
 
                 <div className="space-y-1">
                   {[
+                    { id: "socials", label: "Social & Links Hub", icon: Share2, badge: "Live" },
+                    { id: "dock", label: "Dock & Desktop", icon: LayoutGrid },
+                    { id: "profile", label: "Identity & Status", icon: User },
                     { id: "wallpaper", label: "Desktop Wallpaper", icon: Image },
                     { id: "lockscreen", label: "Lock Screen Wallpaper", icon: Lock },
-                    { id: "password", label: "Password & Security", icon: Key },
                     { id: "appearance", label: "Appearance & Theme", icon: isDarkMode ? Moon : Sun },
                     { id: "sound", label: "Sound & Audio", icon: isMuted ? VolumeX : Volume2 },
+                    { id: "password", label: "Password & Security", icon: Key },
                     { id: "about", label: "System Info", icon: Monitor }
                   ].map((item) => {
                     const IconComp = item.icon;
@@ -256,14 +334,21 @@ export default function SystemSettingsModal({
                       <button
                         key={item.id}
                         onClick={() => { playMacClick(isMuted); setActiveTab(item.id); }}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-medium transition-all ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-medium transition-all ${
                           isActive 
                             ? "bg-white/90 dark:bg-white/20 text-slate-900 dark:text-white font-bold shadow-md backdrop-blur-xl border border-white/80 dark:border-white/30" 
                             : "hover:bg-white/40 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300"
                         }`}
                       >
-                        <IconComp className={`w-4 h-4 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`} />
-                        <span>{item.label}</span>
+                        <div className="flex items-center gap-2.5">
+                          <IconComp className={`w-4 h-4 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`} />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                            {item.badge}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -279,6 +364,339 @@ export default function SystemSettingsModal({
             {/* Settings Right Main Content Area */}
             <div className="flex-1 bg-white/15 dark:bg-slate-950/30 backdrop-blur-2xl overflow-y-auto p-5 space-y-6">
               
+              {/* TAB: Social & Links Hub */}
+              {activeTab === "socials" && (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight mb-1 flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-blue-500" />
+                        <span>Social Accounts & External Links</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Connect your channels and profiles. These directly link to macOS Dock icons and system shortcuts.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleSaveSocials}
+                      className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                    >
+                      {socialsSavedNotice ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      <span>{socialsSavedNotice ? "Saved!" : "Quick Save"}</span>
+                    </button>
+                  </div>
+
+                  {/* Dock Click Action Preference */}
+                  <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2.5 shadow-sm">
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-100">Dock Click Action</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">Choose what happens when visitors click YouTube, LinkedIn, or Instagram in the Dock:</div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleDashboardChange("openLinksInNewTab", false)}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          !localDashboard.openLinksInNewTab
+                            ? "bg-blue-500/15 border-blue-500 text-blue-600 dark:text-blue-400 font-bold shadow-sm"
+                            : "border-slate-300/40 dark:border-slate-700/40 hover:bg-white/30 text-slate-600 dark:text-slate-300"
+                        }`}
+                      >
+                        <div className="text-xs font-bold flex items-center gap-1.5">
+                          <span>Interactive macOS Window</span>
+                          {!localDashboard.openLinksInNewTab && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <div className="text-[10px] opacity-80 mt-0.5">Authentic macOS modal card with preview, details, and launch button</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDashboardChange("openLinksInNewTab", true)}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          localDashboard.openLinksInNewTab
+                            ? "bg-blue-500/15 border-blue-500 text-blue-600 dark:text-blue-400 font-bold shadow-sm"
+                            : "border-slate-300/40 dark:border-slate-700/40 hover:bg-white/30 text-slate-600 dark:text-slate-300"
+                        }`}
+                      >
+                        <div className="text-xs font-bold flex items-center gap-1.5">
+                          <span>Direct New Browser Tab</span>
+                          {localDashboard.openLinksInNewTab && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <div className="text-[10px] opacity-80 mt-0.5">Launches external URL immediately in a new browser tab</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Social Links Form */}
+                  <div className="space-y-3">
+                    {/* YouTube */}
+                    <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img src="/icons/YouTube.png" alt="YouTube" className="w-5 h-5 object-contain" />
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-100">YouTube Channel URL</label>
+                        </div>
+                        {localSocials.youtube && (
+                          <a
+                            href={localSocials.youtube}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+                          >
+                            <span>Test Link</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://youtube.com/@yourchannel or video link..."
+                        value={localSocials.youtube || ''}
+                        onChange={(e) => handleSocialChange('youtube', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+
+                    {/* LinkedIn */}
+                    <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img src="/icons/LinkedIn.png" alt="LinkedIn" className="w-5 h-5 object-contain" />
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-100">LinkedIn Profile URL</label>
+                        </div>
+                        {localSocials.linkedin && (
+                          <a
+                            href={localSocials.linkedin}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+                          >
+                            <span>Test Link</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://linkedin.com/in/yourprofile..."
+                        value={localSocials.linkedin || ''}
+                        onChange={(e) => handleSocialChange('linkedin', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+
+                    {/* Instagram */}
+                    <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img src="/icons/Instagram.png" alt="Instagram" className="w-5 h-5 object-contain" />
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-100">Instagram Profile URL</label>
+                        </div>
+                        {localSocials.instagram && (
+                          <a
+                            href={localSocials.instagram}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+                          >
+                            <span>Test Link</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://instagram.com/yourhandle..."
+                        value={localSocials.instagram || ''}
+                        onChange={(e) => handleSocialChange('instagram', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+
+                    {/* Twitter / X */}
+                    <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-xs">𝕏</span>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-100">Twitter / X URL</label>
+                        </div>
+                        {localSocials.twitter && (
+                          <a
+                            href={localSocials.twitter}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+                          >
+                            <span>Test Link</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://x.com/yourhandle..."
+                        value={localSocials.twitter || ''}
+                        onChange={(e) => handleSocialChange('twitter', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+
+                    {/* GitHub */}
+                    <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-xs">⌘</span>
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-100">GitHub Profile URL</label>
+                        </div>
+                        {localSocials.github && (
+                          <a
+                            href={localSocials.github}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+                          >
+                            <span>Test Link</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://github.com/yourusername..."
+                        value={localSocials.github || ''}
+                        onChange={(e) => handleSocialChange('github', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: Dock & Desktop Controls */}
+              {activeTab === "dock" && (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight mb-1 flex items-center gap-2">
+                        <LayoutGrid className="w-4 h-4 text-blue-500" />
+                        <span>Dock & Desktop Controls</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Fine-tune the macOS Dock animation, audio behavior, and desktop folder layout.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleSaveDashboard}
+                      className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                    >
+                      {dockSavedNotice ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      <span>{dockSavedNotice ? "Saved!" : "Quick Save"}</span>
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-4 shadow-sm">
+                    {/* Dock Magnification */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100">Dock Magnification (Hover Zoom)</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">Smooth parabolic magnification when hovering over dock icons</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDashboardChange("dockMagnification", !localDashboard.dockMagnification)}
+                        className={`w-11 h-6 rounded-full transition-colors relative p-0.5 cursor-pointer ${localDashboard.dockMagnification !== false ? "bg-emerald-500" : "bg-slate-400 dark:bg-slate-600"}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transition-transform ${localDashboard.dockMagnification !== false ? "translate-x-5" : "translate-x-0"}`} />
+                      </button>
+                    </div>
+
+                    <div className="border-t border-slate-200/50 dark:border-slate-800 pt-3 flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100">Mac Click Sound Effects</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">Play responsive audio feedback on clicks, trash empty, and app launches</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDashboardChange("soundEffects", !localDashboard.soundEffects)}
+                        className={`w-11 h-6 rounded-full transition-colors relative p-0.5 cursor-pointer ${localDashboard.soundEffects !== false ? "bg-emerald-500" : "bg-slate-400 dark:bg-slate-600"}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white transition-transform ${localDashboard.soundEffects !== false ? "translate-x-5" : "translate-x-0"}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Reset Desktop Item Positions */}
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-3 shadow-sm">
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-100">Reset Desktop Icons Grid</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">Realign all custom draggable desktop folders back to their default macOS arrangement.</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleResetDesktopPositions}
+                      className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Snap Folders to Default Grid</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: Identity & Status */}
+              {activeTab === "profile" && (
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight mb-1 flex items-center gap-2">
+                        <User className="w-4 h-4 text-blue-500" />
+                        <span>Identity & Status Dashboard</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Control your live availability status, contact email, and public creator badge.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleSaveDashboard}
+                      className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                    >
+                      {dockSavedNotice ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      <span>{dockSavedNotice ? "Saved!" : "Quick Save"}</span>
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-4 shadow-sm">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-800 dark:text-slate-100">Live Status Message</label>
+                      <input
+                        type="text"
+                        value={localDashboard.statusMessage || ''}
+                        onChange={(e) => handleDashboardChange('statusMessage', e.target.value)}
+                        placeholder="e.g. ● Vibecoding live & open for collaborations"
+                        className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-sans text-slate-800 dark:text-slate-100"
+                      />
+                      <p className="text-[10px] text-slate-500">Displays across Spotlight, About, and Menu Bar system summaries.</p>
+                    </div>
+
+                    <div className="space-y-1.5 border-t border-slate-200/50 dark:border-slate-800 pt-3">
+                      <label className="text-xs font-bold text-slate-800 dark:text-slate-100">Primary Contact Email</label>
+                      <input
+                        type="email"
+                        value={localDashboard.contactEmail || ''}
+                        onChange={(e) => handleDashboardChange('contactEmail', e.target.value)}
+                        placeholder="ishant.vibecode@gmail.com"
+                        className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
+                      />
+                      <p className="text-[10px] text-slate-500">Destination for macOS Mail app composer and contact inquiries.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* TAB 1: Main Desktop Wallpaper */}
               {activeTab === "wallpaper" && (
                 <div className="space-y-5">
@@ -638,16 +1056,16 @@ export default function SystemSettingsModal({
             <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                Set as the default for everyone
+                Publish settings globally for all visitors
               </p>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                 {publishState === "error"
                   ? publishError
                   : publishState === "saved"
-                  ? "Saved — every new visitor now loads this wallpaper."
+                  ? "Saved — all future visitors will now load these wallpapers, social links, and dashboard settings."
                   : !canPublish
                   ? "Uploaded wallpapers live only in your browser and can't be published. Pick a built-in one."
-                  : "Saves the current desktop + lock screen wallpaper for all future visitors."}
+                  : "Saves current wallpapers, social links, and dashboard preferences for all future visitors."}
               </p>
             </div>
           </div>

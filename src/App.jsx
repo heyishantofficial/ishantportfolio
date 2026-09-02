@@ -43,12 +43,19 @@ export default function App() {
   const [showControlCenter, setShowControlCenter] = useState(false);
   const [showSpotlight, setShowSpotlight] = useState(false);
 
+  const [socialLinks, setSocialLinks] = useState(DEFAULT_SETTINGS.socialLinks);
+  const [dashboardConfig, setDashboardConfig] = useState(DEFAULT_SETTINGS.dashboardConfig);
+
   // Open apps state object
   const [openApps, setOpenApps] = useState({
     finder: false,
     notes: false,
     ipod: false,
-    settings: false
+    itunes: false,
+    settings: false,
+    youtube: false,
+    linkedin: false,
+    instagram: false
   });
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
@@ -118,8 +125,10 @@ export default function App() {
       if (percent > target) target = percent;
     }).then(({ settings }) => {
       if (cancelled) return;
-      setWallpaper(settings.wallpaper);
-      setLockWallpaper(settings.lockWallpaper);
+      if (settings?.wallpaper) setWallpaper(settings.wallpaper);
+      if (settings?.lockWallpaper) setLockWallpaper(settings.lockWallpaper);
+      if (settings?.socialLinks) setSocialLinks(settings.socialLinks);
+      if (settings?.dashboardConfig) setDashboardConfig(settings.dashboardConfig);
       // Let the ring sit visibly at 100% before handing over to the login screen.
       // Let the ring visibly catch up to and rest at 100% before handing over.
       setTimeout(() => {
@@ -272,19 +281,41 @@ export default function App() {
       osRef.current?.openTrash();
       return;
     }
-    if (appId === "ipod" || appId === "music" || appId === "cyberdeck") {
+    if (appId === "ipod" || appId === "itunes" || appId === "music" || appId === "cyberdeck") {
       const nextState = !showCyberdeck;
       setShowCyberdeck(nextState);
-      setOpenApps(prev => ({ ...prev, ipod: nextState }));
-      setActiveAppTitle(nextState ? "iPod Classic" : "Finder");
+      setOpenApps(prev => ({ ...prev, ipod: nextState, itunes: nextState }));
+      setActiveAppTitle(nextState ? "iTunes Music" : "Finder");
       return;
     }
     if (appId === "settings") {
-      handleOpenSettingsWithTab("wallpaper");
+      handleOpenSettingsWithTab("socials");
+      return;
+    }
+    if (appId === "youtube" && dashboardConfig?.openLinksInNewTab && socialLinks?.youtube) {
+      window.open(socialLinks.youtube, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (appId === "linkedin" && dashboardConfig?.openLinksInNewTab && socialLinks?.linkedin) {
+      window.open(socialLinks.linkedin, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (appId === "instagram" && dashboardConfig?.openLinksInNewTab && socialLinks?.instagram) {
+      window.open(socialLinks.instagram, '_blank', 'noopener,noreferrer');
       return;
     }
     const targetApp = (appId === "resume" || appId === "resume.pdf") ? "notes" : appId;
-    setActiveAppTitle(targetApp === "notes" ? "Notes Workspace" : targetApp);
+    const titleMap = {
+      notes: "Notes Workspace",
+      youtube: "YouTube Channel",
+      linkedin: "LinkedIn Profile",
+      instagram: "Instagram Profile",
+      safari: "Safari Browser",
+      terminal: "Terminal Shell",
+      photos: "Photos Library",
+      mail: "Mail"
+    };
+    setActiveAppTitle(titleMap[targetApp] || targetApp);
     setOpenApps(prev => ({
       ...prev,
       [targetApp]: true,
@@ -297,9 +328,9 @@ export default function App() {
   };
 
   const handleCloseApp = (appId) => {
-    if (appId === "ipod" || appId === "music" || appId === "cyberdeck") {
+    if (appId === "ipod" || appId === "itunes" || appId === "music" || appId === "cyberdeck") {
       setShowCyberdeck(false);
-      setOpenApps(prev => ({ ...prev, ipod: false }));
+      setOpenApps(prev => ({ ...prev, ipod: false, itunes: false }));
       return;
     }
     if (appId === "notes" || appId === "resume") {
@@ -428,6 +459,10 @@ export default function App() {
             customUploadLock={customUploadLock}
             onUploadLockWallpaper={(img) => setCustomUploadLock(img)}
             settingsInitialTab={settingsInitialTab}
+            socialLinks={socialLinks}
+            onUpdateSocialLinks={setSocialLinks}
+            dashboardConfig={dashboardConfig}
+            onUpdateDashboardConfig={setDashboardConfig}
           />
 
           {/* Nexus Cyberdeck Music Player Floating Widget */}

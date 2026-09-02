@@ -15,6 +15,14 @@ const InstagramIcon = (props) => (
   </svg>
 );
 
+const YouTubeIcon = (props) => (
+  <img src="/icons/YouTube.png" alt="YouTube" className="w-3.5 h-3.5 object-contain" {...props} />
+);
+
+const LinkedInIcon = (props) => (
+  <img src="/icons/LinkedIn.png" alt="LinkedIn" className="w-3.5 h-3.5 object-contain" {...props} />
+);
+
 // Draggable & Resizable macOS Window Container Component with Ultra-Frosted Sequoia Material
 export function MacWindow({ title, icon: IconComponent, onClose, onMinimize, children, width = "max-w-4xl", isDark = false }) {
   return (
@@ -931,33 +939,137 @@ export function PhotosModal({ onClose }) {
 }
 
 // 9. Instagram Modal
-export function InstagramModal({ onClose }) {
+export function InstagramModal({ onClose, instagramUrl, onOpenSettings }) {
+  const targetUrl = instagramUrl || PROFILE_INFO.socials.instagram || 'https://instagram.com/ishantvibecode';
+  let handle = '@ishantvibecode';
+  try {
+    const urlObj = new URL(targetUrl);
+    const pathPart = urlObj.pathname.replace(/^\/+|\/+$/g, '');
+    if (pathPart) handle = `@${pathPart}`;
+  } catch {}
+
   return (
-    <MacWindow title="Instagram Profile" icon={InstagramIcon} onClose={onClose}>
-      <div className="text-center space-y-4 py-2 font-sans">
-        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-1 shadow-md">
-          <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-lg">
+    <MacWindow title="Instagram Profile" icon={InstagramIcon} onClose={onClose} width="max-w-md">
+      <div className="text-center space-y-4 py-3 font-sans">
+        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 p-1 shadow-lg">
+          <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-white font-black text-xl tracking-wider">
             IC
           </div>
         </div>
         <div>
-          <h3 className="font-bold text-slate-900 text-base">@ishantvibecode</h3>
-          <p className="text-xs text-slate-500">Content Strategist & Vibecoding Builder</p>
+          <h3 className="font-bold text-slate-900 dark:text-white text-lg tracking-tight">{handle}</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{PROFILE_INFO.name} • {PROFILE_INFO.roleTitle}</p>
         </div>
-        <div className="flex justify-center gap-6 py-2 border-y border-slate-100 text-xs">
-          <div><span className="font-bold text-slate-800">142</span> <span className="text-slate-500">posts</span></div>
-          <div><span className="font-bold text-slate-800">4.8k</span> <span className="text-slate-500">followers</span></div>
-          <div><span className="font-bold text-slate-800">320</span> <span className="text-slate-500">following</span></div>
+        <div className="flex justify-center gap-8 py-2.5 border-y border-slate-200/60 dark:border-slate-800 text-xs">
+          <div><span className="font-bold text-slate-900 dark:text-white">142</span> <span className="text-slate-500 block text-[10px]">Posts</span></div>
+          <div><span className="font-bold text-slate-900 dark:text-white">4.8k</span> <span className="text-slate-500 block text-[10px]">Followers</span></div>
+          <div><span className="font-bold text-slate-900 dark:text-white">320</span> <span className="text-slate-500 block text-[10px]">Following</span></div>
         </div>
-        <a 
-          href={PROFILE_INFO.socials.twitter}
-          target="_blank" 
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold text-xs rounded-xl shadow-md hover:opacity-95 transition-opacity"
-        >
-          <span>Visit Social Profile</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
+        <div className="flex flex-col gap-2 pt-1 max-w-xs mx-auto">
+          <a 
+            href={targetUrl}
+            target="_blank" 
+            rel="noreferrer"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <span>Visit Instagram Profile</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-500 underline transition-colors cursor-pointer"
+            >
+              Configure in System Settings
+            </button>
+          )}
+        </div>
+      </div>
+    </MacWindow>
+  );
+}
+
+// 9b. YouTube Modal
+export function YouTubeModal({ onClose, youtubeUrl, onOpenSettings }) {
+  const targetUrl = youtubeUrl || 'https://youtube.com';
+
+  return (
+    <MacWindow title="YouTube Channel" icon={YouTubeIcon} onClose={onClose} width="max-w-md">
+      <div className="text-center space-y-4 py-3 font-sans">
+        <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-700 p-2 shadow-lg flex items-center justify-center">
+          <img src="/icons/YouTube.png" alt="YouTube" className="w-14 h-14 object-contain drop-shadow-md" />
+        </div>
+        <div>
+          <h3 className="font-bold text-slate-900 dark:text-white text-lg tracking-tight">Ishant Chauhan</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Video Strategy • Vibecoding Builds • Creative Tech</p>
+        </div>
+        <div className="flex justify-center gap-8 py-2.5 border-y border-slate-200/60 dark:border-slate-800 text-xs">
+          <div><span className="font-bold text-slate-900 dark:text-white">HD</span> <span className="text-slate-500 block text-[10px]">Quality</span></div>
+          <div><span className="font-bold text-slate-900 dark:text-white">Active</span> <span className="text-slate-500 block text-[10px]">Uploads</span></div>
+          <div><span className="font-bold text-slate-900 dark:text-white">4K</span> <span className="text-slate-500 block text-[10px]">Creative</span></div>
+        </div>
+        <div className="flex flex-col gap-2 pt-1 max-w-xs mx-auto">
+          <a 
+            href={targetUrl}
+            target="_blank" 
+            rel="noreferrer"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <span>Open YouTube Channel</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-500 underline transition-colors cursor-pointer"
+            >
+              Configure in System Settings
+            </button>
+          )}
+        </div>
+      </div>
+    </MacWindow>
+  );
+}
+
+// 9c. LinkedIn Modal
+export function LinkedInModal({ onClose, linkedinUrl, onOpenSettings }) {
+  const targetUrl = linkedinUrl || 'https://linkedin.com';
+
+  return (
+    <MacWindow title="LinkedIn Profile" icon={LinkedInIcon} onClose={onClose} width="max-w-md">
+      <div className="text-center space-y-4 py-3 font-sans">
+        <div className="w-20 h-20 mx-auto rounded-2xl bg-[#0a66c2]/15 border border-[#0a66c2]/30 p-2 shadow-lg flex items-center justify-center">
+          <img src="/icons/LinkedIn.png" alt="LinkedIn" className="w-14 h-14 object-contain drop-shadow-md" />
+        </div>
+        <div>
+          <h3 className="font-bold text-slate-900 dark:text-white text-lg tracking-tight">Ishant Chauhan</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Content Producer • Strategist • Vibecoding Builder</p>
+        </div>
+        <div className="flex justify-center gap-8 py-2.5 border-y border-slate-200/60 dark:border-slate-800 text-xs">
+          <div><span className="font-bold text-slate-900 dark:text-white">500+</span> <span className="text-slate-500 block text-[10px]">Connections</span></div>
+          <div><span className="font-bold text-slate-900 dark:text-white">Creator</span> <span className="text-slate-500 block text-[10px]">Mode</span></div>
+          <div><span className="font-bold text-slate-900 dark:text-white">Open</span> <span className="text-slate-500 block text-[10px]">To Collaborate</span></div>
+        </div>
+        <div className="flex flex-col gap-2 pt-1 max-w-xs mx-auto">
+          <a 
+            href={targetUrl}
+            target="_blank" 
+            rel="noreferrer"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#0077b5] to-[#00a0dc] hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <span>Connect on LinkedIn</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-500 underline transition-colors cursor-pointer"
+            >
+              Configure in System Settings
+            </button>
+          )}
+        </div>
       </div>
     </MacWindow>
   );

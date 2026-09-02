@@ -8,6 +8,8 @@ import {
   QuickNotesModal, 
   PhotosModal, 
   InstagramModal, 
+  YouTubeModal,
+  LinkedInModal,
   MailModal, 
   TrashModal,
   FinderModal,
@@ -40,7 +42,11 @@ export default function MacDock({
   onUploadDesktopWallpaper,
   customUploadLock,
   onUploadLockWallpaper,
-  settingsInitialTab = "wallpaper"
+  settingsInitialTab = "wallpaper",
+  socialLinks,
+  onUpdateSocialLinks,
+  dashboardConfig,
+  onUpdateDashboardConfig
 }) {
   const [mouseX, setMouseX] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
@@ -92,19 +98,11 @@ export default function MacDock({
       )
     },
     {
-      id: "ipod",
-      name: "iPod Classic Music",
+      id: "itunes",
+      name: "iTunes Music",
       type: "app",
       renderIcon: () => (
-        <div className="w-full h-full bg-gradient-to-b from-slate-200 via-slate-100 to-slate-300 flex flex-col items-center justify-between p-1 relative rounded-[22%] shadow-md border border-slate-300">
-          <div className="w-full h-4 bg-slate-900 rounded-[3px] border border-slate-700 flex items-center justify-between px-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-            <span className="text-[7px] font-mono text-emerald-400 font-bold tracking-tighter">iPod</span>
-          </div>
-          <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 shadow-inner flex items-center justify-center relative my-0.5">
-            <div className="w-2 h-2 rounded-full bg-slate-300 border border-slate-400"></div>
-          </div>
-        </div>
+        <img src="/icons/iTunes.png" alt="iTunes" className="w-full h-full object-contain drop-shadow-md select-none" />
       )
     },
     { id: "divider-1", type: "divider" },
@@ -117,11 +115,27 @@ export default function MacDock({
       )
     },
     {
+      id: "youtube",
+      name: "YouTube",
+      type: "app",
+      renderIcon: () => (
+        <img src="/icons/YouTube.png" alt="YouTube" className="w-full h-full object-contain drop-shadow-md select-none" />
+      )
+    },
+    {
       id: "instagram",
       name: "Instagram",
       type: "app",
       renderIcon: () => (
         <img src="/icons/Instagram.png" alt="Instagram" className="w-full h-full object-contain drop-shadow-md select-none" />
+      )
+    },
+    {
+      id: "linkedin",
+      name: "LinkedIn",
+      type: "app",
+      renderIcon: () => (
+        <img src="/icons/LinkedIn.png" alt="LinkedIn" className="w-full h-full object-contain drop-shadow-md select-none" />
       )
     },
     {
@@ -155,11 +169,12 @@ export default function MacDock({
   };
 
   const getIconScale = (index) => {
+    if (dashboardConfig?.dockMagnification === false) return 1;
     if (mouseX === null || !dockRef.current) return 1;
     const iconWidth = 48; 
     const iconCenter = index * (iconWidth + 6) + iconWidth / 2 + 16;
     const distance = Math.abs(mouseX - iconCenter);
-    const maxScale = 1.5;
+    const maxScale = 1.45;
     const baseScale = 1;
     const stdDev = 60;
     const scale = baseScale + (maxScale - baseScale) * Math.exp(-(distance * distance) / (2 * stdDev * stdDev));
@@ -195,7 +210,7 @@ export default function MacDock({
           const iconSize = 44 * scale;
           const isHovered = hoveredId === item.id;
           const isBouncing = bouncingId === item.id;
-          const isOpen = openApps[item.id];
+          const isOpen = item.id === 'itunes' ? (openApps.itunes || openApps.ipod) : openApps[item.id];
 
           return (
             <div
@@ -264,8 +279,26 @@ export default function MacDock({
       {openApps.photos && (
         <PhotosModal onClose={() => onCloseApp('photos')} />
       )}
+      {openApps.youtube && (
+        <YouTubeModal 
+          youtubeUrl={socialLinks?.youtube}
+          onOpenSettings={() => { onCloseApp('youtube'); onLaunchApp('settings'); }}
+          onClose={() => onCloseApp('youtube')} 
+        />
+      )}
       {openApps.instagram && (
-        <InstagramModal onClose={() => onCloseApp('instagram')} />
+        <InstagramModal 
+          instagramUrl={socialLinks?.instagram}
+          onOpenSettings={() => { onCloseApp('instagram'); onLaunchApp('settings'); }}
+          onClose={() => onCloseApp('instagram')} 
+        />
+      )}
+      {openApps.linkedin && (
+        <LinkedInModal 
+          linkedinUrl={socialLinks?.linkedin}
+          onOpenSettings={() => { onCloseApp('linkedin'); onLaunchApp('settings'); }}
+          onClose={() => onCloseApp('linkedin')} 
+        />
       )}
       {openApps.mail && (
         <MailModal onClose={() => onCloseApp('mail')} />
@@ -290,6 +323,10 @@ export default function MacDock({
           customUploadLock={customUploadLock}
           onUploadLockWallpaper={onUploadLockWallpaper}
           initialTab={settingsInitialTab}
+          socialLinks={socialLinks}
+          onUpdateSocialLinks={onUpdateSocialLinks}
+          dashboardConfig={dashboardConfig}
+          onUpdateDashboardConfig={onUpdateDashboardConfig}
         />
       )}
       {openApps.trash && (

@@ -23,7 +23,10 @@ export const ICON_ASSETS = [
   '/icons/Notes.png',
   '/icons/Mail.png',
   '/icons/Bin.png',
-  '/icons/Instagram.png'
+  '/icons/Instagram.png',
+  '/icons/YouTube.png',
+  '/icons/LinkedIn.png',
+  '/icons/iTunes.png'
 ];
 
 // Wallpapers that can be on screen the instant the lock screen or desktop paints.

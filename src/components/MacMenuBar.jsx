@@ -68,8 +68,8 @@ export default function MacMenuBar({
 
   return (
     <>
-      {/* Top macOS Translucent Menu Bar */}
-      <header className="mac-menu-bar select-none relative z-[9990] flex items-center justify-between px-3 h-7 bg-white/20 dark:bg-black/30 backdrop-blur-xl border-b border-white/20 dark:border-white/10 text-xs font-sans text-slate-900 dark:text-slate-100 shadow-sm">
+      {/* Top macOS Translucent Menu Bar with Liquid Glass */}
+      <header className="mac-menu-bar select-none relative z-[9990] flex items-center justify-between px-3 h-7 bg-white/45 dark:bg-black/45 backdrop-blur-2xl border-b border-white/40 dark:border-white/12 text-xs font-sans text-slate-900 dark:text-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         
         {/* Left Section: Apple Logo & Active App Context Menu */}
         <div className="flex items-center gap-3">

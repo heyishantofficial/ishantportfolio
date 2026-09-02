@@ -28,10 +28,10 @@ export default function MacControlCenter({
 
   return (
     <div 
-      className="fixed top-8 right-3 w-80 bg-white/70 dark:bg-slate-900/75 backdrop-blur-3xl rounded-2xl p-3.5 shadow-2xl border border-white/50 dark:border-slate-700/60 z-[9995] text-slate-800 dark:text-slate-100 font-sans animate-in fade-in slide-in-from-top-2 duration-150 select-none"
+      className="fixed top-8 right-3 w-80 bg-[var(--mac-glass-bg)] backdrop-blur-3xl rounded-2xl p-3.5 shadow-[0_24px_60px_-10px_rgba(0,0,0,0.38)] border border-white/60 dark:border-white/15 z-[9995] text-slate-800 dark:text-slate-100 font-sans animate-in fade-in slide-in-from-top-2 duration-150 select-none"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-slate-700/50 pb-2 mb-3">
+      <div className="flex items-center justify-between border-b border-black/[0.08] dark:border-white/[0.08] pb-2 mb-3">
         <span className="font-extrabold text-xs tracking-tight">macOS Control Center</span>
         <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
           Sequoia v15.0
@@ -41,8 +41,8 @@ export default function MacControlCenter({
       {/* Grid Controls */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         {/* Wi-Fi Tile */}
-        <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-2.5 shadow-sm">
-          <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0">
+        <div className="p-2.5 rounded-xl bg-white/65 dark:bg-white/10 backdrop-blur-md border border-white/50 dark:border-white/10 flex items-center gap-2.5 shadow-sm">
+          <div className="w-7 h-7 rounded-full bg-[#007aff] text-white flex items-center justify-center shrink-0 shadow-sm">
             <Wifi className="w-4 h-4" />
           </div>
           <div className="overflow-hidden">
@@ -54,9 +54,9 @@ export default function MacControlCenter({
         {/* Display / Dark Mode Tile */}
         <div 
           onClick={() => { playMacClick(isMuted); onToggleDarkMode(); }}
-          className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-2.5 shadow-sm cursor-pointer hover:bg-white dark:hover:bg-slate-800 transition-colors"
+          className="p-2.5 rounded-xl bg-white/65 dark:bg-white/10 backdrop-blur-md border border-white/50 dark:border-white/10 flex items-center gap-2.5 shadow-sm cursor-pointer hover:bg-white/80 dark:hover:bg-white/15 transition-all active:scale-98"
         >
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white ${isDarkMode ? 'bg-indigo-600' : 'bg-amber-500'}`}>
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm ${isDarkMode ? 'bg-indigo-600' : 'bg-amber-500'}`}>
             {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </div>
           <div className="overflow-hidden">
@@ -67,7 +67,7 @@ export default function MacControlCenter({
       </div>
 
       {/* Wallpaper Switcher */}
-      <div className="p-3 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-sm space-y-2 mb-3">
+      <div className="p-3 rounded-xl bg-white/65 dark:bg-white/10 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm space-y-2 mb-3">
         <div className="flex items-center justify-between text-xs font-bold">
           <span>Desktop Wallpaper</span>
           <Sparkles className="w-3.5 h-3.5 text-blue-500" />

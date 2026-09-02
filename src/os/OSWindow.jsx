@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import GradientBlur from '../components/GradientBlur';
 
 const MENU_BAR_H = 28;   // windows must not slide under the menu bar
 const DOCK_GUARD = 72;   // ...or under the dock
@@ -113,30 +114,40 @@ export default function OSWindow({
         isActive ? 'os-window-active' : 'os-window-idle'
       } ${dragging ? 'select-none cursor-grabbing' : ''}`}
     >
-      {/* Titlebar */}
+      {/* Progressive optical edge blurs */}
+      <GradientBlur direction="top" size={28} />
+      <GradientBlur direction="bottom" size={24} />
+
+      {/* Titlebar with specular top highlight */}
       <header
         onPointerDown={handleTitlePointerDown}
         onDoubleClick={() => !isCompact && onToggleMaximize()}
-        className={`shrink-0 h-11 px-3 flex items-center gap-3 border-b border-black/10 dark:border-white/10 ${
+        className={`shrink-0 h-11 px-3 flex items-center gap-3 border-b border-black/[0.08] dark:border-white/[0.08] border-t border-white/60 dark:border-white/10 bg-[var(--mac-glass-titlebar)]/50 ${
           isCompact || win.maximized ? '' : 'cursor-grab active:cursor-grabbing'
         }`}
       >
-        <div className="flex items-center gap-2 shrink-0" data-no-drag>
+        <div className="mac-traffic-lights shrink-0" data-no-drag>
           <button
             onClick={onClose}
             aria-label={`Close ${title}`}
-            className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[#ff5f56]"
-          />
+            className="mac-traffic-btn mac-traffic-close group"
+          >
+            <span className="mac-traffic-glyph">✕</span>
+          </button>
           <button
             onClick={onMinimize}
             aria-label={`Minimize ${title}`}
-            className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[#ffbd2e]"
-          />
+            className="mac-traffic-btn mac-traffic-minimize group"
+          >
+            <span className="mac-traffic-glyph">−</span>
+          </button>
           <button
             onClick={onToggleMaximize}
             aria-label={`${win.maximized ? 'Restore' : 'Maximize'} ${title}`}
-            className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[#27c93f]"
-          />
+            className="mac-traffic-btn mac-traffic-maximize group"
+          >
+            <span className="mac-traffic-glyph">⤢</span>
+          </button>
         </div>
 
         {toolbar ? (

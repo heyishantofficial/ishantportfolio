@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ==========================================================================
    MINIMAL FOLDER DECK DESIGN SYSTEM (With Real Paper & Manila Texture Overlay)
@@ -244,42 +245,277 @@ html, body, #root {
 }
 
 /* ==========================================================================
-   ISHANTOS — window layer
+   ISHANTOS — macOS Liquid Glass & Window Layer
    ========================================================================== */
 
 :root {
-  /* The identity accent: selection, active states, links, system highlights. */
-  --os-accent: #c0392b;
+  /* Apple macOS system accent blue */
+  --os-accent: #007aff;
+  --os-accent-hover: #0066d6;
+  --os-accent-muted: rgba(0, 122, 255, 0.15);
+
+  /* macOS translucent materials (Light) */
+  --mac-glass-bg: rgba(245, 246, 250, 0.52);
+  --mac-glass-sidebar: rgba(230, 233, 240, 0.46);
+  --mac-glass-titlebar: rgba(245, 246, 250, 0.62);
+  --mac-glass-footer: rgba(238, 240, 245, 0.52);
+  --mac-glass-border: rgba(255, 255, 255, 0.6);
+  --mac-glass-border-outer: rgba(255, 255, 255, 0.45);
+  --mac-text-primary: #1d1d1f;
+  --mac-text-secondary: #424245;
+  --mac-text-muted: #6e6e73;
+  --mac-item-hover: rgba(0, 0, 0, 0.05);
+  --mac-specular-top: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.95), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  /* macOS translucent materials (Dark) */
+  --mac-glass-bg: rgba(22, 24, 30, 0.56);
+  --mac-glass-sidebar: rgba(16, 18, 22, 0.48);
+  --mac-glass-titlebar: rgba(24, 26, 32, 0.64);
+  --mac-glass-footer: rgba(18, 20, 24, 0.52);
+  --mac-glass-border: rgba(255, 255, 255, 0.18);
+  --mac-glass-border-outer: rgba(255, 255, 255, 0.14);
+  --mac-text-primary: #f5f5f7;
+  --mac-text-secondary: #a1a1a6;
+  --mac-text-muted: #6e6e73;
+  --mac-item-hover: rgba(255, 255, 255, 0.08);
+  --mac-specular-top: inset 0 1px 1px rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 
 .os-window {
-  background: rgba(252, 252, 250, 0.92);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  color: #1a1a1a;
-  transition: box-shadow 0.18s ease, opacity 0.18s ease;
+  background: var(--mac-glass-bg);
+  backdrop-filter: blur(48px) saturate(220%) brightness(1.03);
+  -webkit-backdrop-filter: blur(48px) saturate(220%) brightness(1.03);
+  border: 1px solid var(--mac-glass-border-outer);
+  box-shadow: 
+    0 30px 90px -12px rgba(0, 0, 0, 0.45),
+    0 12px 36px -6px rgba(0, 0, 0, 0.22),
+    var(--mac-specular-top);
+  color: var(--mac-text-primary);
+  border-radius: 14px;
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
 }
 
-.dark .os-window {
-  background: rgba(22, 25, 32, 0.92);
-  border-color: rgba(255, 255, 255, 0.14);
-  color: #f1f5f9;
-}
 
-/* An inactive window should recede without becoming unreadable. */
 .os-window-active {
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.16);
+  box-shadow: 
+    0 32px 85px -10px rgba(0, 0, 0, 0.44),
+    0 14px 36px -5px rgba(0, 0, 0, 0.25),
+    var(--mac-specular-top),
+    0 0 0 0.5px rgba(255, 255, 255, 0.25) inset;
 }
 
 .os-window-idle {
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
-  opacity: 0.97;
+  box-shadow: 
+    0 14px 40px -10px rgba(0, 0, 0, 0.25),
+    0 4px 12px -2px rgba(0, 0, 0, 0.15),
+    var(--mac-specular-top);
+  opacity: 0.96;
 }
 
 .os-window ::selection {
   background: var(--os-accent);
   color: #fff;
+}
+
+/* macOS Window Traffic Lights */
+.mac-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mac-traffic-btn {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  transition: filter 0.12s ease, transform 0.1s ease;
+}
+
+.mac-traffic-btn:active {
+  transform: scale(0.92);
+}
+
+.mac-traffic-close {
+  background: radial-gradient(circle at 35% 30%, #ff736a, #ff5f56 60%, #e0443e 100%);
+  border: 0.5px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.mac-traffic-minimize {
+  background: radial-gradient(circle at 35% 30%, #ffcb42, #ffbd2e 60%, #dea123 100%);
+  border: 0.5px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.mac-traffic-maximize {
+  background: radial-gradient(circle at 35% 30%, #3fe058, #27c93f 60%, #1aab29 100%);
+  border: 0.5px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.mac-traffic-glyph {
+  opacity: 0;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  transition: opacity 0.12s ease;
+  pointer-events: none;
+}
+
+.mac-traffic-lights:hover .mac-traffic-glyph {
+  opacity: 1;
+}
+
+/* macOS Finder Segmented Control */
+.mac-segmented-control {
+  background: rgba(0, 0, 0, 0.06);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 7px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.dark .mac-segmented-control {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.mac-segmented-btn {
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--mac-text-secondary);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mac-segmented-btn:hover {
+  color: var(--mac-text-primary);
+}
+
+.mac-segmented-btn-active {
+  background: #ffffff;
+  color: #1d1d1f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.08);
+}
+
+.dark .mac-segmented-btn-active {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* macOS Search Field */
+.mac-search-field {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 7px;
+  padding: 3.5px 8px 3.5px 24px;
+  font-size: 11.5px;
+  color: var(--mac-text-primary);
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.dark .mac-search-field {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.mac-search-field:focus {
+  background: #ffffff;
+  border-color: var(--os-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25);
+}
+
+.dark .mac-search-field:focus {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--os-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.35);
+}
+
+/* Progressive Gradient Blur Multi-Stop Layers */
+.gradient-blur-container {
+  position: absolute;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+}
+
+.gb-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.gb-layer-0 {
+  backdrop-filter: blur(0.5px);
+  -webkit-backdrop-filter: blur(0.5px);
+  mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%);
+  -webkit-mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%);
+}
+
+.gb-layer-1 {
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%);
+  -webkit-mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%);
+}
+
+.gb-layer-2 {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%);
+  -webkit-mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%);
+}
+
+.gb-layer-3 {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%);
+  -webkit-mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%);
+}
+
+.gb-layer-4 {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%);
+  -webkit-mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%);
+}
+
+.gb-layer-5 {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%);
+  -webkit-mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%);
+}
+
+.gb-layer-6 {
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%);
+  -webkit-mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%);
+}
+
+.gb-layer-7 {
+  backdrop-filter: blur(64px);
+  -webkit-backdrop-filter: blur(64px);
+  mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%);
+  -webkit-mask: linear-gradient(var(--mask-dir, to bottom), rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%);
 }
 
 @keyframes os-fade-in {
@@ -299,3 +535,4 @@ html, body, #root {
     transition: none;
   }
 }
+

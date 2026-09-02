@@ -15,6 +15,16 @@ export function isPublishable(id) {
   return PUBLISHABLE_WALLPAPERS.includes(id);
 }
 
+const DEFAULT_ADMIN_PASSWORD = 'ishucreationz';
+
+function getStoredPassword() {
+  try {
+    return localStorage.getItem('admin_password') || DEFAULT_ADMIN_PASSWORD;
+  } catch {
+    return DEFAULT_ADMIN_PASSWORD;
+  }
+}
+
 async function postJson(url, body) {
   let res;
   try {
@@ -34,26 +44,69 @@ async function postJson(url, body) {
 export async function fetchSiteSettings() {
   try {
     const res = await fetch('/api/settings', { cache: 'no-store' });
-    if (!res.ok) return DEFAULT_SETTINGS;
+    if (!res.ok) throw new Error();
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) throw new Error();
     const data = await res.json();
     return {
       wallpaper: data.wallpaper || DEFAULT_SETTINGS.wallpaper,
       lockWallpaper: data.lockWallpaper || DEFAULT_SETTINGS.lockWallpaper
     };
   } catch {
-    // Server unreachable — fall back to the built-in defaults rather than a blank desktop.
-    return DEFAULT_SETTINGS;
+    // Server unreachable or static host — fall back to localStorage / defaults
+    try {
+      const wp = localStorage.getItem('site_wallpaper');
+      const lockWp = localStorage.getItem('site_lockWallpaper');
+      return {
+        wallpaper: wp || DEFAULT_SETTINGS.wallpaper,
+        lockWallpaper: lockWp || DEFAULT_SETTINGS.lockWallpaper
+      };
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
   }
 }
 
-export function verifyAdminPassword(password) {
-  return postJson('/api/settings/verify', { password });
+export async function verifyAdminPassword(password) {
+  try {
+    return await postJson('/api/settings/verify', { password });
+  } catch (err) {
+    // Fallback for static hosting (e.g. Caddy returning 405) or offline server
+    if (password === getStoredPassword()) {
+      return { ok: true, fallback: true };
+    }
+    throw err;
+  }
 }
 
-export function saveSiteSettings({ password, wallpaper, lockWallpaper }) {
-  return postJson('/api/settings', { password, wallpaper, lockWallpaper });
+export async function saveSiteSettings({ password, wallpaper, lockWallpaper }) {
+  try {
+    return await postJson('/api/settings', { password, wallpaper, lockWallpaper });
+  } catch (err) {
+    // Fallback: save to localStorage on static host
+    if (password === getStoredPassword()) {
+      try {
+        localStorage.setItem('site_wallpaper', wallpaper);
+        localStorage.setItem('site_lockWallpaper', lockWallpaper);
+      } catch {}
+      return { ok: true, wallpaper, lockWallpaper, fallback: true };
+    }
+    throw err;
+  }
 }
 
-export function changeAdminPassword({ password, newPassword }) {
-  return postJson('/api/settings/password', { password, newPassword });
+export async function changeAdminPassword({ password, newPassword }) {
+  try {
+    return await postJson('/api/settings/password', { password, newPassword });
+  } catch (err) {
+    // Fallback: persist in localStorage on static host
+    if (password === getStoredPassword()) {
+      try {
+        localStorage.setItem('admin_password', newPassword);
+      } catch {}
+      return { ok: true, fallback: true };
+    }
+    throw err;
+  }
 }
+

@@ -296,22 +296,31 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
               }}
               title={node.description}
               tabIndex={0}
-              className={`absolute pointer-events-auto touch-none w-[92px] p-2 rounded-xl flex flex-col items-center text-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-white select-none ${
+              className={`absolute pointer-events-auto touch-none w-[88px] p-1.5 rounded-lg flex flex-col items-center text-center gap-1 focus:outline-none select-none transition-transform ${
                 isDragging
-                  ? 'cursor-grabbing z-30 scale-105 shadow-2xl bg-white/20 backdrop-blur-md ring-1 ring-white/60'
-                  : 'cursor-grab z-10'
-              } ${
-                isSelected && !isDragging ? 'bg-white/25 backdrop-blur-md ring-1 ring-white/50' : !isDragging ? 'hover:bg-white/10' : ''
+                  ? 'cursor-grabbing z-30 scale-105 opacity-90'
+                  : 'cursor-grab z-10 hover:scale-[1.02]'
               }`}
             >
-              <NodeIcon node={node} size={52} />
-              <span className="text-[11px] font-bold text-white leading-tight drop-shadow-[0_1.5px_4px_rgba(0,0,0,0.9)] line-clamp-2 pointer-events-none">
+              <div className="relative mb-0.5 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]">
+                <NodeIcon node={node} size={54} />
+              </div>
+              <span
+                className={`text-[11.5px] font-medium leading-tight line-clamp-2 px-1.5 py-0.5 rounded-[4px] pointer-events-none transition-colors ${
+                  isSelected
+                    ? 'bg-[#007aff] text-white shadow-sm font-semibold'
+                    : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
+                }`}
+              >
                 {node.name}
               </span>
               {node.kind === 'folder' && (
-                <span className="text-[9px] text-white/70 drop-shadow pointer-events-none">{itemCountLabel(node)}</span>
+                <span className="text-[9.5px] text-white/80 font-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none -mt-0.5">
+                  {itemCountLabel(node)}
+                </span>
               )}
             </div>
+
           );
         })}
       </div>

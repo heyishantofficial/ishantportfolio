@@ -128,9 +128,18 @@ app.post('/api/settings/password', async (req, res) => {
   }
 });
 
-// Static built site + SPA fallback
-app.use(express.static(DIST));
-app.get(/.*/, (_req, res) => res.sendFile(path.join(DIST, 'index.html')));
+// Static built site + SPA fallback with no-cache for index.html
+app.use(express.static(DIST, {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
+app.get(/.*/, (_req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(DIST, 'index.html'));
+});
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Portfolio running on port ${PORT} — settings stored at ${SETTINGS_FILE}`);

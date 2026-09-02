@@ -420,7 +420,7 @@ export default function FinderWindow({
               if (isAdmin) {
                 setShowAdminDropdown(!showAdminDropdown);
               } else {
-                setAuthPrompt('Enter administrator password ("ishucreationz") to manage folders, upload files, and rename items.');
+                setAuthPrompt('Enter administrator password to manage folders, upload files, and rename items.');
                 setShowAuthModal(true);
               }
             }}

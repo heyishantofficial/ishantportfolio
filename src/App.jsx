@@ -14,6 +14,7 @@ import ProjectModal from './components/ProjectModal';
 import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
 import { playBootChime } from './utils/macAudioEngine';
+import { fetchSiteSettings, DEFAULT_SETTINGS } from './lib/siteSettings';
 
 const QUOTES = [
   "I believe the best ideas usually start as weird ones.",
@@ -27,8 +28,8 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [wallpaper, setWallpaper] = useState('video');
-  const [lockWallpaper, setLockWallpaper] = useState('custom');
+  const [wallpaper, setWallpaper] = useState(DEFAULT_SETTINGS.wallpaper);
+  const [lockWallpaper, setLockWallpaper] = useState(DEFAULT_SETTINGS.lockWallpaper);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(20);
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
@@ -44,6 +45,18 @@ export default function App() {
     notes: false,
     ipod: false
   });
+
+  // Load the global wallpaper defaults the admin last saved, so every
+  // visitor lands on the same wallpaper without needing a redeploy.
+  useEffect(() => {
+    let cancelled = false;
+    fetchSiteSettings().then((settings) => {
+      if (cancelled) return;
+      setWallpaper(settings.wallpaper);
+      setLockWallpaper(settings.lockWallpaper);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
   const [loginTimeStr, setLoginTimeStr] = useState('');

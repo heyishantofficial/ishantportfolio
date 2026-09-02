@@ -235,6 +235,20 @@ export default function MacDock({
           onClose={() => onCloseApp('safari')} 
         />
       )}
+      {openApps.settings && (
+        <SystemSettingsModal
+          wallpaper={wallpaper}
+          onChangeWallpaper={onChangeWallpaper}
+          lockWallpaper={lockWallpaper}
+          onChangeLockWallpaper={onChangeLockWallpaper}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={onToggleDarkMode}
+          volume={volume}
+          onChangeVolume={onChangeVolume}
+          isMuted={isMuted}
+          onClose={() => onCloseApp('settings')}
+        />
+      )}
       {openApps['system-info'] && (
         <SystemInfoModal 
           onClose={() => onCloseApp('system-info')} 

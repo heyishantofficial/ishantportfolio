@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { 
-  Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor
+  Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Globe, Loader2
 } from "lucide-react";
 import { MacWindow } from "./macDockModals";
 import { playMacClick } from "../utils/macAudioEngine";
+import { verifyAdminPassword, saveSiteSettings } from "../lib/siteSettings";
 
 export default function SystemSettingsModal({ 
   onClose,
@@ -19,6 +20,52 @@ export default function SystemSettingsModal({
   onChangeVolume
 }) {
   const [activeTab, setActiveTab] = useState("wallpaper");
+
+  // System Settings is the admin panel: it stays locked until the password checks out.
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  // Kept so the admin's password can be replayed when publishing, without storing it in state we render.
+  const adminPassword = useRef("");
+  const [publishState, setPublishState] = useState("idle"); // idle | saving | saved | error
+  const [publishError, setPublishError] = useState("");
+
+  const handleAdminUnlock = async (e) => {
+    e.preventDefault();
+    if (!passwordInput.trim() || isVerifying) return;
+    setIsVerifying(true);
+    setAuthError("");
+    try {
+      await verifyAdminPassword(passwordInput);
+      adminPassword.current = passwordInput;
+      setIsAdmin(true);
+      setPasswordInput("");
+      playMacClick(isMuted);
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handlePublishDefaults = async () => {
+    setPublishState("saving");
+    setPublishError("");
+    try {
+      await saveSiteSettings({
+        password: adminPassword.current,
+        wallpaper,
+        lockWallpaper
+      });
+      setPublishState("saved");
+      setTimeout(() => setPublishState("idle"), 2500);
+    } catch (err) {
+      setPublishError(err.message);
+      setPublishState("error");
+    }
+  };
 
   const desktopWallpaperOptions = [
     { id: "video", name: "Dynamic Live Video", type: "video", preview: "/bg-video.mp4" },
@@ -37,6 +84,52 @@ export default function SystemSettingsModal({
     { id: "neon", name: "Cyberpunk Neon Glow", type: "gradient", bgClass: "bg-gradient-to-br from-slate-950 via-purple-950 to-blue-950" },
     { id: "aurora", name: "Dark Aurora Borealis", type: "gradient", bgClass: "bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-950" }
   ];
+
+  // Locked view — shown to every visitor who is not the admin.
+  if (!isAdmin) {
+    return (
+      <MacWindow title="System Settings — macOS Sequoia" icon={Sliders} onClose={onClose} width="max-w-md">
+        <div className="flex flex-col items-center justify-center gap-4 py-8 px-6 select-none font-sans text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 flex items-center justify-center shadow-lg border border-slate-600">
+            <Lock className="w-7 h-7 text-slate-100" />
+          </div>
+
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              System Settings is locked
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
+              These settings control the wallpaper every visitor sees. Enter the administrator password to continue.
+            </p>
+          </div>
+
+          <form onSubmit={handleAdminUnlock} className="w-full max-w-xs flex flex-col items-center gap-3 mt-1">
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => { setPasswordInput(e.target.value); setAuthError(""); }}
+              placeholder="Administrator password"
+              autoFocus
+              className="w-full px-4 py-2 bg-white/70 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-full text-xs text-center font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            {authError && (
+              <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">{authError}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={!passwordInput.trim() || isVerifying}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full text-xs font-semibold shadow-lg transition-colors cursor-pointer flex items-center gap-2"
+            >
+              {isVerifying && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {isVerifying ? "Verifying..." : "Unlock Settings"}
+            </button>
+          </form>
+        </div>
+      </MacWindow>
+    );
+  }
 
   return (
     <MacWindow title="System Settings — macOS Sequoia" icon={Sliders} onClose={onClose} width="max-w-4xl">

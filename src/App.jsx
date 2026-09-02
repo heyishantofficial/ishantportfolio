@@ -6,16 +6,16 @@ import confetti from 'canvas-confetti';
 import MacMenuBar from './components/MacMenuBar';
 import MacControlCenter from './components/MacControlCenter';
 import MacSpotlight from './components/MacSpotlight';
-import MacDesktopIcons from './components/MacDesktopIcons';
+import IshantOS from './os/IshantOS';
 import MacDock from './components/MacDock';
 
-import OfficeCoutureFolder from './components/OfficeCoutureFolder';
 import ProjectModal from './components/ProjectModal';
 import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
 import { CircularProgressCombined } from './components/CircularProgress';
 import { playBootChime } from './utils/macAudioEngine';
-import { fetchSiteSettings, DEFAULT_SETTINGS } from './lib/siteSettings';
+import { DEFAULT_SETTINGS } from './lib/siteSettings';
+import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
 
 export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -35,7 +35,9 @@ export default function App() {
   const [customUploadLock, setCustomUploadLock] = useState(null);
   const [settingsInitialTab, setSettingsInitialTab] = useState('wallpaper');
   const [desktopContextMenu, setDesktopContextMenu] = useState(null);
+  const [desktopNotice, setDesktopNotice] = useState(null);
 
+  const osRef = useRef(null);
   const videoRef = useRef(null);
   const nameInputRef = useRef(null);
   const [showControlCenter, setShowControlCenter] = useState(false);
@@ -48,18 +50,6 @@ export default function App() {
     ipod: false,
     settings: false
   });
-
-  // Load the global wallpaper defaults the admin last saved, so every
-  // visitor lands on the same wallpaper without needing a redeploy.
-  useEffect(() => {
-    let cancelled = false;
-    fetchSiteSettings().then((settings) => {
-      if (cancelled) return;
-      setWallpaper(settings.wallpaper);
-      setLockWallpaper(settings.lockWallpaper);
-    });
-    return () => { cancelled = true; };
-  }, []);
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
   const [loginTimeStr, setLoginTimeStr] = useState('');
@@ -81,89 +71,53 @@ export default function App() {
 
   const [isAppReady, setIsAppReady] = useState(false);
   const [isBootLoading, setIsBootLoading] = useState(true);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(15);
-  const [bgVideoSrc, setBgVideoSrc] = useState('/bg-video.mp4');
-  const [lockVideoSrc, setLockVideoSrc] = useState('/lock-video.mp4');
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  // Choreographed desktop entrance, armed the moment the user unlocks.
+  const [isDesktopEntering, setIsDesktopEntering] = useState(false);
 
-  // Pre-fetch video files into local RAM Blob URLs
+  // Boot the workspace for real: hold on the loader until fonts, the published
+  // settings, every dock/desktop icon, the lock wallpaper and the first decoded
+  // frame of both videos are actually in the browser. Nothing is allowed to
+  // arrive after the desktop paints, which is what used to make the site
+  // assemble itself piece by piece in front of the visitor.
   useEffect(() => {
-    let isMounted = true;
-    const cacheAndPreloadVideos = async () => {
-      try {
-        const [bgRes, lockRes] = await Promise.all([
-          fetch('/bg-video.mp4'),
-          fetch('/lock-video.mp4')
-        ]);
+    let cancelled = false;
 
-        if (bgRes.ok && lockRes.ok) {
-          const [bgBlob, lockBlob] = await Promise.all([
-            bgRes.blob(),
-            lockRes.blob()
-          ]);
+    // The ring eases toward whatever the preloader has genuinely finished
+    // rather than snapping to it. The target is always real — a stage landing
+    // in one lump just makes the ring travel faster, and it can never reach
+    // 100% before the last asset is actually in.
+    let target = 0;
+    let shown = 0;
+    let frame = 0;
 
-          if (isMounted) {
-            const bgUrl = URL.createObjectURL(bgBlob);
-            const lockUrl = URL.createObjectURL(lockBlob);
-            setBgVideoSrc(bgUrl);
-            setLockVideoSrc(lockUrl);
-            setIsVideoLoaded(true);
-          }
-        }
-      } catch (err) {
-        console.warn('Video pre-fetch error:', err);
-        if (isMounted) setIsVideoLoaded(true);
-      }
+    const tick = () => {
+      shown += (target - shown) * 0.09;
+      if (target >= 100 && target - shown < 0.6) shown = 100;
+      setLoadingProgress(Math.floor(shown));
+      if (shown < 100) frame = requestAnimationFrame(tick);
     };
+    frame = requestAnimationFrame(tick);
 
-    cacheAndPreloadVideos();
+    preloadBootAssets((percent) => {
+      // Never let the ring walk backwards if a stage reports out of order.
+      if (percent > target) target = percent;
+    }).then(({ settings }) => {
+      if (cancelled) return;
+      setWallpaper(settings.wallpaper);
+      setLockWallpaper(settings.lockWallpaper);
+      // Let the ring sit visibly at 100% before handing over to the login screen.
+      // Let the ring visibly catch up to and rest at 100% before handing over.
+      setTimeout(() => {
+        if (!cancelled) setIsBootLoading(false);
+      }, 700);
+    });
 
     return () => {
-      isMounted = false;
+      cancelled = true;
+      cancelAnimationFrame(frame);
     };
   }, []);
-
-  // Smooth macOS Startup Progress over ~2 seconds
-  useEffect(() => {
-    if (isAppReady) return;
-
-    setLoadingProgress(5);
-    const startTime = Date.now();
-
-    const interval = setInterval(() => {
-      setLoadingProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        // If videos are still fetching, hold at 90% up to 2.5s
-        if (prev >= 90 && !isVideoLoaded && Date.now() - startTime < 2500) {
-          return 90;
-        }
-        const step = Math.floor(Math.random() * 8 + 6);
-        const next = prev + step;
-        if (next >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return next;
-      });
-    }, 100);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [isVideoLoaded, isAppReady]);
-
-  // Transition from Circular Progress Loader to Quote & Login Screen when 100% complete
-  useEffect(() => {
-    if (loadingProgress >= 100 && isBootLoading) {
-      const timer = setTimeout(() => {
-        setIsBootLoading(false);
-      }, 700);
-      return () => clearTimeout(timer);
-    }
-  }, [loadingProgress, isBootLoading]);
 
   // LOGIN UNLOCK FUNCTION (NAME LOGIN)
   const handleBootSystem = (e) => {
@@ -190,14 +144,31 @@ export default function App() {
     setTimeout(() => {
       setIsAppReady(true);
       setIsLoggingIn(false);
+      setIsDesktopEntering(true);
+      // Warm the non-critical assets now that nothing is competing for bandwidth.
+      preloadDeferredAssets();
     }, 450);
   };
+
+  // Drop the entrance class once the sequence has finished, so the desktop is
+  // left in its normal state and a re-lock can replay it cleanly.
+  useEffect(() => {
+    if (!isDesktopEntering) return;
+    const timer = setTimeout(() => setIsDesktopEntering(false), 1400);
+    return () => clearTimeout(timer);
+  }, [isDesktopEntering]);
 
   const handleOpenSettingsWithTab = (tabName = 'wallpaper') => {
     setSettingsInitialTab(tabName);
     setOpenApps(prev => ({ ...prev, settings: true }));
     setActiveAppTitle('System Settings');
     setDesktopContextMenu(null);
+  };
+
+  const showDesktopNotice = (text) => {
+    setDesktopContextMenu(null);
+    setDesktopNotice(text);
+    setTimeout(() => setDesktopNotice(null), 2800);
   };
 
   // Right-Click Context Menu on Desktop Canvas
@@ -260,7 +231,7 @@ export default function App() {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === ' ')) {
+      if ((e.metaKey || e.ctrlKey) && e.key === ' ') {
         e.preventDefault();
         setShowSpotlight(prev => !prev);
       } else if (e.key === 'Escape') {
@@ -274,6 +245,19 @@ export default function App() {
   }, []);
 
   const handleLaunchApp = (appId) => {
+    // These three are folder-layer windows — the dock's old modals are bypassed.
+    if (appId === "finder") {
+      osRef.current?.openId("home");
+      return;
+    }
+    if (appId === "resume" || appId === "resume.pdf") {
+      osRef.current?.openId("resume");
+      return;
+    }
+    if (appId === "trash") {
+      osRef.current?.openTrash();
+      return;
+    }
     if (appId === "ipod" || appId === "music" || appId === "cyberdeck") {
       const nextState = !showCyberdeck;
       setShowCyberdeck(nextState);
@@ -327,14 +311,14 @@ export default function App() {
         <div 
           onContextMenu={handleDesktopContextMenu}
           style={wallpaper === 'uploaded_desktop' && customUploadDesktop ? { backgroundImage: `url(${customUploadDesktop})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
-          className={`w-full h-full max-h-full ${wallpaper === 'uploaded_desktop' ? '' : (wallpaperClasses[wallpaper] || 'wallpaper-video')} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}
+          className={`w-full h-full max-h-full ${isDesktopEntering ? 'mac-boot-enter' : ''} ${wallpaper === 'uploaded_desktop' ? '' : (wallpaperClasses[wallpaper] || 'wallpaper-video')} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}
         >
           
           {/* Background Video element */}
           {wallpaper === 'video' && (
             <video
               ref={videoRef}
-              src={bgVideoSrc} preload="auto"
+              src="/bg-video.mp4" preload="auto"
               autoPlay
               loop
               playsInline
@@ -360,6 +344,10 @@ export default function App() {
             onVolumeChange={handleVolumeChange}
             showCyberdeck={showCyberdeck}
             onToggleCyberdeck={() => handleLaunchApp("ipod")}
+            onOpenPath={(nodeId) => osRef.current?.openId(nodeId)}
+            onNewFinderWindow={() => osRef.current?.newFinderWindow()}
+            onCloseWindow={() => osRef.current?.closeActive()}
+            onOpenPalette={() => osRef.current?.openPalette()}
           />
 
           {/* Control Center Dropdown */}
@@ -382,23 +370,17 @@ export default function App() {
             <MacSpotlight
               onClose={() => setShowSpotlight(false)}
               onLaunchApp={handleLaunchApp}
-              onSelectProject={(proj) => setSelectedProject(proj)}
+              onOpenNode={(node) => osRef.current?.openNode(node)}
               isMuted={isMuted}
             />
           )}
 
-          {/* Desktop Shortcuts Grid */}
-          <MacDesktopIcons 
-            onOpenApp={handleLaunchApp} 
+          {/* IshantOS folder layer: desktop items, windows, Cmd+K palette */}
+          <IshantOS
+            ref={osRef}
             isMuted={isMuted}
+            onActiveTitleChange={setActiveAppTitle}
           />
-
-          {/* Main Desktop Center Content Stage */}
-          <div className="flex-1 flex flex-col items-center justify-center p-2 relative z-0 my-auto overflow-hidden">
-            <OfficeCoutureFolder 
-              onSelectProject={(project) => setSelectedProject(project)}
-            />
-          </div>
 
           {/* Project Detail Modal Overlay */}
           {selectedProject && (
@@ -412,6 +394,7 @@ export default function App() {
           <MacDock 
             openApps={openApps}
             onLaunchApp={handleLaunchApp}
+            onOpenPath={(nodeId) => osRef.current?.openId(nodeId)}
             onCloseApp={handleCloseApp}
             activeProject={selectedProject}
             onSelectProject={(project) => setSelectedProject(project)}
@@ -453,6 +436,13 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          {/* Transient desktop notice (Refresh easter egg) */}
+          {desktopNotice && (
+            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[99997] px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/20 text-white text-[12px] font-medium text-center whitespace-pre-line shadow-2xl animate-fadeIn">
+              {desktopNotice}
+            </div>
+          )}
+
           {/* Desktop Right Click Context Menu */}
           {desktopContextMenu && (
             <div 
@@ -477,6 +467,19 @@ export default function App() {
                 className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
               >
                 <span>🔑 Password & Security...</span>
+              </button>
+              <button 
+                onClick={() => { setDesktopContextMenu(null); osRef.current?.openPalette(); }}
+                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
+              >
+                <span>⚡ Quick Access...</span>
+                <span className="text-[10px] opacity-60 font-mono">⌘K</span>
+              </button>
+              <button 
+                onClick={() => showDesktopNotice("Nothing changed.\nIt's still Ishant.")}
+                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
+              >
+                <span>↻ Refresh</span>
               </button>
               <div className="my-1 border-t border-slate-300/40 dark:border-slate-700/40" />
               <button 
@@ -523,7 +526,7 @@ export default function App() {
             )}
             {lockWallpaper === 'video' && (
               <video
-                src={lockVideoSrc} preload="auto"
+                src="/lock-video.mp4" preload="auto"
                 autoPlay
                 loop
                 playsInline
@@ -567,16 +570,12 @@ export default function App() {
                       value={loadingProgress}
                       size={80}
                       thickness={6}
+                      aria-label="Loading portfolio assets"
                       className="text-amber-300"
                     />
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="font-mono text-xs font-bold tracking-widest uppercase text-white drop-shadow-md">
-                        Loading Workspace...
-                      </span>
-                      <span className="font-mono text-[11px] text-white/70">
-                        {loadingProgress}% Complete
-                      </span>
-                    </div>
+                    <span className="font-mono text-xs font-bold tracking-wide text-white drop-shadow-md max-w-[17rem] leading-relaxed">
+                      Loading Ishant&rsquo;s portfolio.dmg&hellip; hope it works.
+                    </span>
                   </div>
                 </motion.div>
               ) : (
@@ -650,7 +649,7 @@ export default function App() {
                 onClick={() => {
                   setPasswordInput('');
                   setLoginError('');
-                  if (passwordInputRef.current) passwordInputRef.current.focus();
+                  if (nameInputRef.current) nameInputRef.current.focus();
                 }}
               >
                 <div className="w-10 h-10 rounded-full bg-white/15 border border-white/30 backdrop-blur-xl text-white flex items-center justify-center shadow-lg group-hover:bg-white/25 group-hover:scale-105 transition-all">
@@ -666,7 +665,7 @@ export default function App() {
                 onClick={() => {
                   setPasswordInput('');
                   setLoginError('');
-                  if (passwordInputRef.current) passwordInputRef.current.focus();
+                  if (nameInputRef.current) nameInputRef.current.focus();
                 }}
               >
                 <div className="w-10 h-10 rounded-full bg-white/15 border border-white/30 backdrop-blur-xl text-white flex items-center justify-center shadow-lg group-hover:bg-white/25 group-hover:scale-105 transition-all">

@@ -59,7 +59,7 @@ export default function MacDesktopIcons({ onOpenApp, isMuted }) {
 
   return (
     <div 
-      className="absolute top-12 left-6 bottom-20 flex flex-col flex-wrap gap-5 z-[10] select-none pointer-events-auto"
+      className="mac-desktop-icons absolute top-12 left-6 bottom-20 flex flex-col flex-wrap gap-5 z-[10] select-none pointer-events-auto"
       onClick={() => setSelectedId(null)}
     >
       {desktopShortcuts.map((item) => {

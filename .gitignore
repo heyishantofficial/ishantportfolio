@@ -23,5 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Runtime site settings written by the server
-data
+# Runtime site settings written by the server (repo root only —
+# an unanchored "data" would also ignore src/data/)
+/data/

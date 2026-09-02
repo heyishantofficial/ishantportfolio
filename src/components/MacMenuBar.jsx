@@ -16,11 +16,16 @@ export default function MacMenuBar({
   volume = 20,
   onVolumeChange,
   isHardwareFrame,
-  onToggleFrameView
+  onToggleFrameView,
+  onOpenPath,
+  onNewFinderWindow,
+  onCloseWindow,
+  onOpenPalette
 }) {
   const [timeStr, setTimeStr] = useState('');
   const [showAppleMenu, setShowAppleMenu] = useState(false);
   const [showVolumeMenu, setShowVolumeMenu] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null);
   const [isLocked, setIsLocked] = useState(false);
   const [password, setPassword] = useState('');
   const [lockError, setLockError] = useState(false);
@@ -46,6 +51,12 @@ export default function MacMenuBar({
     playMacClick(isMuted);
     setShowAppleMenu(false);
     if (onOpenApp) onOpenApp(appId);
+  };
+
+  const openFromMenu = (nodeId) => {
+    playMacClick(isMuted);
+    setOpenMenu(null);
+    if (onOpenPath) onOpenPath(nodeId);
   };
 
   const handleUnlock = (e) => {
@@ -146,14 +157,64 @@ export default function MacMenuBar({
             {activeAppTitle}
           </span>
 
-          {/* Desktop App Options */}
-          <div className="hidden sm:flex items-center gap-3 text-slate-700 dark:text-slate-300 font-medium text-[11px]">
-            <span className="hover:opacity-75 cursor-pointer" onClick={() => handleAppAction('finder')}>File</span>
-            <span className="hover:opacity-75 cursor-pointer" onClick={() => handleAppAction('notes')}>Edit</span>
-            <span className="hover:opacity-75 cursor-pointer" onClick={() => onToggleControlCenter && onToggleControlCenter()}>View</span>
-            <span className="hover:opacity-75 cursor-pointer" onClick={() => handleAppAction('safari')}>Go</span>
-            <span className="hover:opacity-75 cursor-pointer" onClick={() => onToggleSpotlight && onToggleSpotlight()}>Window</span>
-            <span className="hover:opacity-75 cursor-pointer" onClick={() => handleAppAction('terminal')}>Help</span>
+          {/* File & Go menus — the keyboard-free route to everything */}
+          <div className="hidden sm:flex items-center gap-0.5 text-slate-700 dark:text-slate-300 font-medium text-[11px]">
+            <MenuBarMenu
+              label="File"
+              isOpen={openMenu === 'file'}
+              onToggle={() => { playMacClick(isMuted); setOpenMenu(openMenu === 'file' ? null : 'file'); setShowAppleMenu(false); }}
+              onClose={() => setOpenMenu(null)}
+              items={[
+                { label: 'New Finder Window', shortcut: '\u2318N', action: () => onNewFinderWindow && onNewFinderWindow() },
+                { separator: true },
+                { label: 'Open Experience', action: () => openFromMenu('experience') },
+                { label: 'Open Work', action: () => openFromMenu('work') },
+                { label: 'Open AI Lab', action: () => openFromMenu('ai-lab') },
+                { label: 'Open Resume', action: () => openFromMenu('resume') },
+                { separator: true },
+                { label: 'Close Window', shortcut: '\u2318W', action: () => onCloseWindow && onCloseWindow() }
+              ]}
+            />
+            <MenuBarMenu
+              label="Go"
+              isOpen={openMenu === 'go'}
+              onToggle={() => { playMacClick(isMuted); setOpenMenu(openMenu === 'go' ? null : 'go'); setShowAppleMenu(false); }}
+              onClose={() => setOpenMenu(null)}
+              items={[
+                { label: 'Home', shortcut: '\u21E7\u2318H', action: () => openFromMenu('home') },
+                { separator: true },
+                { label: 'Experience', action: () => openFromMenu('experience') },
+                { label: 'Work', action: () => openFromMenu('work') },
+                { label: 'AI Lab', action: () => openFromMenu('ai-lab') },
+                { label: 'About Me', action: () => openFromMenu('about-me') },
+                { label: 'Random', action: () => openFromMenu('random') },
+                { label: 'Contact', action: () => openFromMenu('contact') },
+                { separator: true },
+                { label: 'Resume.pdf', action: () => openFromMenu('resume') }
+              ]}
+            />
+            <MenuBarMenu
+              label="Window"
+              isOpen={openMenu === 'window'}
+              onToggle={() => { playMacClick(isMuted); setOpenMenu(openMenu === 'window' ? null : 'window'); setShowAppleMenu(false); }}
+              onClose={() => setOpenMenu(null)}
+              items={[
+                { label: 'Quick Access...', shortcut: '\u2318K', action: () => onOpenPalette && onOpenPalette() },
+                { label: 'Spotlight Search', shortcut: '\u2318Space', action: () => onToggleSpotlight && onToggleSpotlight() },
+                { separator: true },
+                { label: 'Control Centre', action: () => onToggleControlCenter && onToggleControlCenter() }
+              ]}
+            />
+            <MenuBarMenu
+              label="Help"
+              isOpen={openMenu === 'help'}
+              onToggle={() => { playMacClick(isMuted); setOpenMenu(openMenu === 'help' ? null : 'help'); setShowAppleMenu(false); }}
+              onClose={() => setOpenMenu(null)}
+              items={[
+                { label: 'Open Terminal', action: () => handleAppAction('terminal') },
+                { label: 'Contact Ishant', action: () => openFromMenu('contact') }
+              ]}
+            />
           </div>
         </div>
 
@@ -284,5 +345,55 @@ export default function MacMenuBar({
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * A menu-bar dropdown. Clicking the label toggles it; clicking anywhere else
+ * or picking an item closes it.
+ */
+function MenuBarMenu({ label, items, isOpen, onToggle, onClose }) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = () => onClose();
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [isOpen, onClose]);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        className={`px-2 py-0.5 rounded transition-colors ${isOpen ? 'bg-blue-600 text-white' : 'hover:bg-white/30 dark:hover:bg-white/10'}`}
+      >
+        {label}
+      </button>
+
+      {isOpen && (
+        <div
+          role="menu"
+          onClick={(e) => e.stopPropagation()}
+          className="absolute left-0 top-7 min-w-52 bg-white/85 dark:bg-slate-900/90 backdrop-blur-2xl rounded-lg shadow-2xl border border-white/40 dark:border-slate-700/60 py-1 text-xs text-slate-800 dark:text-slate-100 z-[9999] animate-fadeIn"
+        >
+          {items.map((item, i) =>
+            item.separator ? (
+              <div key={`sep-${i}`} className="my-1 border-t border-slate-300/40 dark:border-slate-700/40" />
+            ) : (
+              <button
+                key={item.label}
+                role="menuitem"
+                onClick={() => { item.action(); onClose(); }}
+                className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between gap-6 font-medium"
+              >
+                <span>{item.label}</span>
+                {item.shortcut && <span className="text-[10px] opacity-60 font-mono">{item.shortcut}</span>}
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </div>
   );
 }

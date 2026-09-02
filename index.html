@@ -15,9 +15,76 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Montserrat:ital,wght@0,300..900;1,300..900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet" />
+
+    <!-- Start the lock-screen wallpaper before the JS bundle has even parsed. -->
+    <link rel="preload" as="image" href="/bg-poc.jpg" />
+
+    <!--
+      Pre-React splash. Painted the moment this HTML lands, so there is no white
+      frame while the bundle parses and boots. It is drawn to match the React
+      boot screen exactly — same ring geometry, same glass card, same copy — so
+      when createRoot() replaces #root the handoff is invisible.
+    -->
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b0d12; }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at 50% 35%, #1a1f2e 0%, #0b0d12 70%);
+        font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        z-index: 2147483647;
+      }
+      #boot-splash .boot-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 2.5rem;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+      }
+      #boot-splash .boot-ring { transform: rotate(-90deg); }
+      #boot-splash .boot-ring-track { color: rgba(255, 255, 255, 0.2); }
+      #boot-splash .boot-ring-range {
+        color: #fbbf24;
+        transform-origin: center;
+        animation: boot-spin-around 1.6s linear infinite;
+      }
+      #boot-splash .boot-label {
+        max-width: 17rem;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1.5;
+        letter-spacing: 0.06em;
+        color: #ffffff;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      }
+      @keyframes boot-spin-around { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash .boot-ring-range { animation: none; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-splash">
+        <div class="boot-card">
+          <svg class="boot-ring" width="80" height="80" viewBox="0 0 80 80" aria-hidden="true" focusable="false">
+            <circle class="boot-ring-track" cx="40" cy="40" r="37" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" />
+            <circle class="boot-ring-range" cx="40" cy="40" r="37" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-dasharray="232.478" stroke-dashoffset="174.358" />
+          </svg>
+          <div class="boot-label">Loading Ishant&rsquo;s portfolio.dmg&hellip; hope it works.</div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

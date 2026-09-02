@@ -291,10 +291,10 @@ export function FinderModal({ onSelectProject, onLaunchApp, onClose }) {
 }
 
 // 2. Interactive Terminal App Modal (Zsh Shell)
-export function TerminalModal({ onClose }) {
+export function TerminalModal({ onClose, onOpenPath }) {
   const [history, setHistory] = useState([
     { type: 'sys', text: 'Last login: Wed Aug 26 14:43:00 on ttys001' },
-    { type: 'sys', text: 'Type "help" or "neofetch" to explore Ishant\'s Terminal Portfolio.' }
+    { type: 'sys', text: 'Type "help" for commands. Try "coffee", or "sudo".' }
   ]);
   const [inputVal, setInputVal] = useState('');
   const bottomRef = useRef(null);
@@ -308,8 +308,36 @@ export function TerminalModal({ onClose }) {
       const cmd = inputVal.trim().toLowerCase();
       const newHistory = [...history, { type: 'cmd', text: `ishant@macbook-pro ~ % ${inputVal}` }];
 
+      // Commands that open a window hand off to the folder layer, so the
+      // Terminal is a real way to navigate rather than a separate copy of the
+      // content.
+      const openers = {
+        work: 'work',
+        experience: 'experience',
+        projects: 'ai-lab',
+        ai: 'ai-lab',
+        'ai lab': 'ai-lab',
+        about: 'about-me',
+        random: 'random',
+        contact: 'contact',
+        resume: 'resume'
+      };
+
       if (cmd === 'help') {
-        newHistory.push({ type: 'output', text: 'Available Commands:\n  neofetch    - Show macOS System Specs & Bio\n  projects    - List all Vibecoded Apps & Media Engines\n  skills      - List Tech Stack & Tools\n  resume      - Display Profile Summary\n  contact     - Print Contact & Social links\n  clear       - Clear Terminal screen\n  date        - Show current date & time' });
+        newHistory.push({ type: 'output', text: 'Available commands:\n\n  about        Who I am\n  experience   Where I have worked\n  work         Open the work folder\n  projects     Open the AI Lab\n  ai           Same as projects\n  random       The unserious folder\n  contact      Open contact\n  resume       Open Resume.pdf\n  neofetch     System specs & bio\n  skills       Tech stack & tools\n  coffee       Check dependencies\n  date         Current date & time\n  clear        Clear the screen' });
+      } else if (cmd === 'about') {
+        newHistory.push({ type: 'output', text: 'Creative Strategist.\nContent Producer.\nBrand Storyteller.\nBuilder.\nProfessional overthinker.' });
+      } else if (cmd === 'coffee') {
+        newHistory.push({ type: 'output', text: '\u2615 Dependency found.\n\nRecommended action:\nDrink coffee.' });
+      } else if (cmd === 'sudo' || cmd.startsWith('sudo ')) {
+        newHistory.push({ type: 'output', text: 'Nice try.' });
+      } else if (openers[cmd]) {
+        if (cmd === 'experience') {
+          newHistory.push({ type: 'output', text: '5+ years of making things people actually watch.\n\n  Emami                Brand & Creative Strategist   Feb 2026 \u2014 Present\n  CashKaro             Content & Growth Lead         Sep 2024 \u2014 Jan 2026\n  Monk Entertainment   Creative Producer             Mar 2024 \u2014 Aug 2024\n  Burner Digital       Content Producer and Editor   May 2022 \u2014 Feb 2024\n\nOpening EXPERIENCE...' });
+        } else {
+          newHistory.push({ type: 'output', text: `Opening ${cmd}...` });
+        }
+        if (onOpenPath) onOpenPath(openers[cmd]);
       } else if (cmd === 'neofetch' || cmd === 'fastfetch') {
         newHistory.push({ 
           type: 'output', 
@@ -326,12 +354,12 @@ export function TerminalModal({ onClose }) {
               Email: ${PROFILE_INFO.email}
           ` 
         });
-      } else if (cmd === 'projects') {
+      } else if (cmd === 'ls' || cmd === 'ls -la') {
         const listText = PROJECTS_DATA.map(p => `• [${p.id}] ${p.title} (${p.metrics})`).join('\n');
-        newHistory.push({ type: 'output', text: `Vibecoded Projects Portfolio:\n${listText}` });
+        newHistory.push({ type: 'output', text: `Vibecoded Projects:\n${listText}` });
       } else if (cmd === 'skills') {
         newHistory.push({ type: 'output', text: 'Languages & Tech:\n  React 19, JavaScript (ES2026), TailwindCSS v4, Vite, Framer Motion\n  Gemini AI API, Manifest V3, Web Audio API, Canvas Animation, Swift' });
-      } else if (cmd === 'resume') {
+      } else if (cmd === 'whoami') {
         newHistory.push({ type: 'output', text: `${PROFILE_INFO.name} — ${PROFILE_INFO.roleTitle}\n${PROFILE_INFO.tagline}` });
       } else if (cmd === 'contact') {
         newHistory.push({ type: 'output', text: `Email: ${PROFILE_INFO.email}\nTwitter: ${PROFILE_INFO.socials.twitter}\nLinkedIn: ${PROFILE_INFO.socials.linkedin}\nGitHub: ${PROFILE_INFO.socials.github}` });

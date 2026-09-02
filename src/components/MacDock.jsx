@@ -20,6 +20,7 @@ import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
 export default function MacDock({ 
   openApps = {},
   onLaunchApp,
+  onOpenPath,
   onCloseApp,
   activeProject,
   onSelectProject,
@@ -235,6 +236,7 @@ export default function MacDock({
       {openApps.terminal && (
         <TerminalModal 
           onClose={() => onCloseApp('terminal')} 
+          onOpenPath={onOpenPath}
         />
       )}
       {openApps.safari && (

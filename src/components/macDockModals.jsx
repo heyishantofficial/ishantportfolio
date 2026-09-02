@@ -3,7 +3,7 @@ import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, FileText, Image as ImageIcon, Download, 
   Mail, Trash2, Layers, CheckCircle2, Send, RefreshCw, Sparkles, ExternalLink,
-  Terminal, Globe, Cpu, Folder, Search, Check, ChevronRight, X, Copy, RotateCcw
+  Terminal, Globe, Cpu, Folder, Search, Check, ChevronRight, X, Copy, RotateCcw, Maximize2
 } from 'lucide-react';
 import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
 

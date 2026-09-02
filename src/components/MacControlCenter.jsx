@@ -12,6 +12,8 @@ export default function MacControlCenter({
   onChangeWallpaper,
   isMuted,
   onToggleMute,
+  volume,
+  onVolumeChange,
   showCyberdeck,
   onToggleCyberdeck
 }) {

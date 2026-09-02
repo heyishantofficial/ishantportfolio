@@ -247,9 +247,6 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
           if (data) {
             if (data.title && data.title !== 'YouTube') {
               setYtLiveTitle(data.title);
-              if (data.video_id) {
-                setPlaylistTitlesMap(prev => ({ ...prev, [data.video_id]: data.title }));
-              }
             }
             if (data.author) setYtLiveAuthor(data.author);
             if (data.video_id) {
@@ -260,7 +257,6 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
         if (targetPlayer && typeof targetPlayer.getPlaylist === 'function') {
           const list = targetPlayer.getPlaylist();
           if (Array.isArray(list) && list.length > 0) {
-            setPlaylistVideoIds(list);
             setPlaylistTracks(prev => {
               if (prev.length !== list.length) {
                 const updated = list.map(vId => {

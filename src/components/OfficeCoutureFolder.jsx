@@ -6,7 +6,8 @@ import customIshantFolderImg from '../assets/ishant-folder-custom.png';
 
 export default function OfficeCoutureFolder({ onSelectProject }) {
   const [isOpen, setIsOpen] = useState(false);
-  const vibecodedFolder = FOLDERS_DATA[0];
+  const [activeFolderId, setActiveFolderId] = useState(FOLDERS_DATA[0].id);
+  const activeFolder = FOLDERS_DATA.find((f) => f.id === activeFolderId);
 
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col items-center justify-center relative select-none font-sans py-2">
@@ -29,10 +30,10 @@ export default function OfficeCoutureFolder({ onSelectProject }) {
         <div className="flex items-center gap-2 select-none px-3.5 py-2 rounded-full bg-white/10 dark:bg-black/40 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm transition-all group-hover:border-white/40">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping inline-block shrink-0" />
           <span className="font-sans font-bold text-sm sm:text-base text-slate-100">
-            Vibecoded Apps Suite
+            {activeFolder.title}
           </span>
           <span className="font-mono text-xs text-slate-400 font-semibold shrink-0">
-            ({vibecodedFolder.items.length})
+            ({activeFolder.items.length})
           </span>
         </div>
       </div>
@@ -50,10 +51,10 @@ export default function OfficeCoutureFolder({ onSelectProject }) {
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200/80 dark:border-slate-700/80">
               <div>
                 <span className="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest block">
-                  // VIBECODED SUITE
+                  // {activeFolder.subtitle}
                 </span>
                 <h2 className="font-sans font-extrabold text-lg sm:text-xl text-slate-900 dark:text-slate-100">
-                  Vibecoded Apps Suite
+                  {activeFolder.title}
                 </h2>
               </div>
 
@@ -65,13 +66,30 @@ export default function OfficeCoutureFolder({ onSelectProject }) {
               </button>
             </div>
 
+            {/* Category Tabs */}
+            <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
+              {FOLDERS_DATA.map((folder) => (
+                <button
+                  key={folder.id}
+                  onClick={() => setActiveFolderId(folder.id)}
+                  className={`px-2.5 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wide whitespace-nowrap border transition-colors cursor-pointer ${
+                    folder.id === activeFolderId
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {folder.title}
+                </button>
+              ))}
+            </div>
+
             <p className="font-sans text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
-              {vibecodedFolder.tagline}
+              {activeFolder.tagline}
             </p>
 
             {/* Apps Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {vibecodedFolder.items.map((item) => (
+              {activeFolder.items.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => onSelectProject(item)}

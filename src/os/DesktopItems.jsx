@@ -43,7 +43,7 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
 
   if (isCompact) {
     return (
-      <div className="absolute inset-x-0 top-10 bottom-24 z-[10] px-5 overflow-y-auto flex flex-col justify-center">
+      <div className="mac-desktop-icons absolute inset-x-0 top-10 bottom-24 z-[10] px-5 overflow-y-auto flex flex-col justify-center">
         <h1 className="text-center text-white font-black tracking-[0.24em] text-[13px] drop-shadow-lg mb-5">
           ISHANTOS
         </h1>

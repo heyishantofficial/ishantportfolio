@@ -185,14 +185,14 @@ export function preloadBootAssets(onProgress) {
 
   const report = (key) => (fraction) => {
     parts[key] = fraction;
-    const weighted = Object.keys(parts).reduce(
-      (sum, k) => sum + parts[k] * WEIGHTS[k],
-      0
-    );
+    const weighted = Object.keys(parts).reduce((sum, k) => {
+      const fraction = Number.isFinite(parts[k]) ? parts[k] : 0;
+      return sum + fraction * WEIGHTS[k];
+    }, 0);
     onProgress(Math.min(100, Math.round((weighted / totalWeight) * 100)));
   };
 
-  const fontsDone = loadFonts().then(report('fonts'));
+  const fontsDone = loadFonts().then(() => report('fonts')(1));
 
   // Resolved before first paint so the wallpaper the admin published is the one
   // that paints — no post-boot swap in front of the visitor.

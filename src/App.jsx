@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, X, Wifi, Battery, ArrowRight, Lock, Key, ShieldCheck } from 'lucide-react';
+import { User, X, Wifi, Battery, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
@@ -30,7 +30,7 @@ export default function App() {
   // Security state. The real password lives on the server (ADMIN_PASSWORD).
   // Mirrors the server-side admin password so the UI can reflect a change in-session.
   const [, setSystemPassword] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [, setPasswordInput] = useState('');
   const [customUploadDesktop, setCustomUploadDesktop] = useState(null);
   const [customUploadLock, setCustomUploadLock] = useState(null);
   const [settingsInitialTab, setSettingsInitialTab] = useState('wallpaper');
@@ -91,10 +91,18 @@ export default function App() {
     let shown = 0;
     let frame = 0;
 
+    // Only commit when the whole number actually changes — App renders the
+    // entire desktop tree, so a setState every frame would cost more than the
+    // loading it is reporting on.
+    let lastShown = -1;
     const tick = () => {
       shown += (target - shown) * 0.09;
       if (target >= 100 && target - shown < 0.6) shown = 100;
-      setLoadingProgress(Math.floor(shown));
+      const rounded = Math.floor(shown);
+      if (rounded !== lastShown) {
+        lastShown = rounded;
+        setLoadingProgress(rounded);
+      }
       if (shown < 100) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);

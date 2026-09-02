@@ -983,22 +983,33 @@ export async function loadPersistedFS() {
     renamesCache = savedRenames && typeof savedRenames === 'object' ? savedRenames : {};
     deletedCache = Array.isArray(savedDeleted) ? savedDeleted : [];
 
-    // Apply custom nodes
-    for (const item of customNodesCache) {
-      if (!item || !item.node || !item.parentId) continue;
-      const parent = INDEX.get(item.parentId);
-      if (parent && (!deletedCache.includes(item.node.id))) {
-        if (!parent.children) parent.children = [];
-        const existingIdx = parent.children.findIndex((c) => c.id === item.node.id);
-        if (existingIdx >= 0) {
-          parent.children[existingIdx] = item.node;
+    // Apply custom nodes with multi-pass resolution for nested folders
+    let pending = [...customNodesCache];
+    let prevLength = -1;
+    while (pending.length > 0 && pending.length !== prevLength) {
+      prevLength = pending.length;
+      const nextPending = [];
+      for (const item of pending) {
+        if (!item || !item.node || !item.parentId) continue;
+        if (deletedCache.includes(item.node.id)) continue;
+
+        const parent = INDEX.get(item.parentId);
+        if (parent) {
+          if (!parent.children) parent.children = [];
+          const existingIdx = parent.children.findIndex((c) => c.id === item.node.id);
+          if (existingIdx >= 0) {
+            parent.children[existingIdx] = item.node;
+          } else {
+            parent.children.push(item.node);
+          }
+          INDEX.set(item.node.id, item.node);
+          PARENTS.set(item.node.id, item.parentId);
+          if (item.node.children) indexTree(item.node.children, item.node.id);
         } else {
-          parent.children.push(item.node);
+          nextPending.push(item);
         }
-        INDEX.set(item.node.id, item.node);
-        PARENTS.set(item.node.id, item.parentId);
-        if (item.node.children) indexTree(item.node.children, item.node.id);
       }
+      pending = nextPending;
     }
 
     // Apply renames

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { findNode } from '../data/ishantOS';
+import { isYouTubeUrl } from '../utils/mediaHelpers';
 
 // The window state model from the spec: openWindows[], activeWindow,
 // minimizedWindows[], each window with a unique id so several Finder or
@@ -147,6 +148,9 @@ export default function useWindowManager() {
       case 'mail':
         return openWindow({ type: 'mail', nodeId: resolved.id, ...options });
       case 'link':
+        if (resolved.openMode === 'embed' && (isYouTubeUrl(resolved.href) || resolved.videoUrl)) {
+          return openWindow({ type: 'media', nodeId: resolved.id, ...options });
+        }
         window.open(resolved.href, '_blank', 'noopener,noreferrer');
         return null;
       case 'image':

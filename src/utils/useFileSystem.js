@@ -7,6 +7,8 @@ import {
   findNode
 } from '../data/ishantOS';
 
+import { isYouTubeUrl, getYouTubeThumbnail, getYouTubeEmbedUrl } from './mediaHelpers';
+
 export function useFileSystem() {
   const [version, setVersion] = useState(0);
 
@@ -54,6 +56,37 @@ export function useFileSystem() {
     return ok ? newFile : null;
   }, []);
 
+  const addWorkLink = useCallback(async (parentId, linkPayload) => {
+    const id = `work-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const isYt = linkPayload.platform === 'youtube' || isYouTubeUrl(linkPayload.href);
+    const ytThumb = isYt ? getYouTubeThumbnail(linkPayload.href) : null;
+    const embedUrl = isYt ? getYouTubeEmbedUrl(linkPayload.href) : linkPayload.href;
+    const thumbnail = linkPayload.thumbnailUrl || ytThumb || '';
+
+    const newLinkNode = {
+      id,
+      name: linkPayload.name,
+      kind: linkPayload.openMode === 'embed' && (isYt || linkPayload.platform === 'video') ? 'video' : 'link',
+      description: linkPayload.description || (isYt ? 'YouTube Video' : 'Web Link'),
+      href: linkPayload.href,
+      videoUrl: embedUrl,
+      platform: linkPayload.platform || (isYt ? 'youtube' : 'link'),
+      thumbnailUrl: thumbnail,
+      preview: thumbnail,
+      openMode: linkPayload.openMode || 'embed',
+      createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      modifiedAt: 'Just now',
+      isCustom: true,
+      meta: {
+        owner: 'Ishant (Admin)',
+        target: linkPayload.href
+      }
+    };
+
+    const ok = await registerCustomNode(parentId, newLinkNode);
+    return ok ? newLinkNode : null;
+  }, []);
+
   const renameNode = useCallback(async (nodeId, newName) => {
     if (!newName || !newName.trim()) return false;
     return await renameNodeInTree(nodeId, newName.trim());
@@ -67,6 +100,7 @@ export function useFileSystem() {
     version,
     addFolder,
     addFile,
+    addWorkLink,
     renameNode,
     deleteNode,
     findNode

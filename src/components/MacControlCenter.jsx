@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   Wifi, Volume2, VolumeX, Music, Sun, Moon, Sparkles, Sliders, Check, ShieldCheck, Airplay
 } from 'lucide-react';
@@ -17,6 +17,41 @@ export default function MacControlCenter({
   showCyberdeck,
   onToggleCyberdeck
 }) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If clicking inside the Control Center panel, keep it open
+      if (menuRef.current && menuRef.current.contains(event.target)) {
+        return;
+      }
+      // If clicking the menu bar toggle button for Control Center,
+      // let its own toggle handler deal with it to avoid double-toggling
+      if (event.target && typeof event.target.closest === 'function' && event.target.closest('[data-control-center-toggle]')) {
+        return;
+      }
+      if (onClose) {
+        onClose();
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const wallpapers = [
     { id: 'video', name: 'Live Video 🔊', bgClass: 'wallpaper-video' },
     { id: 'custom', name: 'Custom Photo', bgClass: 'wallpaper-custom' },
@@ -28,6 +63,7 @@ export default function MacControlCenter({
 
   return (
     <div 
+      ref={menuRef}
       className="fixed top-8 right-3 w-80 bg-[var(--mac-glass-bg)] backdrop-blur-3xl rounded-2xl p-3.5 shadow-[0_24px_60px_-10px_rgba(0,0,0,0.38)] border border-white/60 dark:border-white/15 z-[9995] text-slate-800 dark:text-slate-100 font-sans animate-in fade-in slide-in-from-top-2 duration-150 select-none"
       onClick={(e) => e.stopPropagation()}
     >

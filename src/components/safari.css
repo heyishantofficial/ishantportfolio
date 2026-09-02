@@ -9,25 +9,41 @@
    - Simulated Web Inspector with DOM tree and interactive Console REPL
    ========================================================================== */
 
+.safari-floating-window {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: #fbfbfd;
+  color: #1d1d1f;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  z-index: 9950;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  user-select: none;
+  box-shadow: 
+    0 28px 60px -12px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.12);
+  min-width: 460px;
+  min-height: 320px;
+}
+
+.dark .safari-floating-window {
+  background: #1c1c1e;
+  color: #f5f5f7;
+  box-shadow: 
+    0 28px 60px -12px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
 .safari-window-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
-  min-height: 520px;
-  background: #fbfbfd;
-  color: #1d1d1f;
-  border-radius: 0.85rem;
+  background: transparent;
+  color: inherit;
   overflow: hidden;
   position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  user-select: none;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-}
-
-.dark .safari-window-container {
-  background: #1c1c1e;
-  color: #f5f5f7;
 }
 
 /* --------------------------------------------------------------------------
@@ -647,3 +663,61 @@
   overflow-y: auto;
   padding: 10px;
 }
+
+/* --------------------------------------------------------------------------
+   Safari Window Resize Handles & Borders
+   -------------------------------------------------------------------------- */
+.safari-resize-corner {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 3px;
+  user-select: none;
+}
+
+.safari-resize-corner::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(156, 163, 175, 0.7);
+  border-bottom: 2px solid rgba(156, 163, 175, 0.7);
+  border-bottom-right-radius: 2px;
+}
+
+.safari-resize-edge-e {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  bottom: 18px;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 45;
+}
+
+.safari-resize-edge-s {
+  position: absolute;
+  bottom: 0;
+  left: 18px;
+  right: 18px;
+  height: 6px;
+  cursor: ns-resize;
+  z-index: 45;
+}
+
+.safari-resize-edge-w {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  bottom: 18px;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 45;
+}
+

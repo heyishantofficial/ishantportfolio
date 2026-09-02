@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Wifi, Battery, Search, Sliders, Volume2, Volume1, VolumeX, Moon, Sun, 
   Lock, RotateCcw, Power, Check, Sparkles, Folder, FileText, Globe
@@ -10,6 +10,7 @@ export default function MacMenuBar({
   activeAppTitle = 'Finder',
   onOpenApp,
   onToggleControlCenter,
+  isControlCenterOpen = false,
   onToggleSpotlight,
   isMuted,
   onToggleMute,
@@ -29,6 +30,40 @@ export default function MacMenuBar({
   const [isLocked, setIsLocked] = useState(false);
   const [password, setPassword] = useState('');
   const [lockError, setLockError] = useState(false);
+
+  const appleMenuRef = useRef(null);
+  const volumeMenuRef = useRef(null);
+
+  // Close Apple menu & Volume menu on outside click or Escape
+  useEffect(() => {
+    if (!showAppleMenu && !showVolumeMenu) return;
+
+    const handleOutsideClick = (e) => {
+      if (showAppleMenu && appleMenuRef.current && !appleMenuRef.current.contains(e.target)) {
+        setShowAppleMenu(false);
+      }
+      if (showVolumeMenu && volumeMenuRef.current && !volumeMenuRef.current.contains(e.target)) {
+        setShowVolumeMenu(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowAppleMenu(false);
+        setShowVolumeMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showAppleMenu, showVolumeMenu]);
 
   // Live macOS Clock & Date
   useEffect(() => {
@@ -74,10 +109,12 @@ export default function MacMenuBar({
         {/* Left Section: Apple Logo & Active App Context Menu */}
         <div className="flex items-center gap-3">
           {/* Apple Logo  */}
-          <div className="relative">
+          <div className="relative" ref={appleMenuRef}>
             <button
               onClick={handleAppleMenuClick}
-              className="px-1.5 py-0.5 rounded hover:bg-white/30 dark:hover:bg-white/10 font-bold text-sm leading-none transition-colors cursor-pointer"
+              className={`px-1.5 py-0.5 rounded font-bold text-sm leading-none transition-colors cursor-pointer ${
+                showAppleMenu ? 'bg-white/40 dark:bg-white/20' : 'hover:bg-white/30 dark:hover:bg-white/10'
+              }`}
               title="Apple Menu"
             >
               
@@ -215,13 +252,15 @@ export default function MacMenuBar({
 
 
           {/* Transparent Minimal Volume Menu Bar Control */}
-          <div className="relative">
+          <div className="relative" ref={volumeMenuRef}>
             <button 
               onClick={() => {
                 setShowVolumeMenu(!showVolumeMenu);
                 setShowAppleMenu(false);
               }}
-              className="p-1 rounded hover:bg-white/30 dark:hover:bg-white/10 cursor-pointer flex items-center transition-colors"
+              className={`p-1 rounded cursor-pointer flex items-center transition-colors ${
+                showVolumeMenu ? 'bg-white/40 dark:bg-white/20' : 'hover:bg-white/30 dark:hover:bg-white/10'
+              }`}
               title="Adjust Volume"
             >
               {isMuted || volume === 0 ? (
@@ -280,8 +319,11 @@ export default function MacMenuBar({
 
           {/* Control Center Toggle */}
           <button 
+            data-control-center-toggle="true"
             onClick={onToggleControlCenter}
-            className="p-1 rounded hover:bg-white/30 dark:hover:bg-white/10 cursor-pointer"
+            className={`p-1 rounded cursor-pointer transition-colors ${
+              isControlCenterOpen ? 'bg-white/40 dark:bg-white/20' : 'hover:bg-white/30 dark:hover:bg-white/10'
+            }`}
             title="Control Center"
           >
             <Sliders className="w-3.5 h-3.5" />

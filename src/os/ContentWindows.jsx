@@ -1,12 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
-  ArrowLeft, ArrowRight, Download, ExternalLink, Send, Minus, Plus, Trash2, Check
+  ArrowLeft, ArrowRight, Download, ExternalLink, Send, Minus, Plus, Trash2, Check,
+  Save, Lock, RotateCcw, ShieldCheck, Type, Copy, FileText
 } from 'lucide-react';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
 import { findNode, getPath, itemCount, itemCountLabel, PROJECT_SEQUENCE, TRASH_ITEMS } from '../data/ishantOS';
 import { PROFILE_INFO } from '../data/projectsData';
 import { isYouTubeUrl, getYouTubeEmbedUrl } from '../utils/mediaHelpers';
+import { useAdminAuth } from '../utils/useAdminAuth';
+import { useFileSystem } from '../utils/useFileSystem';
+import AdminAuthModal from '../components/AdminAuthModal';
 
 const chrome = (props) => ({
   win: props.win,
@@ -21,21 +25,308 @@ const chrome = (props) => ({
 });
 
 /* ------------------------------------------------------------------ *
- * Text files — the .txt content, in a TextEdit-ish sheet
+ * Text files — Apple TextEdit / Notes editor with Admin Mode saving
  * ------------------------------------------------------------------ */
 
 export function TextWindow(props) {
+  const { updateFileContent } = useFileSystem();
+  const { isAdmin, lock } = useAdminAuth();
+
   const node = findNode(props.win.nodeId);
+  const [body, setBody] = useState(node?.body || '');
+  const [savedBody, setSavedBody] = useState(node?.body || '');
+  const [saveState, setSaveState] = useState('idle'); // 'idle' | 'saving' | 'saved'
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [fontFamily, setFontFamily] = useState('mono'); // 'mono' | 'sans'
+  const textareaRef = useRef(null);
+
+  // Sync state if node changes
+  useEffect(() => {
+    if (node) {
+      setBody(node.body || '');
+      setSavedBody(node.body || '');
+    }
+  }, [node]);
+
+  const isDirty = body !== savedBody;
+
+  // Save handler
+  const handleSave = useCallback(async () => {
+    if (!isAdmin) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (!node) return;
+    setSaveState('saving');
+    const ok = await updateFileContent(node.id, body);
+    if (ok) {
+      setSavedBody(body);
+      setSaveState('saved');
+      setTimeout(() => setSaveState('idle'), 2000);
+    } else {
+      setSaveState('idle');
+    }
+  }, [isAdmin, node, body, updateFileContent]);
+
+  // Global Cmd+S / Ctrl+S listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        if (props.isActive) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSave();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave, props.isActive]);
+
+  // Handle Tab key inside textarea
+  const handleKeyDownTextarea = (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      const newBody = body.substring(0, start) + '  ' + body.substring(end);
+      setBody(newBody);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2;
+        }
+      }, 0);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(body);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = node?.name || 'notes.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const lines = useMemo(() => body.split('\n'), [body]);
+  const wordsCount = useMemo(() => (body.trim() ? body.trim().split(/\s+/).length : 0), [body]);
+  const charsCount = body.length;
+  const folderName = getPath(node?.id).at(-2)?.name || 'Finder';
+
   if (!node) return null;
 
-  return (
-    <OSWindow {...chrome(props)} title={node.name} subtitle={getPath(node.id).at(-2)?.name}>
-      <div className="h-full overflow-y-auto bg-[#fdfdfb] dark:bg-slate-900">
-        <pre className="p-6 sm:p-8 font-mono text-[12px] sm:text-[12.5px] leading-[1.75] text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words">
-          {node.body}
-        </pre>
+  const editorToolbar = (
+    <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+      {/* Left: Document name & indicator */}
+      <div className="flex items-center gap-2 min-w-0">
+        <FileText className="w-3.5 h-3.5 text-[#007aff] shrink-0" />
+        <span className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-100 truncate">
+          {node.name}
+        </span>
+        {isDirty && (
+          <span
+            className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse"
+            title="Unsaved changes"
+          />
+        )}
+        <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate hidden md:inline">
+          ({folderName})
+        </span>
       </div>
-    </OSWindow>
+
+      {/* Right: Actions */}
+      <div className="flex items-center gap-1.5 shrink-0" data-no-drag>
+        {isAdmin ? (
+          <>
+            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 select-none">
+              <ShieldCheck className="w-3 h-3" />
+              Admin
+            </span>
+
+            {isDirty && (
+              <button
+                onClick={() => setBody(savedBody)}
+                title="Discard unsaved edits"
+                className="px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 rounded-md transition-colors flex items-center gap-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span className="hidden sm:inline">Revert</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleSave}
+              disabled={!isDirty && saveState !== 'saved'}
+              title="Save Note (⌘S)"
+              className={`px-2.5 py-1 rounded-md text-[11.5px] font-semibold flex items-center gap-1.5 shadow-sm transition-all ${
+                saveState === 'saved'
+                  ? 'bg-emerald-500 text-white shadow-emerald-500/20'
+                  : isDirty
+                    ? 'bg-[#007aff] hover:bg-[#0069dc] text-white shadow-blue-500/20 active:scale-95'
+                    : 'bg-black/5 dark:bg-white/10 text-slate-400 dark:text-slate-500 cursor-default opacity-60'
+              }`}
+            >
+              {saveState === 'saved' ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Saved</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save</span>
+                  <span className="text-[9.5px] opacity-70 font-mono hidden sm:inline">⌘S</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={lock}
+              title="Lock Admin Mode"
+              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              <Lock className="w-3 h-3" />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1.5 transition-colors"
+          >
+            <Lock className="w-3 h-3" />
+            <span>Admin Unlock to Edit</span>
+          </button>
+        )}
+
+        <div className="h-3.5 w-[1px] bg-black/10 dark:bg-white/10 mx-0.5" />
+
+        {/* Font family toggle */}
+        <button
+          onClick={() => setFontFamily((f) => (f === 'mono' ? 'sans' : 'mono'))}
+          title={fontFamily === 'mono' ? 'Switch to Sans font' : 'Switch to Monospace font'}
+          className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+        >
+          <Type className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Copy Note */}
+        <button
+          onClick={handleCopy}
+          title={copied ? 'Copied to clipboard!' : 'Copy Note'}
+          className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+        >
+          {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+        </button>
+
+        {/* Download File */}
+        <button
+          onClick={handleDownload}
+          title="Download text file"
+          className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10"
+        >
+          <Download className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <OSWindow {...chrome(props)} toolbar={editorToolbar}>
+        <div className="h-full flex flex-col bg-[#fdfdfb] dark:bg-[#13151b] text-slate-800 dark:text-slate-100 selection:bg-[#007aff]/20 selection:text-inherit">
+          {/* Read-only banner when not unlocked */}
+          {!isAdmin && (
+            <div className="shrink-0 px-3.5 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-[11.5px] text-amber-800 dark:text-amber-200 flex items-center justify-between select-none">
+              <span className="flex items-center gap-1.5 font-medium truncate">
+                <Lock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Read-only mode. Enter administrator password to write and save notes.</span>
+              </span>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="font-bold underline hover:text-amber-950 dark:hover:text-amber-100 ml-2 shrink-0 cursor-pointer"
+              >
+                Unlock
+              </button>
+            </div>
+          )}
+
+          {/* Main Editing / Viewing Canvas */}
+          <div className="flex-1 min-h-0 relative flex overflow-hidden">
+            {isAdmin ? (
+              <textarea
+                ref={textareaRef}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                onKeyDown={handleKeyDownTextarea}
+                placeholder="Write your note here..."
+                spellCheck={false}
+                autoFocus
+                className={`w-full h-full p-4 sm:p-6 bg-transparent outline-none resize-none overflow-y-auto leading-[1.8] border-none text-[12.5px] ${
+                  fontFamily === 'mono'
+                    ? 'font-mono'
+                    : 'font-sans text-[13.5px] leading-relaxed'
+                }`}
+              />
+            ) : (
+              <div
+                onClick={() => setShowAuthModal(true)}
+                className="w-full h-full p-4 sm:p-6 overflow-y-auto cursor-text"
+                title="Click to unlock Admin Mode to edit"
+              >
+                <pre
+                  className={`whitespace-pre-wrap break-words leading-[1.8] text-[12.5px] ${
+                    fontFamily === 'mono'
+                      ? 'font-mono'
+                      : 'font-sans text-[13.5px] leading-relaxed'
+                  }`}
+                >
+                  {body || '(Empty document)'}
+                </pre>
+              </div>
+            )}
+          </div>
+
+          {/* macOS Bottom Status Bar Footer */}
+          <div className="shrink-0 h-7 px-3.5 flex items-center justify-between border-t border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] text-[10.5px] text-slate-500 dark:text-slate-400 select-none font-mono">
+            <div className="flex items-center gap-3 truncate">
+              <span>{lines.length} lines</span>
+              <span>·</span>
+              <span>{wordsCount} words</span>
+              <span>·</span>
+              <span>{charsCount} chars</span>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <span className={isDirty ? 'text-amber-500 font-semibold' : 'text-emerald-500'}>
+                {isDirty ? '● Unsaved edits (⌘S to save)' : '✓ Saved to IshantOS'}
+              </span>
+              <span className="hidden sm:inline opacity-60">
+                UTF-8 Plain Text
+              </span>
+            </div>
+          </div>
+        </div>
+      </OSWindow>
+
+      {/* Admin Authentication Modal */}
+      <AdminAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          setTimeout(() => textareaRef.current?.focus(), 120);
+        }}
+        initialPrompt={`Enter administrator password to edit and save "${node.name}".`}
+      />
+    </>
   );
 }
 

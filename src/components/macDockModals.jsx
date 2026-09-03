@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, FileText, Image as ImageIcon, Download, 
   Mail, Trash2, Layers, CheckCircle2, Send, RefreshCw, Sparkles, ExternalLink,
-  Globe, Cpu, Folder, Search, Check, ChevronRight, X, Copy, RotateCcw, Maximize2
+  Globe, Cpu, Search, Check, X, Maximize2,
+  Save, Lock, ShieldCheck
 } from 'lucide-react';
 import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
 import SafariBrowser from './SafariBrowser';
+import { useAdminAuth } from '../utils/useAdminAuth';
+import AdminAuthModal from './AdminAuthModal';
 
 const InstagramIcon = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -500,10 +503,28 @@ export function DiagnosticsModal({ onClose }) {
   );
 }
 
+const DEFAULT_QUICK_NOTES = {
+  career: "I am starting a new internship soon, I wonder if I have what it takes or if I just got really lucky? Leadership and 10 things failure taught me.",
+  ai: "I wonder if there is a future of AI identities - login with openai lol... wait this is gonna be real and then all the context and personalization...",
+  tech: "Nintendo design philosophy teaches us that fun, playful design in itself is another strength. In an age where everything is minimal, there will be a resurgence of tech..."
+};
+
 // 7. Quick Notes & Glass Workspace Modal (Exact 1:1 Match to Photo 2)
 export function QuickNotesModal({ onClose }) {
+  const { isAdmin } = useAdminAuth();
   const [isZoomed, setIsZoomed] = useState(false);
   const [activeTab, setActiveTab] = useState("resume"); // "resume" by default so resume shows directly!
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const [notes, setNotes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('quick_notes_store');
+      if (saved) return { ...DEFAULT_QUICK_NOTES, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_QUICK_NOTES;
+  });
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
@@ -514,6 +535,24 @@ export function QuickNotesModal({ onClose }) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleNoteChange = (text) => {
+    setNotes((prev) => ({ ...prev, [activeTab]: text }));
+  };
+
+  const handleSaveNote = () => {
+    if (!isAdmin) {
+      setShowAuthModal(true);
+      return;
+    }
+    try {
+      localStorage.setItem('quick_notes_store', JSON.stringify(notes));
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -640,24 +679,77 @@ export function QuickNotesModal({ onClose }) {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 p-6 overflow-y-auto flex flex-col justify-between text-slate-200">
-                  <div>
-                    <h2 className="font-sans font-extrabold text-xl text-white mb-2">
-                      {activeTab === "career" ? "Design Career Notes" : activeTab === "ai" ? "AI Thinking & Identity" : "Fun Tech Philosophy"}
-                    </h2>
-                    <p className="text-xs font-sans leading-relaxed text-slate-300">
-                      {activeTab === "career" && "I am starting a new internship soon, I wonder if I have what it takes or if I just got really lucky? Leadership and 10 things failure taught me."}
-                      {activeTab === "ai" && "I wonder if there is a future of AI identities - login with openai lol... wait this is gonna be real and then all the context and personalization..."}
-                      {activeTab === "tech" && "Nintendo design philosophy teaches us that fun, playful design in itself is another strength. In an age where everything is minimal, there will be a resurgence of tech..."}
-                    </p>
+                <div className="flex-1 p-5 sm:p-6 overflow-y-auto flex flex-col justify-between text-slate-200">
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
+                      <div>
+                        <h2 className="font-sans font-extrabold text-lg sm:text-xl text-white">
+                          {activeTab === "career" ? "Design Career Notes" : activeTab === "ai" ? "AI Thinking & Identity" : "Fun Tech Philosophy"}
+                        </h2>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {isAdmin ? "Admin Editing Active • Changes save locally" : "Read-only mode (Sign in as Admin to edit)"}
+                        </span>
+                      </div>
+
+                      {isAdmin ? (
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" /> Admin
+                          </span>
+                          <button
+                            onClick={handleSaveNote}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer ${
+                              isSaved
+                                ? "bg-emerald-500 text-white shadow-emerald-500/30"
+                                : "bg-[#007aff] hover:bg-[#0069dc] text-white shadow-blue-500/30 active:scale-95"
+                            }`}
+                          >
+                            {isSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                            <span>{isSaved ? "Saved" : "Save Note"}</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowAuthModal(true)}
+                          className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Lock className="w-3 h-3" />
+                          <span>Unlock to Edit</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {isAdmin ? (
+                      <textarea
+                        value={notes[activeTab] || ""}
+                        onChange={(e) => handleNoteChange(e.target.value)}
+                        placeholder="Write your note here..."
+                        className="flex-1 min-h-[220px] w-full bg-black/30 border border-white/10 rounded-xl p-3.5 text-xs sm:text-sm font-mono leading-relaxed text-slate-100 placeholder:text-slate-500 outline-none focus:border-[#007aff] focus:ring-1 focus:ring-[#007aff] resize-none"
+                      />
+                    ) : (
+                      <div
+                        onClick={() => setShowAuthModal(true)}
+                        className="flex-1 p-3.5 rounded-xl bg-black/20 border border-white/5 cursor-pointer text-xs sm:text-sm leading-relaxed text-slate-300 font-sans"
+                        title="Click to unlock Admin Mode to edit"
+                      >
+                        <p className="whitespace-pre-wrap">{notes[activeTab]}</p>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setActiveTab("resume")}
-                    className="mt-4 px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-xs transition-all w-fit cursor-pointer flex items-center gap-1.5"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Back to Official Resume</span>
-                  </button>
+
+                  <div className="flex items-center justify-between pt-4 mt-2 border-t border-white/10">
+                    <button
+                      onClick={() => setActiveTab("resume")}
+                      className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-xs transition-all w-fit cursor-pointer flex items-center gap-1.5"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Back to Official Resume</span>
+                    </button>
+
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {(notes[activeTab] || "").length} characters
+                    </span>
+                  </div>
                 </div>
               )}
 
@@ -667,6 +759,14 @@ export function QuickNotesModal({ onClose }) {
 
         </div>
       </MacWindow>
+
+      {/* Admin Authentication Modal */}
+      <AdminAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => setShowAuthModal(false)}
+        initialPrompt="Enter administrator password to edit and save workspace notes."
+      />
 
       {/* Lightbox / Zoom Modal for High-Res Fullscreen View */}
       {isZoomed && (

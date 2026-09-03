@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   ChevronLeft, ChevronRight, Search, LayoutGrid, List as ListIcon,
   FileText, Sparkles, Mail, Link2, FileType2, Info, HardDrive, X,
-  Lock, Unlock, FolderPlus, Upload, Edit3, Trash2, ShieldCheck, Film
+  Lock, Unlock, FolderPlus, Upload, Edit3, Trash2, ShieldCheck, Film, FilePlus
 } from 'lucide-react';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
@@ -164,25 +164,35 @@ export default function FinderWindow({
 
   const handleNewTextFile = useCallback(async () => {
     if (!isAdmin) {
-      setAuthPrompt('Enter admin password to create a new file.');
+      setAuthPrompt('Enter admin password to create and write notes.');
       setPendingAction({ type: 'new-file' });
       setShowAuthModal(true);
       return;
     }
 
+    const existingNames = new Set(children.map((c) => c.name.toLowerCase()));
+    let baseName = 'notes.txt';
+    let counter = 1;
+    while (existingNames.has(baseName.toLowerCase())) {
+      counter++;
+      baseName = `notes-${counter}.txt`;
+    }
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const newFile = await addFile(currentId, {
-      name: 'notes.txt',
+      name: baseName,
       kind: 'text',
-      body: 'New text document.\nCreated on ' + new Date().toLocaleString(),
+      body: `NOTES — ${node?.name || 'Workspace'}\nCreated on ${dateStr}\n\nStart typing your note here...`,
       description: 'Text document'
     });
 
     if (newFile) {
       setSelectedId(newFile.id);
-      setRenamingId(newFile.id);
-      setRenameText('notes.txt');
+      // Immediately open the newly created note so user can write and edit right away!
+      onOpenNode(newFile);
     }
-  }, [isAdmin, addFile, currentId]);
+  }, [isAdmin, addFile, currentId, children, node, onOpenNode]);
 
   const handleOpenAddLink = useCallback(() => {
     if (!isAdmin) {
@@ -410,6 +420,14 @@ export default function FinderWindow({
         {isAdmin && (
           <div className="flex items-center gap-1">
             <button
+              onClick={handleNewTextFile}
+              className="px-2 py-0.5 rounded text-[11.5px] font-medium text-slate-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1"
+              title="New Note / Text Document"
+            >
+              <FilePlus className="w-3.5 h-3.5 text-[#007aff]" />
+              <span className="hidden sm:inline">New Note</span>
+            </button>
+            <button
               onClick={handleNewFolder}
               className="w-6 h-6 rounded flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
               title="New Folder"
@@ -479,6 +497,12 @@ export default function FinderWindow({
                 className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 transition-colors font-medium text-rose-600 dark:text-rose-400 hover:!text-white"
               >
                 <Film className="w-3.5 h-3.5" /> Add Work Link / Video...
+              </button>
+              <button
+                onClick={() => { handleNewTextFile(); setShowAdminDropdown(false); }}
+                className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 transition-colors font-medium text-[#007aff] hover:!text-white"
+              >
+                <FilePlus className="w-3.5 h-3.5" /> Write New Note...
               </button>
               <button
                 onClick={() => { handleNewFolder(); setShowAdminDropdown(false); }}
@@ -620,6 +644,12 @@ export default function FinderWindow({
                 {isAdmin && !query && (
                   <div className="flex flex-wrap gap-2 mt-2 justify-center">
                     <button
+                      onClick={handleNewTextFile}
+                      className="px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-[#007aff] text-white hover:bg-[#0069dc] flex items-center gap-1.5 shadow-sm"
+                    >
+                      <FilePlus className="w-3.5 h-3.5" /> Write New Note
+                    </button>
+                    <button
                       onClick={handleOpenAddLink}
                       className="px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-gradient-to-r from-rose-500 to-amber-500 text-white hover:brightness-110 flex items-center gap-1.5 shadow-sm"
                     >
@@ -627,7 +657,7 @@ export default function FinderWindow({
                     </button>
                     <button
                       onClick={handleNewFolder}
-                      className="px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-[#007aff] text-white hover:bg-[#0069dc] flex items-center gap-1.5 shadow-sm"
+                      className="px-3 py-1.5 rounded-lg text-[11.5px] font-medium bg-black/5 dark:bg-white/10 text-slate-700 dark:text-slate-200 hover:bg-black/10 flex items-center gap-1.5 shadow-sm"
                     >
                       <FolderPlus className="w-3.5 h-3.5" /> New Folder
                     </button>
@@ -757,7 +787,7 @@ export default function FinderWindow({
                     onClick={() => { handleNewTextFile(); setMenu(null); }}
                     className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2"
                   >
-                    <FileText className="w-3.5 h-3.5" /> New Text File
+                    <FileText className="w-3.5 h-3.5" /> Write New Note
                   </button>
                   <div className="my-1 border-t border-black/5 dark:border-white/5" />
                   <button

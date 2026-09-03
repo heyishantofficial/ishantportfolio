@@ -70,7 +70,7 @@ const DEFAULT_FAVORITES = [
   {
     id: 'duckduckgo',
     name: 'DuckDuckGo',
-    url: 'https://html.duckduckgo.com/html/?q=macOS+Sequoia+Safari',
+    url: 'safari://search?q=macOS+Sequoia+Safari',
     domain: 'duckduckgo.com',
     iconBg: 'bg-orange-400 text-white',
     iconText: '🦆',
@@ -79,7 +79,7 @@ const DEFAULT_FAVORITES = [
   {
     id: 'apple',
     name: 'Apple',
-    url: 'https://www.apple.com/newsroom/',
+    url: 'https://en.m.wikipedia.org/wiki/Apple_Inc.',
     domain: 'apple.com',
     iconBg: 'bg-slate-900 text-white',
     iconText: '',
@@ -109,6 +109,223 @@ const MENU_BAR_H = 28;
 const DOCK_GUARD = 76;
 const MIN_W = 480;
 const MIN_H = 340;
+
+const BLOCKED_DOMAINS = [
+  'google.com',
+  'x.com',
+  'twitter.com',
+  'facebook.com',
+  'instagram.com',
+  'linkedin.com',
+  'duckduckgo.com',
+  'github.com',
+  'youtube.com',
+  'reddit.com',
+  'netflix.com',
+  'amazon.com',
+  'apple.com',
+  'yahoo.com',
+  'bing.com'
+];
+
+// Safari Native Search Results View
+function SafariSearchView({ query, onNavigate }) {
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+
+    Promise.allSettled([
+      fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`).then(r => r.json()),
+      fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=6&format=json&origin=*`).then(r => r.json())
+    ]).then(([ddgRes, wikiRes]) => {
+      if (!mounted) return;
+      const ddg = ddgRes.status === 'fulfilled' ? ddgRes.value : null;
+      const wiki = wikiRes.status === 'fulfilled' ? wikiRes.value : null;
+
+      const wikiTitles = wiki?.[1] || [];
+      const wikiSnippets = wiki?.[2] || [];
+      const wikiLinks = wiki?.[3] || [];
+
+      setResults({
+        heading: ddg?.Heading || query,
+        abstract: ddg?.Abstract || (wikiSnippets[0] || ''),
+        abstractURL: ddg?.AbstractURL || wikiLinks[0] || '',
+        abstractSource: ddg?.AbstractSource || 'Wikipedia',
+        image: ddg?.Image || null,
+        wikiItems: wikiTitles.map((title, i) => ({
+          title,
+          snippet: wikiSnippets[i] || '',
+          url: wikiLinks[i] || ''
+        })),
+        relatedTopics: (ddg?.RelatedTopics || []).filter(t => t.Text && t.FirstURL).slice(0, 4)
+      });
+      setLoading(false);
+    }).catch(() => {
+      if (!mounted) return;
+      setLoading(false);
+    });
+
+    return () => { mounted = false; };
+  }, [query]);
+
+  return (
+    <div className="safari-search-page">
+      <div className="safari-search-container">
+        {/* Search header */}
+        <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
+          <div>
+            <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Safari Smart Search</div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Results for “{query}”</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <a 
+              href={`https://www.google.com/search?q=${encodeURIComponent(query)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 hover:border-blue-500 flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
+            >
+              Google <ExternalLink className="w-3 h-3" />
+            </a>
+            <a 
+              href={`https://duckduckgo.com/?q=${encodeURIComponent(query)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 hover:border-blue-500 flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
+            >
+              DuckDuckGo <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+            <RotateCw className="w-6 h-6 animate-spin text-blue-500" />
+            <span className="text-xs">Gathering intelligence across the web...</span>
+          </div>
+        ) : (
+          <>
+            {/* Top Knowledge / Instant Summary Card */}
+            {results?.abstract ? (
+              <div className="safari-search-knowledge-card">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">{results.heading}</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
+                        Top Result
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {results.abstract}
+                    </p>
+                    <div className="pt-2 flex flex-wrap items-center gap-2">
+                      {results.abstractURL && (
+                        <button
+                          onClick={() => {
+                            if (results.abstractURL.includes('wikipedia.org')) {
+                              const mobileWiki = results.abstractURL.replace('wikipedia.org', 'm.wikipedia.org');
+                              onNavigate(mobileWiki);
+                            } else {
+                              window.open(results.abstractURL, '_blank');
+                            }
+                          }}
+                          className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                          Read on Safari
+                        </button>
+                      )}
+                      <a
+                        href={results.abstractURL || `https://www.google.com/search?q=${encodeURIComponent(query)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Open Official Page
+                      </a>
+                    </div>
+                  </div>
+                  {results.image && (
+                    <img 
+                      src={results.image} 
+                      alt={results.heading}
+                      className="w-20 h-20 rounded-xl object-contain bg-white p-1 border border-black/10 shrink-0" 
+                    />
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Wikipedia & Web Results */}
+            {results?.wikiItems?.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                  <Globe className="w-3.5 h-3.5 text-blue-500" />
+                  Knowledge Articles
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {results.wikiItems.map((item, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        const mobileWiki = item.url.replace('wikipedia.org', 'm.wikipedia.org');
+                        onNavigate(mobileWiki);
+                      }}
+                      className="safari-search-result-item"
+                    >
+                      <div className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center justify-between">
+                        <span className="truncate">{item.title}</span>
+                        <span className="text-[10px] text-slate-400 shrink-0">wikipedia.org</span>
+                      </div>
+                      {item.snippet && (
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
+                          {item.snippet}
+                        </p>
+                      )}
+                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
+                        Click to view in Safari →
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Related Topics */}
+            {results?.relatedTopics?.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Related Explorations</h4>
+                <div className="space-y-2">
+                  {results.relatedTopics.map((topic, i) => (
+                    <div
+                      key={i}
+                      onClick={() => {
+                        if (topic.FirstURL.includes('wikipedia.org')) {
+                          onNavigate(topic.FirstURL.replace('wikipedia.org', 'm.wikipedia.org'));
+                        } else {
+                          window.open(topic.FirstURL, '_blank');
+                        }
+                      }}
+                      className="p-3 rounded-xl bg-white/50 dark:bg-zinc-800/40 border border-black/5 dark:border-white/5 hover:border-blue-500/40 cursor-pointer text-xs flex items-center justify-between"
+                    >
+                      <span className="text-slate-700 dark:text-slate-200 line-clamp-1">{topic.Text}</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-2" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 const getInitialBounds = () => {
   if (typeof window === 'undefined') return { x: 80, y: 50, w: 980, h: 620 };
@@ -291,20 +508,46 @@ export default function SafariBrowser({ onClose, onMinimize }) {
   // Navigate to a URL or search query
   const navigateTo = (rawInput) => {
     if (!rawInput || !rawInput.trim()) {
-      updateActiveTab({ url: '', title: 'Start Page', hasError: false, isReader: false });
+      updateActiveTab({ url: '', title: 'Start Page', hasError: false, isReader: false, isSearch: false });
       return;
     }
 
     const trimmed = rawInput.trim();
-    let targetUrl = trimmed;
+
+    // Internal search query protocol
+    if (trimmed.startsWith('safari://search?q=')) {
+      const q = decodeURIComponent(trimmed.replace('safari://search?q=', ''));
+      triggerLoading();
+      updateActiveTab({
+        url: trimmed,
+        title: `${q} — Search`,
+        isSearch: true,
+        searchQuery: q,
+        hasError: false,
+        isReader: false
+      });
+      return;
+    }
 
     // Check if it's a search query or a valid domain/URL
     const isUrl = /^(https?:\/\/|[a-z0-9]+([-.]?[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$)/i.test(trimmed);
 
     if (!isUrl) {
-      // It's a search query: use DuckDuckGo HTML search
-      targetUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(trimmed)}`;
-    } else if (!/^https?:\/\//i.test(trimmed)) {
+      // It's a search query! Use our built-in Safari Smart Search
+      triggerLoading();
+      updateActiveTab({
+        url: `safari://search?q=${encodeURIComponent(trimmed)}`,
+        title: `${trimmed} — Search`,
+        isSearch: true,
+        searchQuery: trimmed,
+        hasError: false,
+        isReader: false
+      });
+      return;
+    }
+
+    let targetUrl = trimmed;
+    if (!/^https?:\/\//i.test(trimmed)) {
       targetUrl = `https://${trimmed}`;
     }
 
@@ -319,15 +562,14 @@ export default function SafariBrowser({ onClose, onMinimize }) {
 
     triggerLoading();
 
-    // Check if known anti-iframe site (e.g. twitter, github full page, google main page)
-    const blockedDomains = ['google.com', 'x.com', 'twitter.com', 'facebook.com', 'instagram.com', 'linkedin.com'];
-    const willBlock = blockedDomains.some(b => targetUrl.includes(b));
+    const willBlock = BLOCKED_DOMAINS.some(b => targetUrl.toLowerCase().includes(b));
 
     updateActiveTab({
       url: targetUrl,
       title: domain.charAt(0).toUpperCase() + domain.slice(1),
       hasError: willBlock,
-      isReader: false
+      isReader: false,
+      isSearch: false
     });
   };
 
@@ -774,7 +1016,15 @@ export default function SafariBrowser({ onClose, onMinimize }) {
             </div>
           )}
 
-          {/* 2. Safari Reader Mode View */}
+          {/* 2. Safari Native Search Page */}
+          {activeTab?.isSearch && (
+            <SafariSearchView 
+              query={activeTab.searchQuery} 
+              onNavigate={navigateTo} 
+            />
+          )}
+
+          {/* 3. Safari Reader Mode View */}
           {activeTab?.isReader && (
             <div className={`safari-reader-view safari-reader-theme-${readerTheme}`}>
               {/* Reader Floating Controls Bar */}
@@ -846,45 +1096,45 @@ export default function SafariBrowser({ onClose, onMinimize }) {
             </div>
           )}
 
-          {/* 3. Apple Connection Refused Fallback Screen */}
-          {activeTab?.url && !activeTab.isReader && activeTab.hasError && (
+          {/* 4. Apple Connection Refused Fallback Screen */}
+          {activeTab?.url && !activeTab.isReader && !activeTab.isSearch && activeTab.hasError && (
             <div className="safari-error-screen">
               <div className="safari-error-icon-wrapper">
                 <AlertCircle className="w-8 h-8" />
               </div>
               <h2 className="text-xl font-bold mb-2">Safari Can’t Open the Page</h2>
               <p className="text-xs text-slate-500 max-w-md mb-6 leading-relaxed">
-                Safari can’t open the page <span className="font-mono font-medium text-slate-700 dark:text-slate-300">“{activeTab.url}”</span> because the server refused embedded connection (X-Frame-Options / Content-Security-Policy).
+                Safari can’t open the page <span className="font-mono font-medium text-slate-700 dark:text-slate-300">“{activeTab.url}”</span> because the server refused embedded connection to protect your personal account credentials.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
-                <button 
-                  onClick={() => updateActiveTab({ isReader: true })}
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 shadow-sm flex items-center gap-1.5"
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Open in Safari Reader
-                </button>
                 <a 
                   href={activeTab.url} 
                   target="_blank" 
                   rel="noreferrer"
-                  className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-semibold hover:bg-slate-300 dark:hover:bg-zinc-600 flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 shadow-sm flex items-center gap-1.5"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open in External Tab
                 </a>
                 <button 
-                  onClick={() => navigateTo(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(activeTab.url)}`)}
+                  onClick={() => updateActiveTab({ isReader: true })}
+                  className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-semibold hover:bg-slate-300 dark:hover:bg-zinc-600 flex items-center gap-1.5"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Open in Safari Reader
+                </button>
+                <button 
+                  onClick={() => navigateTo(activeTab.title || 'Search')}
                   className="px-4 py-2 rounded-lg border border-slate-300 dark:border-zinc-600 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
                 >
-                  Search on DuckDuckGo
+                  Search with Safari
                 </button>
               </div>
             </div>
           )}
 
-          {/* 4. Live Sandboxed Iframe Browser */}
-          {activeTab?.url && !activeTab.isReader && !activeTab.hasError && (
+          {/* 5. Live Sandboxed Iframe Browser */}
+          {activeTab?.url && !activeTab.isReader && !activeTab.isSearch && !activeTab.hasError && (
             <iframe
               src={activeTab.url}
               title={activeTab.title || 'Safari Web Content'}

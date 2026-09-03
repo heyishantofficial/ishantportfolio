@@ -2,6 +2,9 @@
 NIXPACKS_NODE_VERSION = "20"
 NIXPACKS_NO_CACHE = "1"
 
+[phases.install]
+cmds = ["npm install --production=false"]
+
 [phases.build]
 cmds = ["npm run build"]
 

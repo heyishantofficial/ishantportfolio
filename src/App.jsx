@@ -674,13 +674,13 @@ export default function App() {
                   initial={{ opacity: 0, scale: 0.95, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center justify-start mt-8 sm:mt-14 mb-auto z-10 space-y-3.5 w-full max-w-2xl text-center"
+                  className="flex flex-col items-center justify-start mt-16 sm:mt-24 md:mt-28 lg:mt-32 mb-auto z-10 space-y-3.5 w-full max-w-2xl text-center"
                 >
                   {/* One-Time Morphing Entrance & Mouse-Reactive Quote Heading */}
                   <AnimatedQuoteHeading />
 
                   {/* Helper Subtitle */}
-                  <p className="text-[11px] sm:text-xs font-sans text-white/80 drop-shadow-md pt-2 mb-1.5 font-medium tracking-wide">
+                  <p className="text-[11px] sm:text-xs font-sans text-white/80 drop-shadow-md pt-3 sm:pt-4 mb-1.5 font-medium tracking-wide">
                     Enter your name to log in
                   </p>
 

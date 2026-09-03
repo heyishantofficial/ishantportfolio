@@ -213,7 +213,7 @@ const getInitialBounds = () => {
 const SECTIONS = [
   {
     id: 'apps',
-    title: 'Vibecoded Apps',
+    title: 'Things I Built for Fun',
     icon: '🚀',
     subtitle: 'Tools, utilities & daily workflow extensions'
   },
@@ -790,7 +790,7 @@ export default function SafariBrowser({ onClose, onMinimize }) {
                     onChange={(e) => setNewCategory(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-blue-500"
                   >
-                    <option value="apps">Vibecoded Apps</option>
+                    <option value="apps">Things I Built for Fun</option>
                     <option value="social">Social & Connect</option>
                     <option value="systems">Case Studies</option>
                     <option value="custom">Other Links</option>

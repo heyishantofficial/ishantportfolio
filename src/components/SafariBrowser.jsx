@@ -23,7 +23,7 @@ const STORAGE_KEY = 'ishant_portfolio_browser_links';
 
 // Curated default links for Ishant's Portfolio Launchpad
 const DEFAULT_PORTFOLIO_LINKS = [
-  // Vibecoded Apps & Live Projects
+  // Things I Built for Fun
   {
     id: 'link-brainjot',
     title: 'Brainjot AI Notes',
@@ -37,17 +37,6 @@ const DEFAULT_PORTFOLIO_LINKS = [
     featured: true
   },
   {
-    id: 'link-instacollect',
-    title: 'InstaCollect Extension',
-    category: 'apps',
-    url: 'https://github.com/heyishantofficial',
-    tag: 'EXTENSION',
-    badgeColor: 'bg-pink-500/15 text-pink-600 dark:text-pink-400 border-pink-500/20',
-    iconBg: 'bg-gradient-to-tr from-pink-500 to-rose-600 text-white',
-    iconEmoji: '📸',
-    description: 'Creator browser extension for 1-click viral reel reference capture, copy hooks, and visual moodboard extraction to Notion.'
-  },
-  {
     id: 'link-notchfinder',
     title: 'Notch Finder macOS',
     category: 'apps',
@@ -58,39 +47,6 @@ const DEFAULT_PORTFOLIO_LINKS = [
     iconEmoji: '💻',
     description: 'macOS status bar utility turning the MacBook camera notch into a drop shelf for active content drafts and teleprompters.',
     featured: true
-  },
-  {
-    id: 'link-databeauty',
-    title: 'DataBeauty Infographics',
-    category: 'apps',
-    url: 'https://heyishant.me',
-    tag: 'ANALYTICS',
-    badgeColor: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    iconBg: 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white',
-    iconEmoji: '📊',
-    description: 'Transforming raw analytics and metric spreadsheets into high-converting viral LinkedIn & X carousel slides.'
-  },
-  {
-    id: 'link-talkntype',
-    title: 'TalkNType Voice AI',
-    category: 'apps',
-    url: 'https://heyishant.me',
-    tag: 'SPEECH AI',
-    badgeColor: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-    iconBg: 'bg-gradient-to-tr from-cyan-500 to-blue-600 text-white',
-    iconEmoji: '🎙️',
-    description: 'Voice-first AI copywriting assistant. Speak raw thoughts and get structured threads and teleprompter scripts in real time.'
-  },
-  {
-    id: 'link-motionmaker',
-    title: 'MotionMaker Shorts',
-    category: 'apps',
-    url: 'https://heyishant.me',
-    tag: 'GRAPHICS',
-    badgeColor: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/20',
-    iconBg: 'bg-gradient-to-tr from-purple-600 to-pink-600 text-white',
-    iconEmoji: '🎬',
-    description: 'Browser-based motion graphics tool generating kinetic captions, callouts, and animated lower-thirds at 60 FPS.'
   },
 
   // Social & Professional Profiles
@@ -128,17 +84,6 @@ const DEFAULT_PORTFOLIO_LINKS = [
     iconBg: 'bg-red-600 text-white',
     iconEmoji: '📺',
     description: 'Deep dives on modern developer tools, vibecoding workflows, Cursor AI engineering, and visual media pacing.'
-  },
-  {
-    id: 'link-twitter',
-    title: 'X / Twitter',
-    category: 'social',
-    url: 'https://x.com',
-    tag: 'MICROBLOG',
-    badgeColor: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20',
-    iconBg: 'bg-black text-white',
-    iconEmoji: '🐦',
-    description: 'Daily builder updates, thoughts on AI workflows, design aesthetics, and viral content breakdowns.'
   },
   {
     id: 'link-instagram',

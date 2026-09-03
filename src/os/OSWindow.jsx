@@ -110,6 +110,7 @@ export default function OSWindow({
       aria-modal="false"
       style={{ ...geometry, zIndex: 200 + win.z }}
       onMouseDown={onFocus}
+      onContextMenu={(e) => e.stopPropagation()}
       className={`os-window fixed flex flex-col overflow-hidden rounded-xl ${
         isActive ? 'os-window-active' : 'os-window-idle'
       } ${dragging ? 'select-none cursor-grabbing' : ''}`}

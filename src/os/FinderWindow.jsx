@@ -560,6 +560,9 @@ export default function FinderWindow({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onContextMenu={(e) => {
+            e.stopPropagation();
+          }}
         >
           {/* Native Drag & Drop Upload Overlay */}
           {isDragging && (
@@ -590,9 +593,9 @@ export default function FinderWindow({
               }
             }}
             onContextMenu={(e) => {
-              // Right-clicking empty space
-              if (e.target === e.currentTarget || e.target.classList?.contains('grid') || e.target.tagName === 'P') {
-                e.preventDefault();
+              e.preventDefault();
+              e.stopPropagation();
+              if (!e.target.closest('[role="option"]')) {
                 setSelectedId(null);
                 setMenu({ x: e.clientX, y: e.clientY, isBackground: true });
               }
@@ -658,6 +661,7 @@ export default function FinderWindow({
                     onStartRename={() => startRenaming(child)}
                     onContextMenu={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       setSelectedId(child.id);
                       setMenu({ x: e.clientX, y: e.clientY, node: child });
                     }}
@@ -685,6 +689,7 @@ export default function FinderWindow({
                     onStartRename={() => startRenaming(child)}
                     onContextMenu={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       setSelectedId(child.id);
                       setMenu({ x: e.clientX, y: e.clientY, node: child });
                     }}

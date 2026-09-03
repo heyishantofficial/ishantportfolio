@@ -205,6 +205,18 @@ export default function App() {
 
   // Right-Click Context Menu on Desktop Canvas
   const handleDesktopContextMenu = (e) => {
+    // If the click is inside any window, dialog, modal, dock, or menu, ignore completely
+    if (
+      e.target.closest('.os-window') ||
+      e.target.closest('.modal-backdrop') ||
+      e.target.closest('nav') ||
+      e.target.closest('header') ||
+      e.target.closest('#mac-dock') ||
+      e.target.closest('[role="dialog"]') ||
+      e.target.closest('[role="listbox"]')
+    ) {
+      return;
+    }
     e.preventDefault();
     setDesktopContextMenu({ x: e.clientX, y: e.clientY });
   };
@@ -510,27 +522,9 @@ export default function App() {
           {desktopContextMenu && (
             <div 
               style={{ top: `${desktopContextMenu.y}px`, left: `${desktopContextMenu.x}px` }}
-              className="fixed z-[99999] w-60 bg-white/80 dark:bg-slate-900/85 backdrop-blur-2xl rounded-xl shadow-2xl border border-white/40 dark:border-slate-700/60 py-1.5 text-xs text-slate-800 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-100 font-sans select-none"
+              className="fixed z-[99999] w-52 bg-white/85 dark:bg-slate-900/90 backdrop-blur-2xl rounded-xl shadow-2xl border border-white/40 dark:border-slate-700/60 py-1 text-xs text-slate-800 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-100 font-sans select-none"
               onClick={(e) => e.stopPropagation()}
             >
-              <button 
-                onClick={() => handleOpenSettingsWithTab('wallpaper')}
-                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
-              >
-                <span>🖼️ Change Desktop Wallpaper...</span>
-              </button>
-              <button 
-                onClick={() => handleOpenSettingsWithTab('lockscreen')}
-                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
-              >
-                <span>🔒 Change Lock Screen Wallpaper...</span>
-              </button>
-              <button 
-                onClick={() => handleOpenSettingsWithTab('password')}
-                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
-              >
-                <span>🔑 Password & Security...</span>
-              </button>
               <button 
                 onClick={() => { setDesktopContextMenu(null); osRef.current?.openPalette(); }}
                 className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
@@ -569,12 +563,6 @@ export default function App() {
                 className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
               >
                 <span>🔒 Lock Screen</span>
-              </button>
-              <button 
-                onClick={() => handleOpenSettingsWithTab('wallpaper')}
-                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
-              >
-                <span>⚙️ System Settings...</span>
               </button>
             </div>
           )}

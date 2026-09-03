@@ -9,6 +9,7 @@ RUN npm ci
 
 # Copy full application code and build Vite static bundle
 COPY . .
+ARG BUILD_DATE=2026-09-03T10:09:00Z
 RUN npm run build
 
 # Production runtime container

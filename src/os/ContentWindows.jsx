@@ -10,7 +10,6 @@ import { PROFILE_INFO } from '../data/projectsData';
 import { isYouTubeUrl, getYouTubeEmbedUrl } from '../utils/mediaHelpers';
 import { useAdminAuth } from '../utils/useAdminAuth';
 import { useFileSystem } from '../utils/useFileSystem';
-import AdminAuthModal from '../components/AdminAuthModal';
 
 const chrome = (props) => ({
   win: props.win,
@@ -28,15 +27,11 @@ const chrome = (props) => ({
  * Text files — Apple TextEdit / Notes editor with Admin Mode saving
  * ------------------------------------------------------------------ */
 
-export function TextWindow(props) {
-  const { updateFileContent } = useFileSystem();
-  const { isAdmin, lock } = useAdminAuth();
-
-  const node = findNode(props.win.nodeId);
+function AdminTextEditor({ node, subtitle, updateFileContent, ...props }) {
+  const { lock } = useAdminAuth();
   const [body, setBody] = useState(node?.body || '');
   const [savedBody, setSavedBody] = useState(node?.body || '');
   const [saveState, setSaveState] = useState('idle'); // 'idle' | 'saving' | 'saved'
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [fontFamily, setFontFamily] = useState('mono'); // 'mono' | 'sans'
   const textareaRef = useRef(null);
@@ -53,10 +48,6 @@ export function TextWindow(props) {
 
   // Save handler
   const handleSave = useCallback(async () => {
-    if (!isAdmin) {
-      setShowAuthModal(true);
-      return;
-    }
     if (!node) return;
     setSaveState('saving');
     const ok = await updateFileContent(node.id, body);
@@ -67,7 +58,7 @@ export function TextWindow(props) {
     } else {
       setSaveState('idle');
     }
-  }, [isAdmin, node, body, updateFileContent]);
+  }, [node, body, updateFileContent]);
 
   // Global Cmd+S / Ctrl+S listener
   useEffect(() => {
@@ -84,7 +75,6 @@ export function TextWindow(props) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSave, props.isActive]);
 
-  // Handle Tab key inside textarea
   const handleKeyDownTextarea = (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -119,88 +109,77 @@ export function TextWindow(props) {
   const lines = useMemo(() => body.split('\n'), [body]);
   const wordsCount = useMemo(() => (body.trim() ? body.trim().split(/\s+/).length : 0), [body]);
   const charsCount = body.length;
-  const folderName = getPath(node?.id).at(-2)?.name || 'Finder';
-
-  if (!node) return null;
 
   const editorToolbar = (
-    <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-      {/* Left: Document name & indicator */}
+    <div className="flex items-center justify-between w-full min-w-0 pr-2 select-none">
       <div className="flex items-center gap-2 min-w-0">
         <FileText className="w-3.5 h-3.5 text-[#007aff] shrink-0" />
-        <span className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-100 truncate">
-          {node.name}
+        <span className="text-[12.5px] font-semibold truncate text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+          <span>{node.name}</span>
+          {isDirty && (
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" title="Unsaved changes" />
+          )}
         </span>
-        {isDirty && (
-          <span
-            className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse"
-            title="Unsaved changes"
-          />
+        {subtitle && (
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate hidden md:inline">
+            ({subtitle})
+          </span>
         )}
-        <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate hidden md:inline">
-          ({folderName})
-        </span>
       </div>
 
-      {/* Right: Actions */}
       <div className="flex items-center gap-1.5 shrink-0" data-no-drag>
-        {isAdmin && (
-          <>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 select-none">
-              <ShieldCheck className="w-3 h-3" />
-              Admin
-            </span>
+        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 select-none">
+          <ShieldCheck className="w-3 h-3" />
+          Admin
+        </span>
 
-            {isDirty && (
-              <button
-                onClick={() => setBody(savedBody)}
-                title="Discard unsaved edits"
-                className="px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 rounded-md transition-colors flex items-center gap-1"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span className="hidden sm:inline">Revert</span>
-              </button>
-            )}
-
-            <button
-              onClick={handleSave}
-              disabled={!isDirty && saveState !== 'saved'}
-              title="Save Note (⌘S)"
-              className={`px-2.5 py-1 rounded-md text-[11.5px] font-semibold flex items-center gap-1.5 shadow-sm transition-all ${
-                saveState === 'saved'
-                  ? 'bg-emerald-500 text-white shadow-emerald-500/20'
-                  : isDirty
-                    ? 'bg-[#007aff] hover:bg-[#0069dc] text-white shadow-blue-500/20 active:scale-95'
-                    : 'bg-black/5 dark:bg-white/10 text-slate-400 dark:text-slate-500 cursor-default opacity-60'
-              }`}
-            >
-              {saveState === 'saved' ? (
-                <>
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Saved</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save</span>
-                  <span className="text-[9.5px] opacity-70 font-mono hidden sm:inline">⌘S</span>
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={lock}
-              title="Lock Admin Mode"
-              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              <Lock className="w-3 h-3" />
-            </button>
-
-            <div className="h-3.5 w-[1px] bg-black/10 dark:bg-white/10 mx-0.5" />
-          </>
+        {isDirty && (
+          <button
+            onClick={() => setBody(savedBody)}
+            title="Discard unsaved edits"
+            className="px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:text-red-500 hover:bg-black/5 dark:hover:bg-white/10 rounded-md transition-colors flex items-center gap-1"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span className="hidden sm:inline">Revert</span>
+          </button>
         )}
 
-        {/* Font family toggle */}
+        <button
+          onClick={handleSave}
+          disabled={!isDirty && saveState !== 'saved'}
+          title="Save Note (⌘S)"
+          className={`px-2.5 py-1 rounded-md text-[11.5px] font-semibold flex items-center gap-1.5 shadow-sm transition-all ${
+            saveState === 'saved'
+              ? 'bg-emerald-500 text-white shadow-emerald-500/20'
+              : isDirty
+                ? 'bg-[#007aff] hover:bg-[#0069dc] text-white shadow-blue-500/20 active:scale-95'
+                : 'bg-black/5 dark:bg-white/10 text-slate-400 dark:text-slate-500 cursor-default opacity-60'
+          }`}
+        >
+          {saveState === 'saved' ? (
+            <>
+              <Check className="w-3.5 h-3.5" />
+              <span>Saved</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-3.5 h-3.5" />
+              <span>Save</span>
+              <span className="text-[9.5px] opacity-70 font-mono hidden sm:inline">⌘S</span>
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={lock}
+          title="Lock Admin Mode"
+          className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+        >
+          <Lock className="w-3 h-3" />
+        </button>
+
+        <div className="h-3.5 w-[1px] bg-black/10 dark:bg-white/10 mx-0.5" />
+
         <button
           onClick={() => setFontFamily((f) => (f === 'mono' ? 'sans' : 'mono'))}
           title={fontFamily === 'mono' ? 'Switch to Sans font' : 'Switch to Monospace font'}
@@ -209,7 +188,6 @@ export function TextWindow(props) {
           <Type className="w-3.5 h-3.5" />
         </button>
 
-        {/* Copy Note */}
         <button
           onClick={handleCopy}
           title={copied ? 'Copied to clipboard!' : 'Copy Note'}
@@ -218,7 +196,6 @@ export function TextWindow(props) {
           {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
         </button>
 
-        {/* Download File */}
         <button
           onClick={handleDownload}
           title="Download text file"
@@ -231,75 +208,72 @@ export function TextWindow(props) {
   );
 
   return (
-    <>
-      <OSWindow {...chrome(props)} title={node.name} subtitle={folderName} toolbar={editorToolbar}>
-        <div className="h-full flex flex-col bg-[#fdfdfb] dark:bg-[#13151b] text-slate-800 dark:text-slate-100 selection:bg-[#007aff]/20 selection:text-inherit">
-          {/* Main Editing / Viewing Canvas */}
-          <div className="flex-1 min-h-0 relative flex overflow-hidden">
-            {isAdmin ? (
-              <textarea
-                ref={textareaRef}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                onKeyDown={handleKeyDownTextarea}
-                placeholder="Write your note here..."
-                spellCheck={false}
-                autoFocus
-                className={`w-full h-full p-4 sm:p-6 bg-transparent outline-none resize-none overflow-y-auto leading-[1.8] border-none text-[12.5px] ${
-                  fontFamily === 'mono'
-                    ? 'font-mono'
-                    : 'font-sans text-[13.5px] leading-relaxed'
-                }`}
-              />
-            ) : (
-              <div className="w-full h-full p-4 sm:p-6 overflow-y-auto">
-                <pre
-                  className={`whitespace-pre-wrap break-words leading-[1.8] text-[12.5px] ${
-                    fontFamily === 'mono'
-                      ? 'font-mono'
-                      : 'font-sans text-[13.5px] leading-relaxed'
-                  }`}
-                >
-                  {body || '(Empty document)'}
-                </pre>
-              </div>
-            )}
+    <OSWindow {...chrome(props)} title={node.name} subtitle={subtitle} toolbar={editorToolbar}>
+      <div className="h-full flex flex-col bg-[#fdfdfb] dark:bg-[#13151b] text-slate-800 dark:text-slate-100 selection:bg-[#007aff]/20 selection:text-inherit">
+        <div className="flex-1 min-h-0 relative flex overflow-hidden">
+          <textarea
+            ref={textareaRef}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={handleKeyDownTextarea}
+            placeholder="Write your note here..."
+            spellCheck={false}
+            autoFocus
+            className={`w-full h-full p-4 sm:p-6 bg-transparent outline-none resize-none overflow-y-auto leading-[1.8] border-none text-[12.5px] ${
+              fontFamily === 'mono'
+                ? 'font-mono'
+                : 'font-sans text-[13.5px] leading-relaxed'
+            }`}
+          />
+        </div>
+
+        <div className="shrink-0 h-7 px-3.5 flex items-center justify-between border-t border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] text-[10.5px] text-slate-500 dark:text-slate-400 select-none font-mono">
+          <div className="flex items-center gap-3 truncate">
+            <span>{lines.length} lines</span>
+            <span>·</span>
+            <span>{wordsCount} words</span>
+            <span>·</span>
+            <span>{charsCount} chars</span>
           </div>
 
-          {/* macOS Bottom Status Bar Footer */}
-          <div className="shrink-0 h-7 px-3.5 flex items-center justify-between border-t border-black/[0.08] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.02] text-[10.5px] text-slate-500 dark:text-slate-400 select-none font-mono">
-            <div className="flex items-center gap-3 truncate">
-              <span>{lines.length} lines</span>
-              <span>·</span>
-              <span>{wordsCount} words</span>
-              <span>·</span>
-              <span>{charsCount} chars</span>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0">
-              <span className={isDirty ? 'text-amber-500 font-semibold' : 'text-emerald-500'}>
-                {isDirty ? '● Unsaved edits (⌘S to save)' : '✓ Saved to IshantOS'}
-              </span>
-              <span className="hidden sm:inline opacity-60">
-                UTF-8 Plain Text
-              </span>
-            </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className={isDirty ? 'text-amber-500 font-semibold' : 'text-emerald-500'}>
+              {isDirty ? '● Unsaved edits (⌘S to save)' : '✓ Saved to IshantOS'}
+            </span>
+            <span className="hidden sm:inline opacity-60">
+              UTF-8 Plain Text
+            </span>
           </div>
         </div>
-      </OSWindow>
-
-      {/* Admin Authentication Modal */}
-      <AdminAuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={() => {
-          setShowAuthModal(false);
-          setTimeout(() => textareaRef.current?.focus(), 120);
-        }}
-        initialPrompt={`Enter administrator password to edit and save "${node.name}".`}
-      />
-    </>
+      </div>
+    </OSWindow>
   );
+}
+
+export function TextWindow(props) {
+  const { updateFileContent } = useFileSystem();
+  const { isAdmin } = useAdminAuth();
+
+  const node = findNode(props.win.nodeId);
+  if (!node) return null;
+
+  const subtitle = getPath(node.id).at(-2)?.name;
+
+  // When admin is locked: 100% authentic, pristine native macOS note sheet
+  if (!isAdmin) {
+    return (
+      <OSWindow {...chrome(props)} title={node.name} subtitle={subtitle}>
+        <div className="h-full overflow-y-auto bg-[#fdfdfb] dark:bg-slate-900">
+          <pre className="p-6 sm:p-8 font-mono text-[12px] sm:text-[12.5px] leading-[1.75] text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words">
+            {node.body}
+          </pre>
+        </div>
+      </OSWindow>
+    );
+  }
+
+  // When admin is unlocked: Interactive editor with Save, Dirty indicator, ⌘S
+  return <AdminTextEditor {...props} node={node} subtitle={subtitle} updateFileContent={updateFileContent} />;
 }
 
 /* ------------------------------------------------------------------ *

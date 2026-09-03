@@ -455,6 +455,8 @@ export default function App() {
             ref={osRef}
             isMuted={isMuted}
             onActiveTitleChange={setActiveAppTitle}
+            socialLinks={socialLinks}
+            contactEmail={dashboardConfig?.contactEmail}
           />
 
           {/* Project Detail Modal Overlay */}

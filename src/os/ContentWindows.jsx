@@ -389,15 +389,16 @@ export function MailWindow(props) {
   const [subject, setSubject] = useState("Let's work together");
   const [body, setBody] = useState('Hi Ishant,\n\nI found your portfolio...');
 
-  const mailto = `mailto:${PROFILE_INFO.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const email = props.contactEmail || PROFILE_INFO.email;
+  const mailto = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
   return (
-    <OSWindow {...chrome(props)} title="New Message" subtitle={PROFILE_INFO.email}>
+    <OSWindow {...chrome(props)} title="New Message" subtitle={email}>
       <div className="h-full flex flex-col bg-white dark:bg-slate-900">
         <div className="shrink-0 px-4 py-2 border-b border-black/10 dark:border-white/10 space-y-1.5">
           <Field label="To">
             <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-100">
-              Ishant &lt;{PROFILE_INFO.email}&gt;
+              Ishant &lt;{email}&gt;
             </span>
           </Field>
           <Field label="Subject">

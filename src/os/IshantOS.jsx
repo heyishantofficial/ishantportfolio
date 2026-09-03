@@ -18,7 +18,7 @@ const COMPACT_BREAKPOINT = 640;
  * App.jsx holds a ref to this so the menu bar, Spotlight, the Terminal and the
  * dock can all open the same windows without duplicating the routing logic.
  */
-const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange }, ref) {
+const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, socialLinks, contactEmail }, ref) {
   const wm = useWindowManager();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [isCompact, setIsCompact] = useState(
@@ -35,8 +35,22 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange }, 
 
   const openNode = useCallback((node, options) => {
     click();
-    return wm.openNode(node, options);
-  }, [wm, click]);
+    let targetNode = node;
+    if (typeof node === 'string') targetNode = findNode(node);
+    if (targetNode?.id === 'contact-instagram' && socialLinks?.instagram) {
+      targetNode = { ...targetNode, href: socialLinks.instagram };
+    }
+    if (targetNode?.id === 'contact-linkedin' && socialLinks?.linkedin) {
+      targetNode = { ...targetNode, href: socialLinks.linkedin };
+    }
+    if (targetNode?.id === 'contact-youtube' && socialLinks?.youtube) {
+      targetNode = { ...targetNode, href: socialLinks.youtube };
+    }
+    if (targetNode?.id === 'contact-github' && socialLinks?.github) {
+      targetNode = { ...targetNode, href: socialLinks.github };
+    }
+    return wm.openNode(targetNode, options);
+  }, [wm, click, socialLinks]);
 
   useImperativeHandle(ref, () => ({
     openNode,
@@ -115,7 +129,7 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange }, 
       case 'text': return <TextWindow key={win.id} {...shared} />;
       case 'project': return <ProjectWindow key={win.id} {...shared} />;
       case 'pdf': return <PdfWindow key={win.id} {...shared} />;
-      case 'mail': return <MailWindow key={win.id} {...shared} />;
+      case 'mail': return <MailWindow key={win.id} {...shared} contactEmail={contactEmail} />;
       case 'info': return <InfoWindow key={win.id} {...shared} />;
       case 'trash': return <TrashWindow key={win.id} {...shared} />;
       case 'media': return <MediaWindow key={win.id} {...shared} />;

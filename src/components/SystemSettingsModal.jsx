@@ -50,7 +50,7 @@ export default function SystemSettingsModal({
     openLinksInNewTab: false,
     dockMagnification: true,
     soundEffects: true,
-    statusMessage: '● Vibecoding live & open for collaborations',
+    statusMessage: '',
     contactEmail: 'ishant.vibecode@gmail.com'
   });
 

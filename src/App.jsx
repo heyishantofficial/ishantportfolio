@@ -674,13 +674,13 @@ export default function App() {
                   initial={{ opacity: 0, scale: 0.95, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center justify-start mt-2 sm:mt-5 mb-auto z-10 space-y-2.5 w-full max-w-2xl text-center"
+                  className="flex flex-col items-center justify-start mt-8 sm:mt-14 mb-auto z-10 space-y-3.5 w-full max-w-2xl text-center"
                 >
                   {/* One-Time Morphing Entrance & Mouse-Reactive Quote Heading */}
                   <AnimatedQuoteHeading />
 
                   {/* Helper Subtitle */}
-                  <p className="text-[11px] sm:text-xs font-sans text-white/80 drop-shadow-md mb-1.5 font-medium tracking-wide">
+                  <p className="text-[11px] sm:text-xs font-sans text-white/80 drop-shadow-md pt-2 mb-1.5 font-medium tracking-wide">
                     Enter your name to log in
                   </p>
 
@@ -728,16 +728,6 @@ export default function App() {
                     <span>{isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName}` : 'Click to Unlock'}</span>
                     <span>🔒</span>
                   </button>
-
-                  {/* Live Admin Broadcast Status Message */}
-                  {dashboardConfig?.statusMessage && (
-                    <div className="pt-2">
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-black/40 backdrop-blur-xl border border-white/20 text-[10px] text-white/90 font-mono tracking-wide shadow-md">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        {dashboardConfig.statusMessage}
-                      </span>
-                    </div>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>

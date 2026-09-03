@@ -33,7 +33,7 @@ const FALLBACK = {
     openLinksInNewTab: false,
     dockMagnification: true,
     soundEffects: true,
-    statusMessage: '● Vibecoding live & open for collaborations',
+    statusMessage: '',
     contactEmail: 'ishant.vibecode@gmail.com'
   }
 };

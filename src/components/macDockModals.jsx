@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, FileText, Image as ImageIcon, Download, 
@@ -880,31 +880,121 @@ export function InstagramModal({ onClose, instagramUrl, onOpenSettings }) {
   );
 }
 
-// 9b. YouTube Modal
+// 9b. YouTube Modal with Live Channel Metrics
 export function YouTubeModal({ onClose, youtubeUrl, onOpenSettings }) {
-  const targetUrl = youtubeUrl || 'https://youtube.com';
+  const targetUrl = youtubeUrl || 'https://youtube.com/@heyishant';
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+
+    fetch(`/api/youtube-stats?url=${encodeURIComponent(targetUrl)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data && data.ok) {
+          setStats(data);
+        } else {
+          setStats(null);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch YouTube stats:', err);
+        if (isMounted) setStats(null);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [targetUrl]);
 
   return (
     <MacWindow title="YouTube Channel" icon={YouTubeIcon} onClose={onClose} width="max-w-md">
       <div className="text-center space-y-4 py-3 font-sans">
-        <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-700 p-2 shadow-lg flex items-center justify-center">
-          <img src="/icons/YouTube.png" alt="YouTube" className="w-14 h-14 object-contain drop-shadow-md" />
+        {/* Avatar or Icon Container */}
+        <div className="relative w-20 h-20 mx-auto">
+          {loading ? (
+            <div className="w-20 h-20 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse flex items-center justify-center border border-white/50 dark:border-white/10 shadow-lg">
+              <img src="/icons/YouTube.png" alt="YouTube" className="w-10 h-10 object-contain opacity-50" />
+            </div>
+          ) : stats?.avatar ? (
+            <div className="relative group">
+              <img 
+                src={stats.avatar} 
+                alt={stats.title || "YouTube Channel"} 
+                className="w-20 h-20 rounded-2xl object-cover shadow-lg border-2 border-white/80 dark:border-white/20 bg-slate-900" 
+              />
+              <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-red-600 border-2 border-white dark:border-slate-900 shadow flex items-center justify-center">
+                <img src="/icons/YouTube.png" alt="YouTube" className="w-3.5 h-3.5 object-contain" />
+              </div>
+            </div>
+          ) : (
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-tr from-red-600 via-rose-600 to-red-700 p-2 shadow-lg flex items-center justify-center">
+              <img src="/icons/YouTube.png" alt="YouTube" className="w-14 h-14 object-contain drop-shadow-md" />
+            </div>
+          )}
         </div>
+
+        {/* Channel Details */}
         <div>
-          <h3 className="font-bold text-slate-900 dark:text-white text-lg tracking-tight">Ishant Chauhan</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Video Strategy • Vibecoding Builds • Creative Tech</p>
+          {loading ? (
+            <div className="space-y-2">
+              <div className="h-5 w-36 mx-auto bg-slate-200 dark:bg-slate-700/60 rounded-md animate-pulse" />
+              <div className="h-3 w-48 mx-auto bg-slate-200/80 dark:bg-slate-700/40 rounded-md animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <h3 className="font-bold text-slate-900 dark:text-white text-lg tracking-tight">
+                {stats?.title || "Ishant Chauhan"}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {stats?.handle && <span className="font-semibold text-red-600 dark:text-red-400 mr-1.5">{stats.handle}</span>}
+                Video Strategy • Vibecoding Builds • Creative Tech
+              </p>
+            </>
+          )}
         </div>
+
+        {/* Live Metrics Grid */}
         <div className="flex justify-center gap-8 py-2.5 border-y border-slate-200/60 dark:border-slate-800 text-xs">
-          <div><span className="font-bold text-slate-900 dark:text-white">HD</span> <span className="text-slate-500 block text-[10px]">Quality</span></div>
-          <div><span className="font-bold text-slate-900 dark:text-white">Active</span> <span className="text-slate-500 block text-[10px]">Uploads</span></div>
-          <div><span className="font-bold text-slate-900 dark:text-white">4K</span> <span className="text-slate-500 block text-[10px]">Creative</span></div>
+          <div>
+            <span className="font-bold text-slate-900 dark:text-white text-sm block">
+              {loading ? "..." : (stats?.subscribers || "Active")}
+            </span>
+            <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold tracking-wider mt-0.5">
+              Subscribers
+            </span>
+          </div>
+          <div>
+            <span className="font-bold text-slate-900 dark:text-white text-sm block">
+              {loading ? "..." : (stats?.videos || "HD")}
+            </span>
+            <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold tracking-wider mt-0.5">
+              Videos
+            </span>
+          </div>
+          <div>
+            <span className="font-bold text-slate-900 dark:text-white text-sm block">
+              {stats?.ok ? "Official" : "Active"}
+            </span>
+            <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-semibold tracking-wider mt-0.5">
+              Channel
+            </span>
+          </div>
         </div>
+
+        {/* Action Button & Settings Link */}
         <div className="flex flex-col gap-2 pt-1 max-w-xs mx-auto">
           <a 
             href={targetUrl}
             target="_blank" 
             rel="noreferrer"
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer hover:shadow-red-500/25 active:scale-[0.98]"
           >
             <span>Open YouTube Channel</span>
             <ExternalLink className="w-3.5 h-3.5" />

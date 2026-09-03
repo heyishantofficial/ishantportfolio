@@ -57,6 +57,35 @@ export default function SystemSettingsModal({
   const [socialsSavedNotice, setSocialsSavedNotice] = useState(false);
   const [dockSavedNotice, setDockSavedNotice] = useState(false);
 
+  // YouTube live status preview in settings
+  const [ytPreview, setYtPreview] = useState(null);
+  const [ytLoading, setYtLoading] = useState(false);
+
+  useEffect(() => {
+    const url = localSocials.youtube;
+    if (!url || (!url.includes('@') && !url.includes('/channel/') && !url.includes('/c/'))) {
+      setYtPreview(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setYtLoading(true);
+      fetch(`/api/youtube-stats?url=${encodeURIComponent(url)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.ok) {
+            setYtPreview(data);
+          } else {
+            setYtPreview(null);
+          }
+        })
+        .catch(() => setYtPreview(null))
+        .finally(() => setYtLoading(false));
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [localSocials.youtube]);
+
   useEffect(() => {
     if (socialLinks) setLocalSocials(socialLinks);
   }, [socialLinks]);
@@ -495,6 +524,20 @@ export default function SystemSettingsModal({
                         onChange={(e) => handleSocialChange('youtube', e.target.value)}
                         className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
                       />
+                      {ytLoading && (
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 animate-pulse pt-0.5">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
+                          <span>Scanning live YouTube channel metadata...</span>
+                        </div>
+                      )}
+                      {!ytLoading && ytPreview && ytPreview.ok && (
+                        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span className="truncate">
+                            Channel synced: <strong className="font-semibold">{ytPreview.title}</strong> ({ytPreview.subscribers} subscribers • {ytPreview.videos} videos)
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* LinkedIn */}

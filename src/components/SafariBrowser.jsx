@@ -572,67 +572,6 @@ export default function SafariBrowser({ onClose, onMinimize }) {
           </div>
         </div>
 
-        {/* Safari Bookmarks Bar */}
-        <div className="safari-bookmarks-bar" data-no-drag>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1 mr-1">Favorites:</span>
-          <div 
-            onClick={() => openInNewTab('https://heyishant.me', "Ishant's Portfolio")}
-            className="safari-bookmark-chip"
-          >
-            <span>⚡</span>
-            <span>Portfolio</span>
-          </div>
-          <div 
-            onClick={() => openInNewTab('https://linkedin.com', 'LinkedIn')}
-            className="safari-bookmark-chip"
-          >
-            <span>💼</span>
-            <span>LinkedIn</span>
-          </div>
-          <div 
-            onClick={() => openInNewTab('https://github.com/heyishantofficial', 'GitHub')}
-            className="safari-bookmark-chip"
-          >
-            <span>🐙</span>
-            <span>GitHub</span>
-          </div>
-          <div 
-            onClick={() => openInNewTab('https://youtube.com', 'YouTube')}
-            className="safari-bookmark-chip"
-          >
-            <span>📺</span>
-            <span>YouTube</span>
-          </div>
-          <div 
-            onClick={() => openInNewTab('https://x.com', 'X / Twitter')}
-            className="safari-bookmark-chip"
-          >
-            <span>🐦</span>
-            <span>Twitter</span>
-          </div>
-          <div 
-            onClick={() => openInNewTab('https://instagram.com', 'Instagram')}
-            className="safari-bookmark-chip"
-          >
-            <span>📸</span>
-            <span>Instagram</span>
-          </div>
-          <div 
-            onClick={() => openInNewTab('mailto:ishant.vibecode@gmail.com', 'Email Ishant')}
-            className="safari-bookmark-chip"
-          >
-            <span>✉️</span>
-            <span>Email</span>
-          </div>
-          <div 
-            onClick={() => openInNewTab('/resume.pdf', 'Resume PDF')}
-            className="safari-bookmark-chip"
-          >
-            <span>📄</span>
-            <span>Resume</span>
-          </div>
-        </div>
-
         {/* Main Content Area */}
         <div className="safari-hub-page">
           {/* Header Banner */}

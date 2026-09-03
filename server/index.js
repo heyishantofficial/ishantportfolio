@@ -93,12 +93,28 @@ const app = express();
 app.use(express.json({ limit: '16kb' }));
 
 // Health check endpoint for control panel connectivity diagnosis
+app.get('/health', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    status: 'ok',
+    server: 'Express Backend',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/health', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json({
     status: 'ok',
     server: 'Express Backend',
     storageFile: SETTINGS_FILE,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/version', (_req, res) => {
+  res.json({
+    version: 'latest-admin-notes',
     timestamp: new Date().toISOString()
   });
 });

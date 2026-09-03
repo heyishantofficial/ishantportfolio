@@ -6,331 +6,205 @@ import {
   X, 
   Plus, 
   Lock, 
-  ShieldCheck, 
-  BookOpen, 
-  Code2, 
   ExternalLink, 
-  Globe, 
-  Sparkles, 
-  AlertCircle,
-  Clock,
-  Trash2,
-  FileCode
+  Copy, 
+  Check, 
+  Trash2, 
+  FolderPlus
 } from 'lucide-react';
 
 import './safari.css';
 
-// Default curated favorites for the Safari Start Page
-const DEFAULT_FAVORITES = [
+const MENU_BAR_H = 28;
+const DOCK_GUARD = 76;
+const MIN_W = 540;
+const MIN_H = 380;
+const STORAGE_KEY = 'ishant_portfolio_browser_links';
+
+// Curated default links for Ishant's Portfolio Launchpad
+const DEFAULT_PORTFOLIO_LINKS = [
+  // Vibecoded Apps & Live Projects
   {
-    id: 'wikipedia',
-    name: 'Wikipedia',
-    url: 'https://en.m.wikipedia.org/wiki/Special:Random',
-    domain: 'wikipedia.org',
-    iconBg: 'bg-white text-slate-900 border border-slate-200',
-    iconText: 'W',
-    category: 'Knowledge'
-  },
-  {
-    id: 'devdocs',
-    name: 'DevDocs',
-    url: 'https://devdocs.io',
-    domain: 'devdocs.io',
-    iconBg: 'bg-emerald-600 text-white',
-    iconText: 'DD',
-    category: 'Developer'
-  },
-  {
-    id: 'ishant-portfolio',
-    name: "Ishant's Work",
+    id: 'link-brainjot',
+    title: 'Brainjot AI Notes',
+    category: 'apps',
     url: 'https://heyishant.me',
-    domain: 'heyishant.me',
-    iconBg: 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white',
-    iconText: '⚡',
-    category: 'Featured'
+    tag: 'LIVE APP',
+    badgeColor: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+    iconBg: 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white',
+    iconEmoji: '🧠',
+    description: 'AI-Powered spatial note-taking and thought architecture system for structuring raw creator braindumps into video scripts.',
+    featured: true
   },
   {
-    id: 'codepen',
-    name: 'CodePen',
-    url: 'https://codepen.io/picks',
-    domain: 'codepen.io',
-    iconBg: 'bg-black text-white',
-    iconText: 'CP',
-    category: 'Creative'
-  },
-  {
-    id: 'hacker-news',
-    name: 'Hacker News',
-    url: 'https://news.ycombinator.com',
-    domain: 'ycombinator.com',
-    iconBg: 'bg-orange-500 text-white',
-    iconText: 'Y',
-    category: 'Tech'
-  },
-  {
-    id: 'duckduckgo',
-    name: 'DuckDuckGo',
-    url: 'safari://search?q=macOS+Sequoia+Safari',
-    domain: 'duckduckgo.com',
-    iconBg: 'bg-orange-400 text-white',
-    iconText: '🦆',
-    category: 'Search'
-  },
-  {
-    id: 'apple',
-    name: 'Apple',
-    url: 'https://en.m.wikipedia.org/wiki/Apple_Inc.',
-    domain: 'apple.com',
-    iconBg: 'bg-slate-900 text-white',
-    iconText: '',
-    category: 'News'
-  },
-  {
-    id: 'github',
-    name: 'GitHub',
+    id: 'link-instacollect',
+    title: 'InstaCollect Extension',
+    category: 'apps',
     url: 'https://github.com/heyishantofficial',
-    domain: 'github.com',
-    iconBg: 'bg-slate-800 text-white',
-    iconText: 'GH',
-    category: 'Social'
+    tag: 'EXTENSION',
+    badgeColor: 'bg-pink-500/15 text-pink-600 dark:text-pink-400 border-pink-500/20',
+    iconBg: 'bg-gradient-to-tr from-pink-500 to-rose-600 text-white',
+    iconEmoji: '📸',
+    description: 'Creator browser extension for 1-click viral reel reference capture, copy hooks, and visual moodboard extraction to Notion.'
+  },
+  {
+    id: 'link-notchfinder',
+    title: 'Notch Finder macOS',
+    category: 'apps',
+    url: 'https://heyishant.me',
+    tag: 'UTILITY',
+    badgeColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    iconBg: 'bg-gradient-to-tr from-emerald-500 to-teal-600 text-white',
+    iconEmoji: '💻',
+    description: 'macOS status bar utility turning the MacBook camera notch into a drop shelf for active content drafts and teleprompters.',
+    featured: true
+  },
+  {
+    id: 'link-databeauty',
+    title: 'DataBeauty Infographics',
+    category: 'apps',
+    url: 'https://heyishant.me',
+    tag: 'ANALYTICS',
+    badgeColor: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    iconBg: 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white',
+    iconEmoji: '📊',
+    description: 'Transforming raw analytics and metric spreadsheets into high-converting viral LinkedIn & X carousel slides.'
+  },
+  {
+    id: 'link-talkntype',
+    title: 'TalkNType Voice AI',
+    category: 'apps',
+    url: 'https://heyishant.me',
+    tag: 'SPEECH AI',
+    badgeColor: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+    iconBg: 'bg-gradient-to-tr from-cyan-500 to-blue-600 text-white',
+    iconEmoji: '🎙️',
+    description: 'Voice-first AI copywriting assistant. Speak raw thoughts and get structured threads and teleprompter scripts in real time.'
+  },
+  {
+    id: 'link-motionmaker',
+    title: 'MotionMaker Shorts',
+    category: 'apps',
+    url: 'https://heyishant.me',
+    tag: 'GRAPHICS',
+    badgeColor: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    iconBg: 'bg-gradient-to-tr from-purple-600 to-pink-600 text-white',
+    iconEmoji: '🎬',
+    description: 'Browser-based motion graphics tool generating kinetic captions, callouts, and animated lower-thirds at 60 FPS.'
+  },
+
+  // Social & Professional Profiles
+  {
+    id: 'link-linkedin',
+    title: 'LinkedIn Profile',
+    category: 'social',
+    url: 'https://linkedin.com',
+    tag: 'PROFESSIONAL',
+    badgeColor: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    iconBg: 'bg-[#0077b5] text-white',
+    iconEmoji: '💼',
+    description: 'Connect for content strategy, executive distribution engines, brand building, and engineering leadership insights.',
+    featured: true
+  },
+  {
+    id: 'link-github',
+    title: 'GitHub Repositories',
+    category: 'social',
+    url: 'https://github.com/heyishantofficial',
+    tag: 'OPEN SOURCE',
+    badgeColor: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20',
+    iconBg: 'bg-slate-900 text-white',
+    iconEmoji: '🐙',
+    description: 'Explore vibecoded open-source applications, AI agent tools, Swift scripts, and frontend experiments.',
+    featured: true
+  },
+  {
+    id: 'link-youtube',
+    title: 'YouTube Channel',
+    category: 'social',
+    url: 'https://youtube.com',
+    tag: 'VIDEO MEDIA',
+    badgeColor: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20',
+    iconBg: 'bg-red-600 text-white',
+    iconEmoji: '📺',
+    description: 'Deep dives on modern developer tools, vibecoding workflows, Cursor AI engineering, and visual media pacing.'
+  },
+  {
+    id: 'link-twitter',
+    title: 'X / Twitter',
+    category: 'social',
+    url: 'https://x.com',
+    tag: 'MICROBLOG',
+    badgeColor: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20',
+    iconBg: 'bg-black text-white',
+    iconEmoji: '🐦',
+    description: 'Daily builder updates, thoughts on AI workflows, design aesthetics, and viral content breakdowns.'
+  },
+  {
+    id: 'link-instagram',
+    title: 'Instagram',
+    category: 'social',
+    url: 'https://instagram.com',
+    tag: 'VISUALS',
+    badgeColor: 'bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20',
+    iconBg: 'bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white',
+    iconEmoji: '📸',
+    description: 'Behind the scenes of studio setups, creator lifestyle, editing breakdowns, and short-form visual edits.'
+  },
+  {
+    id: 'link-email',
+    title: 'Direct Inquiries & Email',
+    category: 'social',
+    url: 'mailto:ishant.vibecode@gmail.com',
+    tag: 'CONTACT',
+    badgeColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    iconBg: 'bg-emerald-600 text-white',
+    iconEmoji: '✉️',
+    description: 'Get in touch directly for collaborations, content consulting, vibecoded software, or custom builds.',
+    featured: true
+  },
+
+  // Case Studies & Editorial Systems
+  {
+    id: 'link-pipeline',
+    title: 'Multi-Channel Media Pipeline',
+    category: 'systems',
+    url: 'https://heyishant.me',
+    tag: 'CASE STUDY',
+    badgeColor: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20',
+    iconBg: 'bg-gradient-to-tr from-violet-600 to-indigo-700 text-white',
+    iconEmoji: '⚡',
+    description: 'Automated 1-to-10 media engine converting 1 weekly long-form video into 10 high-performing posts across platforms.'
+  },
+  {
+    id: 'link-kanban',
+    title: 'Creator Kanban & Research Engine',
+    category: 'systems',
+    url: 'https://heyishant.me',
+    tag: 'WORKFLOW',
+    badgeColor: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    iconBg: 'bg-gradient-to-tr from-amber-600 to-yellow-500 text-white',
+    iconEmoji: '📋',
+    description: 'Structured Notion workspace aggregating trending industry topics, auto-generating hooks, and tracking assets.'
+  },
+  {
+    id: 'link-resume',
+    title: 'Official Resume PDF',
+    category: 'systems',
+    url: '/resume.pdf',
+    tag: 'DOCUMENT',
+    badgeColor: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    iconBg: 'bg-rose-600 text-white',
+    iconEmoji: '📄',
+    description: 'Download and inspect comprehensive resume highlighting full-stack engineering and creator credentials.'
   }
 ];
 
-// Blocked trackers breakdown for Privacy Report
-const PRIVACY_REPORT_DATA = [
-  { name: 'Google Analytics & Tag Manager', category: 'Analytics', blockedCount: 19 },
-  { name: 'Meta Pixel (Facebook)', category: 'Cross-Site Tracking', blockedCount: 11 },
-  { name: 'DoubleClick by Google', category: 'Advertising', blockedCount: 7 },
-  { name: 'Hotjar Behavioral Recording', category: 'Session Replay', blockedCount: 4 },
-  { name: 'TikTok Advertising Pixel', category: 'Fingerprinting', blockedCount: 3 }
-];
-
-const MENU_BAR_H = 28;
-const DOCK_GUARD = 76;
-const MIN_W = 480;
-const MIN_H = 340;
-
-const BLOCKED_DOMAINS = [
-  'google.com',
-  'x.com',
-  'twitter.com',
-  'facebook.com',
-  'instagram.com',
-  'linkedin.com',
-  'duckduckgo.com',
-  'github.com',
-  'youtube.com',
-  'reddit.com',
-  'netflix.com',
-  'amazon.com',
-  'apple.com',
-  'yahoo.com',
-  'bing.com'
-];
-
-// Safari Native Search Results View
-function SafariSearchView({ query, onNavigate }) {
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-
-    Promise.allSettled([
-      fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`).then(r => r.json()),
-      fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=6&format=json&origin=*`).then(r => r.json())
-    ]).then(([ddgRes, wikiRes]) => {
-      if (!mounted) return;
-      const ddg = ddgRes.status === 'fulfilled' ? ddgRes.value : null;
-      const wiki = wikiRes.status === 'fulfilled' ? wikiRes.value : null;
-
-      const wikiTitles = wiki?.[1] || [];
-      const wikiSnippets = wiki?.[2] || [];
-      const wikiLinks = wiki?.[3] || [];
-
-      setResults({
-        heading: ddg?.Heading || query,
-        abstract: ddg?.Abstract || (wikiSnippets[0] || ''),
-        abstractURL: ddg?.AbstractURL || wikiLinks[0] || '',
-        abstractSource: ddg?.AbstractSource || 'Wikipedia',
-        image: ddg?.Image || null,
-        wikiItems: wikiTitles.map((title, i) => ({
-          title,
-          snippet: wikiSnippets[i] || '',
-          url: wikiLinks[i] || ''
-        })),
-        relatedTopics: (ddg?.RelatedTopics || []).filter(t => t.Text && t.FirstURL).slice(0, 4)
-      });
-      setLoading(false);
-    }).catch(() => {
-      if (!mounted) return;
-      setLoading(false);
-    });
-
-    return () => { mounted = false; };
-  }, [query]);
-
-  return (
-    <div className="safari-search-page">
-      <div className="safari-search-container">
-        {/* Search header */}
-        <div className="flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
-          <div>
-            <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Safari Smart Search</div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Results for “{query}”</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <a 
-              href={`https://www.google.com/search?q=${encodeURIComponent(query)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 hover:border-blue-500 flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
-            >
-              Google <ExternalLink className="w-3 h-3" />
-            </a>
-            <a 
-              href={`https://duckduckgo.com/?q=${encodeURIComponent(query)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 hover:border-blue-500 flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
-            >
-              DuckDuckGo <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-            <RotateCw className="w-6 h-6 animate-spin text-blue-500" />
-            <span className="text-xs">Gathering intelligence across the web...</span>
-          </div>
-        ) : (
-          <>
-            {/* Top Knowledge / Instant Summary Card */}
-            {results?.abstract ? (
-              <div className="safari-search-knowledge-card">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">{results.heading}</h3>
-                      <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
-                        Top Result
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                      {results.abstract}
-                    </p>
-                    <div className="pt-2 flex flex-wrap items-center gap-2">
-                      {results.abstractURL && (
-                        <button
-                          onClick={() => {
-                            if (results.abstractURL.includes('wikipedia.org')) {
-                              const mobileWiki = results.abstractURL.replace('wikipedia.org', 'm.wikipedia.org');
-                              onNavigate(mobileWiki);
-                            } else {
-                              window.open(results.abstractURL, '_blank');
-                            }
-                          }}
-                          className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm"
-                        >
-                          <BookOpen className="w-3.5 h-3.5" />
-                          Read on Safari
-                        </button>
-                      )}
-                      <a
-                        href={results.abstractURL || `https://www.google.com/search?q=${encodeURIComponent(query)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Open Official Page
-                      </a>
-                    </div>
-                  </div>
-                  {results.image && (
-                    <img 
-                      src={results.image} 
-                      alt={results.heading}
-                      className="w-20 h-20 rounded-xl object-contain bg-white p-1 border border-black/10 shrink-0" 
-                    />
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Wikipedia & Web Results */}
-            {results?.wikiItems?.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <Globe className="w-3.5 h-3.5 text-blue-500" />
-                  Knowledge Articles
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {results.wikiItems.map((item, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        const mobileWiki = item.url.replace('wikipedia.org', 'm.wikipedia.org');
-                        onNavigate(mobileWiki);
-                      }}
-                      className="safari-search-result-item"
-                    >
-                      <div className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center justify-between">
-                        <span className="truncate">{item.title}</span>
-                        <span className="text-[10px] text-slate-400 shrink-0">wikipedia.org</span>
-                      </div>
-                      {item.snippet && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
-                          {item.snippet}
-                        </p>
-                      )}
-                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
-                        Click to view in Safari →
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Related Topics */}
-            {results?.relatedTopics?.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Related Explorations</h4>
-                <div className="space-y-2">
-                  {results.relatedTopics.map((topic, i) => (
-                    <div
-                      key={i}
-                      onClick={() => {
-                        if (topic.FirstURL.includes('wikipedia.org')) {
-                          onNavigate(topic.FirstURL.replace('wikipedia.org', 'm.wikipedia.org'));
-                        } else {
-                          window.open(topic.FirstURL, '_blank');
-                        }
-                      }}
-                      className="p-3 rounded-xl bg-white/50 dark:bg-zinc-800/40 border border-black/5 dark:border-white/5 hover:border-blue-500/40 cursor-pointer text-xs flex items-center justify-between"
-                    >
-                      <span className="text-slate-700 dark:text-slate-200 line-clamp-1">{topic.Text}</span>
-                      <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-2" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
+// Calculate initial window bounds
 const getInitialBounds = () => {
   if (typeof window === 'undefined') return { x: 80, y: 50, w: 980, h: 620 };
-  const w = Math.min(1040, Math.max(MIN_W, window.innerWidth - 60));
-  const h = Math.min(640, Math.max(MIN_H, window.innerHeight - MENU_BAR_H - DOCK_GUARD - 20));
+  const w = Math.min(1060, Math.max(MIN_W, window.innerWidth - 60));
+  const h = Math.min(650, Math.max(MIN_H, window.innerHeight - MENU_BAR_H - DOCK_GUARD - 20));
   const x = Math.max(16, Math.round((window.innerWidth - w) / 2));
   const y = Math.max(MENU_BAR_H + 8, Math.round((window.innerHeight - DOCK_GUARD - h) / 2));
   return { x, y, w, h };
@@ -345,6 +219,112 @@ export default function SafariBrowser({ onClose, onMinimize }) {
 
   const dragState = useRef(null);
   const resizeState = useRef(null);
+
+  // Search & Link State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all'); // all, apps, social, systems, custom
+  const [customLinks, setCustomLinks] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [copiedLinkId, setCopiedLinkId] = useState(null);
+
+  // Add Link Form State
+  const [newTitle, setNewTitle] = useState('');
+  const [newUrl, setNewUrl] = useState('');
+  const [newCategory, setNewCategory] = useState('apps');
+  const [newEmoji, setNewEmoji] = useState('🔗');
+  const [newDescription, setNewDescription] = useState('');
+
+  // Load custom links from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setCustomLinks(JSON.parse(stored));
+      }
+    } catch {
+      // ignore parsing errors
+    }
+  }, []);
+
+  // Save custom links to localStorage
+  const saveCustomLinks = (updated) => {
+    setCustomLinks(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  // Toast feedback helper
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 2800);
+  };
+
+  // Open any URL in a new tab with feedback
+  const openInNewTab = (url, title = 'Link') => {
+    if (!url) return;
+    let target = url.trim();
+    if (!/^https?:\/\//i.test(target) && !target.startsWith('mailto:')) {
+      target = `https://${target}`;
+    }
+    window.open(target, '_blank', 'noopener,noreferrer');
+    showToast(`Opened “${title}” in new tab ↗`);
+  };
+
+  // Copy link URL
+  const copyLink = (e, link) => {
+    e.stopPropagation();
+    navigator.clipboard?.writeText(link.url);
+    setCopiedLinkId(link.id);
+    showToast(`Copied ${link.title} URL to clipboard!`);
+    setTimeout(() => setCopiedLinkId(null), 2000);
+  };
+
+  // Delete custom link
+  const deleteCustomLink = (e, id) => {
+    e.stopPropagation();
+    const updated = customLinks.filter(l => l.id !== id);
+    saveCustomLinks(updated);
+    showToast('Link removed from Portfolio Hub');
+  };
+
+  // Handle Add Link submit
+  const handleAddLink = (e) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newUrl.trim()) return;
+
+    let cleanUrl = newUrl.trim();
+    if (!/^https?:\/\//i.test(cleanUrl) && !cleanUrl.startsWith('mailto:')) {
+      cleanUrl = `https://${cleanUrl}`;
+    }
+
+    const newLink = {
+      id: `custom-${Date.now()}`,
+      title: newTitle.trim(),
+      url: cleanUrl,
+      category: newCategory,
+      tag: 'CUSTOM',
+      badgeColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+      iconBg: 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white',
+      iconEmoji: newEmoji || '🔗',
+      description: newDescription.trim() || 'Custom portfolio link added to your browser hub.',
+      isCustom: true
+    };
+
+    const updated = [newLink, ...customLinks];
+    saveCustomLinks(updated);
+
+    setNewTitle('');
+    setNewUrl('');
+    setNewDescription('');
+    setShowAddModal(false);
+    showToast(`Added “${newLink.title}” to your links!`);
+  };
 
   // Dragging toolbar
   const handleToolbarPointerDown = (e) => {
@@ -434,267 +414,45 @@ export default function SafariBrowser({ onClose, onMinimize }) {
     }
   };
 
-  // Tabs State
-  const [tabs, setTabs] = useState([
-    {
-      id: 'tab-1',
-      title: 'Start Page',
-      url: '',
-      history: [''],
-      historyIndex: 0,
-      favicon: null,
-      isReader: false,
-      hasError: false
-    }
-  ]);
-  const [activeTabId, setActiveTabId] = useState('tab-1');
+  // Combine default and custom links
+  const allLinks = useMemo(() => {
+    return [...customLinks, ...DEFAULT_PORTFOLIO_LINKS];
+  }, [customLinks]);
 
-  // Address bar input state
-  const [addressInput, setAddressInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  // Filter links based on category and search query
+  const filteredLinks = useMemo(() => {
+    return allLinks.filter(item => {
+      const matchesCategory = 
+        activeCategory === 'all' ? true :
+        activeCategory === 'custom' ? item.isCustom :
+        item.category === activeCategory;
 
-  // Inspector & Reader states
-  const [showInspector, setShowInspector] = useState(false);
-  const [inspectorTab, setInspectorTab] = useState('elements');
-  const [consoleInput, setConsoleInput] = useState('');
-  const [consoleLogs, setConsoleLogs] = useState([
-    { type: 'info', text: ' Safari WebKit Engine 605.1.15 initialized.' },
-    { type: 'log', text: 'Sandbox security active: allow-scripts, allow-same-origin, allow-forms.' },
-    { type: 'info', text: 'Intelligent Tracking Prevention (ITP) enabled.' }
-  ]);
+      const q = searchQuery.toLowerCase().trim();
+      const matchesQuery = !q || 
+        item.title.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.url.toLowerCase().includes(q) ||
+        item.tag.toLowerCase().includes(q);
 
-  // Window state (maximize / fullscreen inside IshantOS)
-
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [showCertModal, setShowCertModal] = useState(false);
-
-  // Reader Settings
-  const [readerTheme, setReaderTheme] = useState('light'); // light, sepia, gray, dark
-  const [readerFontSize, setReaderFontSize] = useState(18);
-
-  const activeTab = useMemo(() => {
-    return tabs.find(t => t.id === activeTabId) || tabs[0];
-  }, [tabs, activeTabId]);
-
-  // Sync address bar input when active tab changes
-  useEffect(() => {
-    if (activeTab) {
-      setAddressInput(activeTab.url);
-    }
-  }, [activeTab]);
-
-  // Handle simulated progress sweep during page transitions
-  const triggerLoading = () => {
-    setIsLoading(true);
-    setProgress(15);
-    const step1 = setTimeout(() => setProgress(55), 180);
-    const step2 = setTimeout(() => setProgress(88), 420);
-    const step3 = setTimeout(() => {
-      setProgress(100);
-      setTimeout(() => {
-        setIsLoading(false);
-        setProgress(0);
-      }, 250);
-    }, 650);
-
-    return () => {
-      clearTimeout(step1);
-      clearTimeout(step2);
-      clearTimeout(step3);
-    };
-  };
-
-  // Navigate to a URL or search query
-  const navigateTo = (rawInput) => {
-    if (!rawInput || !rawInput.trim()) {
-      updateActiveTab({ url: '', title: 'Start Page', hasError: false, isReader: false, isSearch: false });
-      return;
-    }
-
-    const trimmed = rawInput.trim();
-
-    // Internal search query protocol
-    if (trimmed.startsWith('safari://search?q=')) {
-      const q = decodeURIComponent(trimmed.replace('safari://search?q=', ''));
-      triggerLoading();
-      updateActiveTab({
-        url: trimmed,
-        title: `${q} — Search`,
-        isSearch: true,
-        searchQuery: q,
-        hasError: false,
-        isReader: false
-      });
-      return;
-    }
-
-    // Check if it's a search query or a valid domain/URL
-    const isUrl = /^(https?:\/\/|[a-z0-9]+([-.]?[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$)/i.test(trimmed);
-
-    if (!isUrl) {
-      // It's a search query! Use our built-in Safari Smart Search
-      triggerLoading();
-      updateActiveTab({
-        url: `safari://search?q=${encodeURIComponent(trimmed)}`,
-        title: `${trimmed} — Search`,
-        isSearch: true,
-        searchQuery: trimmed,
-        hasError: false,
-        isReader: false
-      });
-      return;
-    }
-
-    let targetUrl = trimmed;
-    if (!/^https?:\/\//i.test(trimmed)) {
-      targetUrl = `https://${trimmed}`;
-    }
-
-    // Determine domain for title
-    let domain = 'Web Page';
-    try {
-      const parsed = new URL(targetUrl);
-      domain = parsed.hostname.replace('www.', '');
-    } catch {
-      domain = trimmed;
-    }
-
-    triggerLoading();
-
-    const willBlock = BLOCKED_DOMAINS.some(b => targetUrl.toLowerCase().includes(b));
-
-    updateActiveTab({
-      url: targetUrl,
-      title: domain.charAt(0).toUpperCase() + domain.slice(1),
-      hasError: willBlock,
-      isReader: false,
-      isSearch: false
+      return matchesCategory && matchesQuery;
     });
-  };
+  }, [allLinks, activeCategory, searchQuery]);
 
-  const updateActiveTab = (updates) => {
-    setTabs(prev => prev.map(tab => {
-      if (tab.id === activeTabId) {
-        let nextHistory = tab.history;
-        let nextHistoryIndex = tab.historyIndex;
-
-        if (updates.url !== undefined && updates.url !== tab.url) {
-          nextHistory = [...tab.history.slice(0, tab.historyIndex + 1), updates.url];
-          nextHistoryIndex = nextHistory.length - 1;
-        }
-
-        return {
-          ...tab,
-          ...updates,
-          history: nextHistory,
-          historyIndex: nextHistoryIndex
-        };
-      }
-      return tab;
-    }));
-  };
-
-  // Back / Forward navigation
-  const goBack = () => {
-    if (!activeTab || activeTab.historyIndex <= 0) return;
-    const newIndex = activeTab.historyIndex - 1;
-    const prevUrl = activeTab.history[newIndex];
-    triggerLoading();
-    setTabs(prev => prev.map(t => t.id === activeTabId ? {
-      ...t,
-      url: prevUrl,
-      historyIndex: newIndex,
-      title: prevUrl ? new URL(prevUrl).hostname : 'Start Page',
-      hasError: false
-    } : t));
-  };
-
-  const goForward = () => {
-    if (!activeTab || activeTab.historyIndex >= activeTab.history.length - 1) return;
-    const newIndex = activeTab.historyIndex + 1;
-    const nextUrl = activeTab.history[newIndex];
-    triggerLoading();
-    setTabs(prev => prev.map(t => t.id === activeTabId ? {
-      ...t,
-      url: nextUrl,
-      historyIndex: newIndex,
-      title: nextUrl ? new URL(nextUrl).hostname : 'Start Page',
-      hasError: false
-    } : t));
-  };
-
-  const reloadPage = () => {
-    if (activeTab?.url) {
-      triggerLoading();
-      const currentUrl = activeTab.url;
-      updateActiveTab({ url: '' });
-      setTimeout(() => updateActiveTab({ url: currentUrl }), 50);
-    }
-  };
-
-  // Tab management
-  const addTab = () => {
-    const newTabId = `tab-${Date.now()}`;
-    const newTab = {
-      id: newTabId,
-      title: 'Start Page',
-      url: '',
-      history: [''],
-      historyIndex: 0,
-      favicon: null,
-      isReader: false,
-      hasError: false
-    };
-    setTabs(prev => [...prev, newTab]);
-    setActiveTabId(newTabId);
-  };
-
-  const closeTab = (e, tabIdToClose) => {
-    e.stopPropagation();
-    if (tabs.length === 1) {
-      // If closing the last tab, reset it to Start Page
-      updateActiveTab({ url: '', title: 'Start Page', hasError: false, isReader: false });
-      return;
-    }
-    const nextTabs = tabs.filter(t => t.id !== tabIdToClose);
-    setTabs(nextTabs);
-    if (activeTabId === tabIdToClose) {
-      setActiveTabId(nextTabs[nextTabs.length - 1].id);
-    }
-  };
-
-  // Console evaluator for Web Inspector
-  const handleEvalConsole = (e) => {
-    e.preventDefault();
-    if (!consoleInput.trim()) return;
-    const cmd = consoleInput.trim();
-    setConsoleLogs(prev => [...prev, { type: 'input', text: `> ${cmd}` }]);
-
-    try {
-      // Safe quick evaluation
-      if (cmd === 'clear' || cmd === 'clear()') {
-        setConsoleLogs([]);
-        setConsoleInput('');
-        return;
-      }
-      if (cmd === 'location' || cmd === 'window.location') {
-        setConsoleLogs(prev => [...prev, { type: 'output', text: JSON.stringify({ href: activeTab?.url || 'safari://start', title: activeTab?.title }, null, 2) }]);
-      } else if (cmd === 'navigator.userAgent') {
-        setConsoleLogs(prev => [...prev, { type: 'output', text: '"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"' }]);
+  // Handle Address Bar Enter Key
+  const handleAddressKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      const trimmed = searchQuery.trim();
+      if (!trimmed) return;
+      
+      const isUrl = /^(https?:\/\/|[a-z0-9]+([-.]?[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$)/i.test(trimmed);
+      if (isUrl) {
+        openInNewTab(trimmed, trimmed);
       } else {
-        // eslint-disable-next-line no-eval
-        const res = Function(`"use strict"; return (${cmd})`)();
-        setConsoleLogs(prev => [...prev, { type: 'output', text: String(res) }]);
+        // Open Google search in new tab
+        openInNewTab(`https://www.google.com/search?q=${encodeURIComponent(trimmed)}`, `Google: ${trimmed}`);
       }
-    } catch (err) {
-      setConsoleLogs(prev => [...prev, { type: 'error', text: `TypeError: ${err.message}` }]);
     }
-    setConsoleInput('');
   };
-
-  const canGoBack = activeTab && activeTab.historyIndex > 0;
-  const canGoForward = activeTab && activeTab.historyIndex < activeTab.history.length - 1;
 
   const windowStyle = isMaximized
     ? {
@@ -718,11 +476,6 @@ export default function SafariBrowser({ onClose, onMinimize }) {
       style={windowStyle}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Invisible shield to prevent iframe capturing mouse events during drag/resize */}
-      {isInteracting && (
-        <div className="absolute inset-0 z-50 bg-transparent select-none" />
-      )}
-
       <div className="safari-window-container">
         {/* Safari Unified Navigation Toolbar (Draggable) */}
         <div 
@@ -741,595 +494,278 @@ export default function SafariBrowser({ onClose, onMinimize }) {
           <div className="flex items-center gap-0.5" data-no-drag>
             <button 
               className="safari-btn-icon" 
-              onClick={goBack} 
-              disabled={!canGoBack} 
-              title="Back"
+              onClick={() => setActiveCategory('all')} 
+              title="All Links"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button 
-              className="safari-btn-icon" 
-              onClick={goForward} 
-              disabled={!canGoForward} 
+              className="safari-btn-icon opacity-50 cursor-not-allowed" 
+              disabled 
               title="Forward"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
             <button 
               className="safari-btn-icon" 
-              onClick={reloadPage} 
-              title="Reload Page"
+              onClick={() => { setSearchQuery(''); setActiveCategory('all'); showToast('Refreshed portfolio links'); }} 
+              title="Reset Filters"
             >
-              <RotateCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-blue-500' : ''}`} />
+              <RotateCw className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Smart Search & Address Bar */}
           <div className="safari-address-bar-wrapper" data-no-drag>
             <div className="safari-address-bar">
-              {/* SSL Padlock */}
-              <button 
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors shrink-0"
-                onClick={() => setShowCertModal(v => !v)}
-                title="View site security information"
-              >
-                <Lock className="w-3.5 h-3.5 text-emerald-500" />
-              </button>
-
-              {/* Reader Mode Toggle */}
-              {activeTab?.url && (
+              <Lock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleAddressKeyDown}
+                placeholder="Search links, apps, or type a URL to open in a new tab..."
+                className="safari-address-input"
+              />
+              {searchQuery && (
                 <button 
-                  onClick={() => updateActiveTab({ isReader: !activeTab.isReader })}
-                  className={`px-1.5 py-0.5 rounded text-[11px] font-serif font-bold transition-all shrink-0 ${
-                    activeTab.isReader 
-                      ? 'bg-blue-500 text-white shadow-sm' 
-                      : 'text-slate-500 hover:bg-black/5 dark:hover:bg-white/10'
-                  }`}
-                  title="Toggle Safari Reader Mode (aA)"
+                  onClick={() => setSearchQuery('')}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                 >
-                  aA
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              )}
-
-              {/* Address Input */}
-              <form 
-                className="flex-1 flex items-center" 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  navigateTo(addressInput);
-                }}
-              >
-                <input 
-                  type="text"
-                  value={addressInput}
-                  onChange={(e) => setAddressInput(e.target.value)}
-                  placeholder="Search or enter website name"
-                  className="safari-address-input"
-                  spellCheck={false}
-                  autoComplete="off"
-                />
-              </form>
-
-              {/* Clear / Start Page Button */}
-              {addressInput && (
-                <button 
-                  onClick={() => {
-                    setAddressInput('');
-                    updateActiveTab({ url: '', title: 'Start Page', hasError: false, isReader: false });
-                  }}
-                  className="p-0.5 text-slate-400 hover:text-slate-600 rounded-full shrink-0"
-                  title="Clear"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-
-              {/* Progress sweep indicator */}
-              {isLoading && (
-                <div className="safari-progress-sweep" style={{ width: `${progress}%` }} />
               )}
             </div>
-
-            {/* Certificate Popover */}
-            {showCertModal && (
-              <div className="absolute top-10 left-0 w-72 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
-                <div className="flex items-start gap-2.5 pb-2.5 border-b border-slate-100 dark:border-slate-700">
-                  <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-slate-900 dark:text-white">Connection is Secure</h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Your information is protected by Apple WebKit TLS encryption.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-2 text-[11px] text-slate-600 dark:text-slate-300 space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Host:</span>
-                    <span className="font-mono font-medium truncate max-w-[170px]">{activeTab?.url ? new URL(activeTab.url).hostname : 'localhost'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Protocol:</span>
-                    <span>TLS 1.3 (ChaCha20-Poly1305)</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Toolbar Actions */}
-          <div className="flex items-center gap-1" data-no-drag>
-            {/* Privacy Report Quick Button */}
-            <button 
-              className="safari-btn-icon" 
-              onClick={() => setShowPrivacyModal(v => !v)}
-              title="Privacy Report (Trackers Prevented)"
+          <div className="flex items-center gap-1.5" data-no-drag>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+              title="Add a new custom link to your portfolio hub"
             >
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Link</span>
             </button>
-
-            {/* Web Inspector DevTools Toggle */}
-            <button 
-              className={`safari-btn-icon ${showInspector ? '!bg-blue-500/20 !text-blue-500' : ''}`}
-              onClick={() => setShowInspector(v => !v)}
-              title="Safari Web Inspector"
-            >
-              <Code2 className="w-4 h-4" />
-            </button>
-
-            {/* Share / External Link */}
-            {activeTab?.url && (
-              <a 
-                href={activeTab.url} 
-                target="_blank" 
-                rel="noreferrer"
-                className="safari-btn-icon"
-                title="Open in new window"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
           </div>
         </div>
 
-        {/* Dynamic Unified Tabs Bar */}
-        <div className="safari-tabs-bar" data-no-drag>
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeTabId;
-            return (
-              <div 
-                key={tab.id}
-                onClick={() => setActiveTabId(tab.id)}
-                className={`safari-tab-item ${isActive ? 'active' : ''}`}
-              >
-                <Globe className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                <span className="truncate flex-1">{tab.title || 'Start Page'}</span>
-                <button 
-                  className="safari-tab-close-btn"
-                  onClick={(e) => closeTab(e, tab.id)}
-                  title="Close tab"
-                >
-                  ✕
-                </button>
-              </div>
-            );
-          })}
-
-          {/* Add Tab Button */}
-          <button className="safari-tab-add-btn" onClick={addTab} title="New Tab">
-            <Plus className="w-3.5 h-3.5" />
-          </button>
+        {/* Safari Bookmarks Bar */}
+        <div className="safari-bookmarks-bar" data-no-drag>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1 mr-1">Favorites:</span>
+          <div 
+            onClick={() => openInNewTab('https://heyishant.me', "Ishant's Portfolio")}
+            className="safari-bookmark-chip"
+          >
+            <span>⚡</span>
+            <span>Portfolio</span>
+          </div>
+          <div 
+            onClick={() => openInNewTab('https://linkedin.com', 'LinkedIn')}
+            className="safari-bookmark-chip"
+          >
+            <span>💼</span>
+            <span>LinkedIn</span>
+          </div>
+          <div 
+            onClick={() => openInNewTab('https://github.com/heyishantofficial', 'GitHub')}
+            className="safari-bookmark-chip"
+          >
+            <span>🐙</span>
+            <span>GitHub</span>
+          </div>
+          <div 
+            onClick={() => openInNewTab('https://youtube.com', 'YouTube')}
+            className="safari-bookmark-chip"
+          >
+            <span>📺</span>
+            <span>YouTube</span>
+          </div>
+          <div 
+            onClick={() => openInNewTab('https://x.com', 'X / Twitter')}
+            className="safari-bookmark-chip"
+          >
+            <span>🐦</span>
+            <span>Twitter</span>
+          </div>
+          <div 
+            onClick={() => openInNewTab('https://instagram.com', 'Instagram')}
+            className="safari-bookmark-chip"
+          >
+            <span>📸</span>
+            <span>Instagram</span>
+          </div>
+          <div 
+            onClick={() => openInNewTab('mailto:ishant.vibecode@gmail.com', 'Email Ishant')}
+            className="safari-bookmark-chip"
+          >
+            <span>✉️</span>
+            <span>Email</span>
+          </div>
+          <div 
+            onClick={() => openInNewTab('/resume.pdf', 'Resume PDF')}
+            className="safari-bookmark-chip"
+          >
+            <span>📄</span>
+            <span>Resume</span>
+          </div>
         </div>
 
-        {/* Main Viewport Content */}
-        <div className="safari-viewport">
-          {/* 1. Safari Start Page (when no URL is loaded) */}
-          {(!activeTab?.url || activeTab.url === 'safari://start') && (
-            <div className="safari-start-page">
-              <div className="safari-start-container">
-                {/* Favorites Section */}
-                <div>
-                  <h3 className="safari-section-heading">
-                    <Sparkles className="w-4 h-4 text-blue-500" />
-                    Favorites
-                  </h3>
-                  <div className="safari-favorites-grid">
-                    {DEFAULT_FAVORITES.map((fav) => (
-                      <button
-                        key={fav.id}
-                        onClick={() => navigateTo(fav.url)}
-                        className="safari-favorite-card group"
-                      >
-                        <div className="safari-favorite-icon-box">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shadow-sm ${fav.iconBg}`}>
-                            {fav.iconText}
-                          </div>
-                        </div>
-                        <span className="safari-favorite-label">{fav.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Privacy Report Banner */}
-                <div 
-                  className="safari-privacy-card"
-                  onClick={() => setShowPrivacyModal(true)}
-                >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                      <ShieldCheck className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Privacy Report</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        In the last 30 days, Safari prevented <strong>44 trackers</strong> from profiling you.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1 shrink-0">
-                    View Details →
-                  </span>
-                </div>
-
-                {/* Frequently Visited & Siri Suggestions */}
-                <div>
-                  <h3 className="safari-section-heading">
-                    <Clock className="w-4 h-4 text-purple-500" />
-                    Siri Suggestions & Quick Tools
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div 
-                      onClick={() => navigateTo('https://devdocs.io/javascript/')}
-                      className="p-3.5 rounded-xl bg-white/70 dark:bg-zinc-800/60 border border-black/5 dark:border-white/5 hover:border-blue-500/40 cursor-pointer transition-all shadow-sm flex items-center gap-3"
-                    >
-                      <FileCode className="w-5 h-5 text-indigo-500" />
-                      <div className="overflow-hidden">
-                        <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">JavaScript Reference</div>
-                        <div className="text-[11px] text-slate-500 truncate">devdocs.io</div>
-                      </div>
-                    </div>
-
-                    <div 
-                      onClick={() => navigateTo('https://en.m.wikipedia.org/wiki/Steve_Jobs')}
-                      className="p-3.5 rounded-xl bg-white/70 dark:bg-zinc-800/60 border border-black/5 dark:border-white/5 hover:border-blue-500/40 cursor-pointer transition-all shadow-sm flex items-center gap-3"
-                    >
-                      <BookOpen className="w-5 h-5 text-emerald-500" />
-                      <div className="overflow-hidden">
-                        <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">Steve Jobs — Biography</div>
-                        <div className="text-[11px] text-slate-500 truncate">wikipedia.org</div>
-                      </div>
-                    </div>
-
-                    <div 
-                      onClick={() => updateActiveTab({ isReader: true, title: 'Clean Architecture in 2026' })}
-                      className="p-3.5 rounded-xl bg-white/70 dark:bg-zinc-800/60 border border-black/5 dark:border-white/5 hover:border-blue-500/40 cursor-pointer transition-all shadow-sm flex items-center gap-3"
-                    >
-                      <Sparkles className="w-5 h-5 text-amber-500" />
-                      <div className="overflow-hidden">
-                        <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">Safari Reader Demo</div>
-                        <div className="text-[11px] text-slate-500 truncate">Distraction-free mode</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        {/* Main Content Area (Portfolio Links Launchpad) */}
+        <div className="safari-hub-page">
+          {/* Header Banner */}
+          <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-black/10 dark:border-white/10">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold text-[10px] tracking-wider uppercase">
+                  Portfolio Launchpad
+                </span>
+                <span className="text-xs text-slate-400">
+                  {filteredLinks.length} {filteredLinks.length === 1 ? 'Destination' : 'Destinations'}
+                </span>
               </div>
-            </div>
-          )}
-
-          {/* 2. Safari Native Search Page */}
-          {activeTab?.isSearch && (
-            <SafariSearchView 
-              query={activeTab.searchQuery} 
-              onNavigate={navigateTo} 
-            />
-          )}
-
-          {/* 3. Safari Reader Mode View */}
-          {activeTab?.isReader && (
-            <div className={`safari-reader-view safari-reader-theme-${readerTheme}`}>
-              {/* Reader Floating Controls Bar */}
-              <div className="max-w-[680px] mx-auto mb-8 flex items-center justify-between pb-3 border-b border-black/10 dark:border-white/10">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-sans font-medium uppercase tracking-wider opacity-60">Theme:</span>
-                  <button 
-                    onClick={() => setReaderTheme('light')} 
-                    className={`w-6 h-6 rounded-full border border-slate-300 bg-white ${readerTheme === 'light' ? 'ring-2 ring-blue-500' : ''}`}
-                    title="Light theme" 
-                  />
-                  <button 
-                    onClick={() => setReaderTheme('sepia')} 
-                    className={`w-6 h-6 rounded-full border border-[#e3d7bf] bg-[#f8f1e3] ${readerTheme === 'sepia' ? 'ring-2 ring-blue-500' : ''}`}
-                    title="Sepia theme" 
-                  />
-                  <button 
-                    onClick={() => setReaderTheme('gray')} 
-                    className={`w-6 h-6 rounded-full border border-zinc-600 bg-[#4a4a4c] ${readerTheme === 'gray' ? 'ring-2 ring-blue-500' : ''}`}
-                    title="Gray theme" 
-                  />
-                  <button 
-                    onClick={() => setReaderTheme('dark')} 
-                    className={`w-6 h-6 rounded-full border border-zinc-700 bg-[#121212] ${readerTheme === 'dark' ? 'ring-2 ring-blue-500' : ''}`}
-                    title="Night theme" 
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setReaderFontSize(s => Math.max(14, s - 2))}
-                    className="px-2 py-1 text-xs font-sans font-semibold rounded hover:bg-black/5 dark:hover:bg-white/10"
-                    title="Decrease font size"
-                  >
-                    A-
-                  </button>
-                  <span className="text-xs font-sans opacity-60">{readerFontSize}px</span>
-                  <button 
-                    onClick={() => setReaderFontSize(s => Math.min(26, s + 2))}
-                    className="px-2 py-1 text-xs font-sans font-semibold rounded hover:bg-black/5 dark:hover:bg-white/10"
-                    title="Increase font size"
-                  >
-                    A+
-                  </button>
-                </div>
-              </div>
-
-              {/* Reader Article Body */}
-              <article className="safari-reader-article" style={{ fontSize: `${readerFontSize}px` }}>
-                <h1 className="safari-reader-title">
-                  {activeTab?.title || 'The Art of Vibecoding and Apple-Grade Digital Craft'}
-                </h1>
-                <div className="safari-reader-meta">
-                  By Ishant Chauhan • Published in IshantOS Journal • 4 min read
-                </div>
-                <p className="mb-6 leading-relaxed">
-                  When software stops behaving like rigid computer code and begins responding with physical fluidity, an interface becomes an effortless extension of human intent.
-                </p>
-                <p className="mb-6 leading-relaxed">
-                  Every interaction must respect velocity handoff, critically damped spring physics, and continuous tactile responsiveness. In macOS Sequoia Safari, typography and visual hierarchy guide the mind effortlessly through information without friction.
-                </p>
-                <blockquote className="my-8 pl-4 border-l-4 border-blue-500 italic opacity-90">
-                  "Simplicity is not the absence of clutter, that's a consequence of simplicity. Simplicity is somehow essentially describing the purpose and place of an object and product."
-                </blockquote>
-                <p className="mb-6 leading-relaxed">
-                  Building inside the browser with modern CSS primitives, container queries, and sub-frame composition allows us to simulate entire operating ecosystems right on the open web.
-                </p>
-              </article>
-            </div>
-          )}
-
-          {/* 4. Apple Connection Refused Fallback Screen */}
-          {activeTab?.url && !activeTab.isReader && !activeTab.isSearch && activeTab.hasError && (
-            <div className="safari-error-screen">
-              <div className="safari-error-icon-wrapper">
-                <AlertCircle className="w-8 h-8" />
-              </div>
-              <h2 className="text-xl font-bold mb-2">Safari Can’t Open the Page</h2>
-              <p className="text-xs text-slate-500 max-w-md mb-6 leading-relaxed">
-                Safari can’t open the page <span className="font-mono font-medium text-slate-700 dark:text-slate-300">“{activeTab.url}”</span> because the server refused embedded connection to protect your personal account credentials.
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                Ishant's Web Hub & Work Launcher
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Click any project, social profile, or case study to launch directly in a new tab.
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <a 
-                  href={activeTab.url} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 shadow-sm flex items-center gap-1.5"
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: 'all', label: 'All Links', count: allLinks.length },
+                { id: 'apps', label: 'Vibecoded Apps', count: allLinks.filter(l => l.category === 'apps').length },
+                { id: 'social', label: 'Connect & Social', count: allLinks.filter(l => l.category === 'social').length },
+                { id: 'systems', label: 'Case Studies', count: allLinks.filter(l => l.category === 'systems').length },
+                { id: 'custom', label: 'Custom', count: customLinks.length }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    activeCategory === cat.id
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-black/5 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-black/10 dark:hover:bg-white/15'
+                  }`}
+                >
+                  <span>{cat.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                    activeCategory === cat.id ? 'bg-white/25 text-white' : 'bg-black/10 dark:bg-white/10 text-slate-500'
+                  }`}>
+                    {cat.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Links Grid */}
+          {filteredLinks.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center">
+              <div className="w-14 h-14 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-2xl mb-3">
+                🔍
+              </div>
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                No links found matching “{searchQuery}”
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1 mb-4">
+                You can launch this query directly on the web or add it as a new custom bookmark to your portfolio.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openInNewTab(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, `Search ${searchQuery}`)}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  Open in External Tab
-                </a>
-                <button 
-                  onClick={() => updateActiveTab({ isReader: true })}
-                  className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-semibold hover:bg-slate-300 dark:hover:bg-zinc-600 flex items-center gap-1.5"
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Open in Safari Reader
+                  Search on Google ↗
                 </button>
-                <button 
-                  onClick={() => navigateTo(activeTab.title || 'Search')}
-                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-zinc-600 text-xs font-medium hover:bg-black/5 dark:hover:bg-white/5"
+                <button
+                  onClick={() => {
+                    setNewTitle(searchQuery);
+                    setNewUrl('https://');
+                    setShowAddModal(true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/10 text-xs font-semibold hover:bg-black/10 text-slate-800 dark:text-slate-200"
                 >
-                  Search with Safari
+                  + Add as New Link
                 </button>
               </div>
             </div>
-          )}
-
-          {/* 5. Live Sandboxed Iframe Browser */}
-          {activeTab?.url && !activeTab.isReader && !activeTab.isSearch && !activeTab.hasError && (
-            <iframe
-              src={activeTab.url}
-              title={activeTab.title || 'Safari Web Content'}
-              className="safari-iframe"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              referrerPolicy="no-referrer"
-              onError={() => updateActiveTab({ hasError: true })}
-            />
-          )}
-
-          {/* 5. Safari Web Inspector (DevTools Drawer) */}
-          {showInspector && (
-            <div className="safari-inspector-drawer">
-              {/* Inspector Tab Bar */}
-              <div className="safari-inspector-tabs">
-                <button 
-                  className={`safari-inspector-tab ${inspectorTab === 'elements' ? 'active' : ''}`}
-                  onClick={() => setInspectorTab('elements')}
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {filteredLinks.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => openInNewTab(item.url, item.title)}
+                  className="safari-link-card group"
                 >
-                  Elements
-                </button>
-                <button 
-                  className={`safari-inspector-tab ${inspectorTab === 'console' ? 'active' : ''}`}
-                  onClick={() => setInspectorTab('console')}
-                >
-                  Console ({consoleLogs.length})
-                </button>
-                <button 
-                  className={`safari-inspector-tab ${inspectorTab === 'network' ? 'active' : ''}`}
-                  onClick={() => setInspectorTab('network')}
-                >
-                  Network
-                </button>
-                <div className="ml-auto flex items-center gap-2 pr-2">
-                  <button 
-                    className="text-slate-400 hover:text-white text-xs"
-                    onClick={() => setConsoleLogs([])}
-                    title="Clear console"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button 
-                    className="text-slate-400 hover:text-white text-xs"
-                    onClick={() => setShowInspector(false)}
-                    title="Close Inspector"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              {/* Inspector Tab Views */}
-              <div className="safari-inspector-content">
-                {inspectorTab === 'elements' && (
-                  <div className="font-mono text-xs space-y-1 text-slate-300 leading-relaxed">
-                    <div>&lt;<span className="text-rose-400">html</span> <span className="text-amber-300">lang</span>=<span className="text-emerald-300">"en"</span>&gt;</div>
-                    <div className="pl-4">&lt;<span className="text-rose-400">head</span>&gt;</div>
-                    <div className="pl-8 text-slate-500">&lt;!-- 12 metadata and link stylesheets --&gt;</div>
-                    <div className="pl-8">&lt;<span className="text-rose-400">title</span>&gt;{activeTab?.title || 'Safari Web Document'}&lt;/<span className="text-rose-400">title</span>&gt;</div>
-                    <div className="pl-4">&lt;/<span className="text-rose-400">head</span>&gt;</div>
-                    <div className="pl-4">&lt;<span className="text-rose-400">body</span> <span className="text-amber-300">class</span>=<span className="text-emerald-300">"safari-viewport-rendered active-macOS-engine"</span>&gt;</div>
-                    <div className="pl-8">&lt;<span className="text-rose-400">main</span> <span className="text-amber-300">id</span>=<span className="text-emerald-300">"app-root"</span>&gt;</div>
-                    <div className="pl-12 text-slate-400">&lt;<span className="text-rose-400">section</span> <span className="text-amber-300">data-source</span>=<span className="text-emerald-300">"{activeTab?.url || 'safari://start'}"</span>&gt;...&lt;/<span className="text-rose-400">section</span>&gt;</div>
-                    <div className="pl-8">&lt;/<span className="text-rose-400">main</span>&gt;</div>
-                    <div className="pl-4">&lt;/<span className="text-rose-400">body</span>&gt;</div>
-                    <div>&lt;/<span className="text-rose-400">html</span>&gt;</div>
-                  </div>
-                )}
-
-                {inspectorTab === 'console' && (
-                  <div className="flex flex-col h-full">
-                    <div className="flex-1 overflow-y-auto space-y-1 font-mono text-xs">
-                      {consoleLogs.map((log, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`flex items-start gap-1.5 py-0.5 ${
-                            log.type === 'error' ? 'text-rose-400 bg-rose-950/20 px-1 rounded' :
-                            log.type === 'input' ? 'text-blue-400 font-semibold' :
-                            log.type === 'info' ? 'text-sky-300' : 'text-slate-300'
-                          }`}
-                        >
-                          <span className="text-slate-600 select-none">›</span>
-                          <span className="whitespace-pre-wrap">{log.text}</span>
+                  <div>
+                    {/* Top Row: Icon, Title, Badge & Actions */}
+                    <div className="flex items-start justify-between gap-3 mb-2.5">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl font-bold shadow-sm shrink-0 transition-transform group-hover:scale-105 ${item.iconBg}`}>
+                          {item.iconEmoji || '🔗'}
                         </div>
-                      ))}
+                        <div className="overflow-hidden">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {item.title}
+                          </h3>
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider border mt-0.5 ${item.badgeColor}`}>
+                            {item.tag}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={(e) => copyLink(e, item)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                          title="Copy Link"
+                        >
+                          {copiedLinkId === item.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        {item.isCustom && (
+                          <button
+                            onClick={(e) => deleteCustomLink(e, item.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                            title="Delete custom link"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Console REPL Prompt */}
-                    <form onSubmit={handleEvalConsole} className="mt-2 pt-2 border-t border-zinc-800 flex items-center gap-2">
-                      <span className="text-blue-400 font-bold select-none">&gt;</span>
-                      <input 
-                        type="text"
-                        value={consoleInput}
-                        onChange={(e) => setConsoleInput(e.target.value)}
-                        placeholder="Evaluate JavaScript expression (e.g. navigator.userAgent, 12 * 45)..."
-                        className="flex-1 bg-transparent border-none outline-none font-mono text-xs text-white"
-                      />
-                    </form>
+                    {/* Description */}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-4">
+                      {item.description}
+                    </p>
                   </div>
-                )}
 
-                {inspectorTab === 'network' && (
-                  <div className="font-mono text-xs space-y-2">
-                    <div className="grid grid-cols-5 text-slate-500 text-[11px] pb-1 border-b border-zinc-800 font-sans font-semibold">
-                      <span>Name</span>
-                      <span>Status</span>
-                      <span>Type</span>
-                      <span>Size</span>
-                      <span>Time</span>
-                    </div>
-                    <div className="grid grid-cols-5 items-center text-slate-300">
-                      <span className="truncate text-blue-400">{activeTab?.url ? new URL(activeTab.url).pathname || '/' : 'start-page'}</span>
-                      <span className="text-emerald-400">200 OK</span>
-                      <span>document</span>
-                      <span>14.2 KB</span>
-                      <span>42 ms</span>
-                    </div>
-                    <div className="grid grid-cols-5 items-center text-slate-300">
-                      <span className="truncate text-amber-300">safari.css</span>
-                      <span className="text-emerald-400">200 OK</span>
-                      <span>stylesheet</span>
-                      <span>8.6 KB</span>
-                      <span>18 ms</span>
-                    </div>
-                    <div className="grid grid-cols-5 items-center text-slate-300">
-                      <span className="truncate text-purple-300">web-engine.js</span>
-                      <span className="text-emerald-400">200 OK</span>
-                      <span>script</span>
-                      <span>32.1 KB</span>
-                      <span>65 ms</span>
-                    </div>
+                  {/* Bottom Row: URL & Launch Action */}
+                  <div className="pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
+                    <span className="font-mono text-[11px] text-slate-400 truncate max-w-[170px]">
+                      {item.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                    </span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                      Open ↗
+                    </span>
                   </div>
-                )}
-              </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-
-        {/* Privacy Report Modal / Popover */}
-        {showPrivacyModal && (
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-black/10 dark:border-white/10 max-w-lg w-full p-6 text-slate-900 dark:text-white">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-zinc-800">
-                <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="w-6 h-6 text-emerald-500" />
-                  <div>
-                    <h3 className="font-bold text-base">Safari Privacy Report</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Intelligent Tracking Prevention (ITP)</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowPrivacyModal(false)}
-                  className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="py-4 space-y-4">
-                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs leading-relaxed">
-                  Safari uses on-device machine learning to block cross-site tracking cookies, canvas fingerprinting, and behavioral profile syndication.
-                </div>
-
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Trackers Prevented (Last 30 Days)</h4>
-                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                    {PRIVACY_REPORT_DATA.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-zinc-800/60 text-xs">
-                        <div>
-                          <div className="font-semibold text-slate-800 dark:text-slate-200">{item.name}</div>
-                          <div className="text-[11px] text-slate-400">{item.category}</div>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-700 font-mono text-[11px] font-bold">
-                          {item.blockedCount} blocked
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button 
-                  onClick={() => setShowPrivacyModal(false)}
-                  className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Window Resize Handles */}
+      {/* Resize handles */}
       {!isMaximized && (
         <>
           <div 
@@ -1350,6 +786,114 @@ export default function SafariBrowser({ onClose, onMinimize }) {
             className="safari-resize-edge-w"
           />
         </>
+      )}
+
+      {/* Add Custom Link Modal */}
+      {showAddModal && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-black/10 dark:border-white/10 max-w-md w-full p-6 text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <FolderPlus className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-base">Add Portfolio Link</h3>
+              </div>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddLink} className="py-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Link Title</label>
+                <input
+                  type="text"
+                  required
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="e.g. Substack Newsletter or Dribbble Portfolio"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Target URL</label>
+                <input
+                  type="text"
+                  required
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                  <select
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="apps">Vibecoded Apps</option>
+                    <option value="social">Social & Connect</option>
+                    <option value="systems">Case Studies</option>
+                    <option value="custom">Other Links</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Icon / Emoji</label>
+                  <input
+                    type="text"
+                    value={newEmoji}
+                    onChange={(e) => setNewEmoji(e.target.value)}
+                    placeholder="🚀, 💡, 🌐, 🎨"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-blue-500 text-center"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Short Description</label>
+                <textarea
+                  rows={2}
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="One sentence summary of this destination..."
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-blue-500 resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button 
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 shadow-sm"
+                >
+                  Save Link
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="absolute bottom-5 right-5 z-50 bg-slate-900/90 text-white px-4 py-2.5 rounded-xl shadow-xl backdrop-blur-md border border-white/10 text-xs font-medium flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+          <span>{toastMessage}</span>
+        </div>
       )}
     </div>
   );

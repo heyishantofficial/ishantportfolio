@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { MacWindow } from "./macDockModals";
 import { playMacClick } from "../utils/macAudioEngine";
-import { verifyAdminPassword, saveSiteSettings, changeAdminPassword, isPublishable } from "../lib/siteSettings";
+import { verifyAdminPassword, saveSiteSettings, changeAdminPassword, isPublishable, checkServerHealth } from "../lib/siteSettings";
 
 export default function SystemSettingsModal({ 
   onClose,
@@ -115,6 +115,15 @@ export default function SystemSettingsModal({
   const [isVerifying, setIsVerifying] = useState(false);
   const [publishState, setPublishState] = useState("idle"); // idle | saving | saved | error
   const [publishError, setPublishError] = useState("");
+  const [serverHealth, setServerHealth] = useState({ checked: false, online: false });
+
+  useEffect(() => {
+    if (isSettingsUnlocked) {
+      checkServerHealth().then((res) => {
+        setServerHealth({ checked: true, ...res });
+      });
+    }
+  }, [isSettingsUnlocked]);
 
   const desktopWallpaperOptions = [
     { id: "video", name: "Dynamic Live Video", type: "video", preview: "/bg-video.mp4" },
@@ -360,9 +369,33 @@ export default function SystemSettingsModal({
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-300/40 dark:border-slate-700/40 flex items-center justify-between px-2 text-[10px] text-slate-500">
-                <span>macOS Sequoia v15.0</span>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">M3 Max</span>
+              {/* Live Backend / Cloud Status Card */}
+              <div className="space-y-2 pt-2">
+                <div className={`p-2.5 rounded-xl border text-[11px] flex flex-col gap-1 backdrop-blur-md transition-all ${
+                  serverHealth.online
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+                    : "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
+                }`}>
+                  <div className="flex items-center justify-between font-bold">
+                    <span className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${serverHealth.online ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                      <span>{serverHealth.online ? "Backend Online" : "Static Cache"}</span>
+                    </span>
+                    <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 font-bold">
+                      {serverHealth.online ? "Port 3000" : "Local Only"}
+                    </span>
+                  </div>
+                  <p className="text-[10px] opacity-80 leading-tight">
+                    {serverHealth.online
+                      ? "Live control panel active. Changes publish to all visitors."
+                      : "Server offline. Deploy Dockerfile to enable global CMS."}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-300/40 dark:border-slate-700/40 flex items-center justify-between px-2 text-[10px] text-slate-500">
+                  <span>macOS Sequoia v15.0</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">M3 Max</span>
+                </div>
               </div>
             </div>
 

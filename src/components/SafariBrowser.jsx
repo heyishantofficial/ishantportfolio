@@ -182,7 +182,7 @@ const SECTIONS = [
   }
 ];
 
-export default function SafariBrowser({ onClose, onMinimize, socialLinks }) {
+export default function SafariBrowser({ onClose, onMinimize, socialLinks, dashboardConfig }) {
   // Window geometry, drag, resize, maximize states
   const [bounds, setBounds] = useState(getInitialBounds);
   const [prevBounds, setPrevBounds] = useState(getInitialBounds);
@@ -400,10 +400,13 @@ export default function SafariBrowser({ onClose, onMinimize, socialLinks }) {
       if (link.id === 'link-github' && socialLinks?.github) {
         return { ...link, url: socialLinks.github };
       }
+      if (link.id === 'link-email' && dashboardConfig?.contactEmail) {
+        return { ...link, url: `mailto:${dashboardConfig.contactEmail}` };
+      }
       return link;
     });
     return [...customLinks, ...dynamicDefaults];
-  }, [customLinks, socialLinks]);
+  }, [customLinks, socialLinks, dashboardConfig]);
 
   // Filter links based on search query
   const filteredLinks = useMemo(() => {

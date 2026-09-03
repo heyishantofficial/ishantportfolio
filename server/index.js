@@ -92,12 +92,30 @@ async function requireAdmin(req, res) {
 const app = express();
 app.use(express.json({ limit: '16kb' }));
 
+// Health check endpoint for control panel connectivity diagnosis
+app.get('/api/health', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    status: 'ok',
+    server: 'Express Backend',
+    storageFile: SETTINGS_FILE,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Public: every visitor reads the current global defaults on boot.
 // The stored password is never included in the response.
 app.get('/api/settings', async (_req, res) => {
   const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, updatedAt } = await readState();
   res.set('Cache-Control', 'no-store');
-  res.json({ wallpaper, lockWallpaper, socialLinks, dashboardConfig, updatedAt });
+  res.json({
+    wallpaper,
+    lockWallpaper,
+    socialLinks,
+    dashboardConfig,
+    updatedAt,
+    serverStatus: 'online'
+  });
 });
 
 // Admin: unlock the System Settings panel.

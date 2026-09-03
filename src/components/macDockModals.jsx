@@ -300,8 +300,8 @@ export function FinderModal({ onSelectProject, onLaunchApp, onClose }) {
 }
 
 // 3. Safari Browser Modal (Powered by macOS Sequoia Safari Engine)
-export function SafariModal({ onClose, onMinimize, socialLinks }) {
-  return <SafariBrowser onClose={onClose} onMinimize={onMinimize} socialLinks={socialLinks} />;
+export function SafariModal({ onClose, onMinimize, socialLinks, dashboardConfig }) {
+  return <SafariBrowser onClose={onClose} onMinimize={onMinimize} socialLinks={socialLinks} dashboardConfig={dashboardConfig} />;
 }
 
 
@@ -875,13 +875,15 @@ export function LinkedInModal({ onClose, linkedinUrl, onOpenSettings }) {
 }
 
 // 10. Mail Modal
-export function MailModal({ onClose }) {
+export function MailModal({ onClose, contactEmail }) {
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitted(true);
   };
+
+  const recipient = contactEmail || PROFILE_INFO.email;
 
   return (
     <MacWindow title="New Message — macOS Mail" icon={Mail} onClose={onClose}>
@@ -908,7 +910,7 @@ export function MailModal({ onClose }) {
             <input 
               type="text" 
               readOnly 
-              value={PROFILE_INFO.email} 
+              value={recipient} 
               className="w-full p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-mono text-xs"
             />
           </div>

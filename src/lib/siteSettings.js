@@ -55,6 +55,19 @@ async function postJson(url, body) {
   return data;
 }
 
+export async function checkServerHealth() {
+  try {
+    const res = await fetch('/api/health', { cache: 'no-store' });
+    if (!res.ok) return { online: false };
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return { online: false };
+    const data = await res.json();
+    return { online: true, ...data };
+  } catch {
+    return { online: false };
+  }
+}
+
 export async function fetchSiteSettings() {
   try {
     const res = await fetch('/api/settings', { cache: 'no-store' });
@@ -66,7 +79,9 @@ export async function fetchSiteSettings() {
       wallpaper: data.wallpaper || DEFAULT_SETTINGS.wallpaper,
       lockWallpaper: data.lockWallpaper || DEFAULT_SETTINGS.lockWallpaper,
       socialLinks: { ...DEFAULT_SETTINGS.socialLinks, ...(data.socialLinks || {}) },
-      dashboardConfig: { ...DEFAULT_SETTINGS.dashboardConfig, ...(data.dashboardConfig || {}) }
+      dashboardConfig: { ...DEFAULT_SETTINGS.dashboardConfig, ...(data.dashboardConfig || {}) },
+      updatedAt: data.updatedAt || null,
+      isServerConnected: true
     };
   } catch {
     // Server unreachable or static host — fall back to localStorage / defaults
@@ -79,10 +94,12 @@ export async function fetchSiteSettings() {
         wallpaper: wp || DEFAULT_SETTINGS.wallpaper,
         lockWallpaper: lockWp || DEFAULT_SETTINGS.lockWallpaper,
         socialLinks: storedSocials ? { ...DEFAULT_SETTINGS.socialLinks, ...JSON.parse(storedSocials) } : DEFAULT_SETTINGS.socialLinks,
-        dashboardConfig: storedDashboard ? { ...DEFAULT_SETTINGS.dashboardConfig, ...JSON.parse(storedDashboard) } : DEFAULT_SETTINGS.dashboardConfig
+        dashboardConfig: storedDashboard ? { ...DEFAULT_SETTINGS.dashboardConfig, ...JSON.parse(storedDashboard) } : DEFAULT_SETTINGS.dashboardConfig,
+        updatedAt: null,
+        isServerConnected: false
       };
     } catch {
-      return DEFAULT_SETTINGS;
+      return { ...DEFAULT_SETTINGS, updatedAt: null, isServerConnected: false };
     }
   }
 }

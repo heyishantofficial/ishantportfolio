@@ -243,6 +243,7 @@ export default function MacDock({
         <SafariModal 
           onClose={() => onCloseApp('safari')} 
           socialLinks={socialLinks}
+          dashboardConfig={dashboardConfig}
         />
       )}
       {openApps['system-info'] && (
@@ -287,7 +288,10 @@ export default function MacDock({
         />
       )}
       {openApps.mail && (
-        <MailModal onClose={() => onCloseApp('mail')} />
+        <MailModal 
+          onClose={() => onCloseApp('mail')} 
+          contactEmail={dashboardConfig?.contactEmail}
+        />
       )}
       {openApps.settings && (
         <SystemSettingsModal 

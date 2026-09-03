@@ -137,9 +137,13 @@ export default function App() {
       if (settings?.wallpaper) setWallpaper(settings.wallpaper);
       if (settings?.lockWallpaper) setLockWallpaper(settings.lockWallpaper);
       if (settings?.socialLinks) setSocialLinks(settings.socialLinks);
-      if (settings?.dashboardConfig) setDashboardConfig(settings.dashboardConfig);
+      if (settings?.dashboardConfig) {
+        setDashboardConfig(settings.dashboardConfig);
+        if (settings.dashboardConfig.soundEffects === false) {
+          setIsMuted(true);
+        }
+      }
       // Let the ring sit visibly at 100% before handing over to the login screen.
-      // Let the ring visibly catch up to and rest at 100% before handing over.
       setTimeout(() => {
         if (!cancelled) setIsBootLoading(false);
       }, 700);
@@ -722,6 +726,16 @@ export default function App() {
                     <span>{isLoggingIn ? 'Logging in...' : viewerName.trim() ? `Unlock as ${viewerName}` : 'Click to Unlock'}</span>
                     <span>🔒</span>
                   </button>
+
+                  {/* Live Admin Broadcast Status Message */}
+                  {dashboardConfig?.statusMessage && (
+                    <div className="pt-2">
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-black/40 backdrop-blur-xl border border-white/20 text-[10px] text-white/90 font-mono tracking-wide shadow-md">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        {dashboardConfig.statusMessage}
+                      </span>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

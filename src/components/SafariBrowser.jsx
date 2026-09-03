@@ -210,6 +210,33 @@ const getInitialBounds = () => {
   return { x, y, w, h };
 };
 
+const SECTIONS = [
+  {
+    id: 'apps',
+    title: 'Vibecoded Apps',
+    icon: '🚀',
+    subtitle: 'Tools, utilities & daily workflow extensions'
+  },
+  {
+    id: 'social',
+    title: 'Connect & Social',
+    icon: '🌐',
+    subtitle: 'Profiles, channels & professional network'
+  },
+  {
+    id: 'systems',
+    title: 'Case Studies & Systems',
+    icon: '⚡',
+    subtitle: 'Media engines, workflows & credentials'
+  },
+  {
+    id: 'custom',
+    title: 'My Custom Links',
+    icon: '📌',
+    subtitle: 'Personal bookmarks & custom references'
+  }
+];
+
 export default function SafariBrowser({ onClose, onMinimize }) {
   // Window geometry, drag, resize, maximize states
   const [bounds, setBounds] = useState(getInitialBounds);
@@ -222,7 +249,6 @@ export default function SafariBrowser({ onClose, onMinimize }) {
 
   // Search & Link State
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all'); // all, apps, social, systems, custom
   const [customLinks, setCustomLinks] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -419,24 +445,19 @@ export default function SafariBrowser({ onClose, onMinimize }) {
     return [...customLinks, ...DEFAULT_PORTFOLIO_LINKS];
   }, [customLinks]);
 
-  // Filter links based on category and search query
+  // Filter links based on search query
   const filteredLinks = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return allLinks;
     return allLinks.filter(item => {
-      const matchesCategory = 
-        activeCategory === 'all' ? true :
-        activeCategory === 'custom' ? item.isCustom :
-        item.category === activeCategory;
-
-      const q = searchQuery.toLowerCase().trim();
-      const matchesQuery = !q || 
+      return (
         item.title.toLowerCase().includes(q) ||
         item.description.toLowerCase().includes(q) ||
         item.url.toLowerCase().includes(q) ||
-        item.tag.toLowerCase().includes(q);
-
-      return matchesCategory && matchesQuery;
+        item.tag.toLowerCase().includes(q)
+      );
     });
-  }, [allLinks, activeCategory, searchQuery]);
+  }, [allLinks, searchQuery]);
 
   // Handle Address Bar Enter Key
   const handleAddressKeyDown = (e) => {
@@ -494,7 +515,7 @@ export default function SafariBrowser({ onClose, onMinimize }) {
           <div className="flex items-center gap-0.5" data-no-drag>
             <button 
               className="safari-btn-icon" 
-              onClick={() => setActiveCategory('all')} 
+              onClick={() => setSearchQuery('')} 
               title="All Links"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -508,7 +529,7 @@ export default function SafariBrowser({ onClose, onMinimize }) {
             </button>
             <button 
               className="safari-btn-icon" 
-              onClick={() => { setSearchQuery(''); setActiveCategory('all'); showToast('Refreshed portfolio links'); }} 
+              onClick={() => { setSearchQuery(''); showToast('Refreshed links'); }} 
               title="Reset Filters"
             >
               <RotateCw className="w-3.5 h-3.5" />
@@ -612,57 +633,19 @@ export default function SafariBrowser({ onClose, onMinimize }) {
           </div>
         </div>
 
-        {/* Main Content Area (Portfolio Links Launchpad) */}
+        {/* Main Content Area */}
         <div className="safari-hub-page">
           {/* Header Banner */}
-          <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-black/10 dark:border-white/10">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold text-[10px] tracking-wider uppercase">
-                  Portfolio Launchpad
-                </span>
-                <span className="text-xs text-slate-400">
-                  {filteredLinks.length} {filteredLinks.length === 1 ? 'Destination' : 'Destinations'}
-                </span>
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Ishant's Web Hub & Work Launcher
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Click any project, social profile, or case study to launch directly in a new tab.
-              </p>
-            </div>
-
-            {/* Category Filter Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {[
-                { id: 'all', label: 'All Links', count: allLinks.length },
-                { id: 'apps', label: 'Vibecoded Apps', count: allLinks.filter(l => l.category === 'apps').length },
-                { id: 'social', label: 'Connect & Social', count: allLinks.filter(l => l.category === 'social').length },
-                { id: 'systems', label: 'Case Studies', count: allLinks.filter(l => l.category === 'systems').length },
-                { id: 'custom', label: 'Custom', count: customLinks.length }
-              ].map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    activeCategory === cat.id
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-black/5 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-black/10 dark:hover:bg-white/15'
-                  }`}
-                >
-                  <span>{cat.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                    activeCategory === cat.id ? 'bg-white/25 text-white' : 'bg-black/10 dark:bg-white/10 text-slate-500'
-                  }`}>
-                    {cat.count}
-                  </span>
-                </button>
-              ))}
-            </div>
+          <div className="mb-8 pb-5 border-b border-black/10 dark:border-white/10">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Ishant’s Work & Projects
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Everything I’m building, creating, and working on.
+            </p>
           </div>
 
-          {/* Links Grid */}
+          {/* Links View */}
           {filteredLinks.length === 0 ? (
             <div className="py-20 flex flex-col items-center justify-center text-center">
               <div className="w-14 h-14 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-2xl mb-3">
@@ -695,72 +678,102 @@ export default function SafariBrowser({ onClose, onMinimize }) {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {filteredLinks.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => openInNewTab(item.url, item.title)}
-                  className="safari-link-card group"
-                >
-                  <div>
-                    {/* Top Row: Icon, Title, Badge & Actions */}
-                    <div className="flex items-start justify-between gap-3 mb-2.5">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl font-bold shadow-sm shrink-0 transition-transform group-hover:scale-105 ${item.iconBg}`}>
-                          {item.iconEmoji || '🔗'}
+            /* Categorized Sections with Headings */
+            SECTIONS.map((section) => {
+              const sectionLinks = filteredLinks.filter(item => 
+                section.id === 'custom' ? item.isCustom : item.category === section.id
+              );
+
+              if (sectionLinks.length === 0) return null;
+
+              return (
+                <section key={section.id} className="mb-10">
+                  {/* Category Section Header */}
+                  <div className="flex items-center justify-between pb-2.5 mb-4 border-b border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">{section.icon}</span>
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                        {section.title}
+                      </h2>
+                      <span className="px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-zinc-700/80 text-slate-600 dark:text-slate-300 font-mono text-[10px] font-bold">
+                        {sectionLinks.length}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 hidden sm:inline">
+                      {section.subtitle}
+                    </span>
+                  </div>
+
+                  {/* Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    {sectionLinks.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => openInNewTab(item.url, item.title)}
+                        className="safari-link-card group"
+                      >
+                        <div>
+                          {/* Top Row: Icon, Title, Badge & Actions */}
+                          <div className="flex items-start justify-between gap-3 mb-2.5">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl font-bold shadow-sm shrink-0 transition-transform group-hover:scale-105 ${item.iconBg}`}>
+                                {item.iconEmoji || '🔗'}
+                              </div>
+                              <div className="overflow-hidden">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                  {item.title}
+                                </h3>
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider border mt-0.5 ${item.badgeColor}`}>
+                                  {item.tag}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={(e) => copyLink(e, item)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                                title="Copy Link"
+                              >
+                                {copiedLinkId === item.id ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                              {item.isCustom && (
+                                <button
+                                  onClick={(e) => deleteCustomLink(e, item.id)}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                  title="Delete custom link"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Description */}
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-4">
+                            {item.description}
+                          </p>
                         </div>
-                        <div className="overflow-hidden">
-                          <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {item.title}
-                          </h3>
-                          <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider border mt-0.5 ${item.badgeColor}`}>
-                            {item.tag}
+
+                        {/* Bottom Row: URL & Launch Action */}
+                        <div className="pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
+                          <span className="font-mono text-[11px] text-slate-400 truncate max-w-[170px]">
+                            {item.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                          </span>
+                          <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                            Open ↗
                           </span>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={(e) => copyLink(e, item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                          title="Copy Link"
-                        >
-                          {copiedLinkId === item.id ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                        {item.isCustom && (
-                          <button
-                            onClick={(e) => deleteCustomLink(e, item.id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                            title="Delete custom link"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-4">
-                      {item.description}
-                    </p>
+                    ))}
                   </div>
-
-                  {/* Bottom Row: URL & Launch Action */}
-                  <div className="pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
-                    <span className="font-mono text-[11px] text-slate-400 truncate max-w-[170px]">
-                      {item.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                    </span>
-                    <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                      Open ↗
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                </section>
+              );
+            })
           )}
         </div>
       </div>

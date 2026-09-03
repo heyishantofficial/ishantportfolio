@@ -144,7 +144,7 @@ export function TextWindow(props) {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5 shrink-0" data-no-drag>
-        {isAdmin ? (
+        {isAdmin && (
           <>
             <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 select-none">
               <ShieldCheck className="w-3 h-3" />
@@ -195,18 +195,10 @@ export function TextWindow(props) {
             >
               <Lock className="w-3 h-3" />
             </button>
-          </>
-        ) : (
-          <button
-            onClick={() => setShowAuthModal(true)}
-            className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1.5 transition-colors"
-          >
-            <Lock className="w-3 h-3" />
-            <span>Admin Unlock to Edit</span>
-          </button>
-        )}
 
-        <div className="h-3.5 w-[1px] bg-black/10 dark:bg-white/10 mx-0.5" />
+            <div className="h-3.5 w-[1px] bg-black/10 dark:bg-white/10 mx-0.5" />
+          </>
+        )}
 
         {/* Font family toggle */}
         <button
@@ -242,22 +234,6 @@ export function TextWindow(props) {
     <>
       <OSWindow {...chrome(props)} title={node.name} subtitle={folderName} toolbar={editorToolbar}>
         <div className="h-full flex flex-col bg-[#fdfdfb] dark:bg-[#13151b] text-slate-800 dark:text-slate-100 selection:bg-[#007aff]/20 selection:text-inherit">
-          {/* Read-only banner when not unlocked */}
-          {!isAdmin && (
-            <div className="shrink-0 px-3.5 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-[11.5px] text-amber-800 dark:text-amber-200 flex items-center justify-between select-none">
-              <span className="flex items-center gap-1.5 font-medium truncate">
-                <Lock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Read-only mode. Enter administrator password to write and save notes.</span>
-              </span>
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="font-bold underline hover:text-amber-950 dark:hover:text-amber-100 ml-2 shrink-0 cursor-pointer"
-              >
-                Unlock
-              </button>
-            </div>
-          )}
-
           {/* Main Editing / Viewing Canvas */}
           <div className="flex-1 min-h-0 relative flex overflow-hidden">
             {isAdmin ? (
@@ -276,11 +252,7 @@ export function TextWindow(props) {
                 }`}
               />
             ) : (
-              <div
-                onClick={() => setShowAuthModal(true)}
-                className="w-full h-full p-4 sm:p-6 overflow-y-auto cursor-text"
-                title="Click to unlock Admin Mode to edit"
-              >
+              <div className="w-full h-full p-4 sm:p-6 overflow-y-auto">
                 <pre
                   className={`whitespace-pre-wrap break-words leading-[1.8] text-[12.5px] ${
                     fontFamily === 'mono'

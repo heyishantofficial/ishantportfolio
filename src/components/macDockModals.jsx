@@ -687,11 +687,11 @@ export function QuickNotesModal({ onClose }) {
                           {activeTab === "career" ? "Design Career Notes" : activeTab === "ai" ? "AI Thinking & Identity" : "Fun Tech Philosophy"}
                         </h2>
                         <span className="text-[10px] text-slate-400 font-mono">
-                          {isAdmin ? "Admin Editing Active • Changes save locally" : "Read-only mode (Sign in as Admin to edit)"}
+                          {isAdmin ? "Admin Editing Active • Changes save locally" : "Thought Archive"}
                         </span>
                       </div>
 
-                      {isAdmin ? (
+                      {isAdmin && (
                         <div className="flex items-center gap-2">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3" /> Admin
@@ -708,14 +708,6 @@ export function QuickNotesModal({ onClose }) {
                             <span>{isSaved ? "Saved" : "Save Note"}</span>
                           </button>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowAuthModal(true)}
-                          className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <Lock className="w-3 h-3" />
-                          <span>Unlock to Edit</span>
-                        </button>
                       )}
                     </div>
 

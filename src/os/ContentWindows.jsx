@@ -240,7 +240,7 @@ export function TextWindow(props) {
 
   return (
     <>
-      <OSWindow {...chrome(props)} toolbar={editorToolbar}>
+      <OSWindow {...chrome(props)} title={node.name} subtitle={folderName} toolbar={editorToolbar}>
         <div className="h-full flex flex-col bg-[#fdfdfb] dark:bg-[#13151b] text-slate-800 dark:text-slate-100 selection:bg-[#007aff]/20 selection:text-inherit">
           {/* Read-only banner when not unlocked */}
           {!isAdmin && (

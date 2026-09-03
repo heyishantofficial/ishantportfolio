@@ -89,7 +89,7 @@ const DEFAULT_PORTFOLIO_LINKS = [
     id: 'link-instagram',
     title: 'Instagram',
     category: 'social',
-    url: 'https://instagram.com',
+    url: 'https://instagram.com/heyishant',
     tag: 'VISUALS',
     badgeColor: 'bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/20',
     iconBg: 'bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white',
@@ -182,7 +182,7 @@ const SECTIONS = [
   }
 ];
 
-export default function SafariBrowser({ onClose, onMinimize }) {
+export default function SafariBrowser({ onClose, onMinimize, socialLinks }) {
   // Window geometry, drag, resize, maximize states
   const [bounds, setBounds] = useState(getInitialBounds);
   const [prevBounds, setPrevBounds] = useState(getInitialBounds);
@@ -385,10 +385,25 @@ export default function SafariBrowser({ onClose, onMinimize }) {
     }
   };
 
-  // Combine default and custom links
+  // Combine default and custom links, applying socialLinks overrides
   const allLinks = useMemo(() => {
-    return [...customLinks, ...DEFAULT_PORTFOLIO_LINKS];
-  }, [customLinks]);
+    const dynamicDefaults = DEFAULT_PORTFOLIO_LINKS.map(link => {
+      if (link.id === 'link-instagram' && socialLinks?.instagram) {
+        return { ...link, url: socialLinks.instagram };
+      }
+      if (link.id === 'link-youtube' && socialLinks?.youtube) {
+        return { ...link, url: socialLinks.youtube };
+      }
+      if (link.id === 'link-linkedin' && socialLinks?.linkedin) {
+        return { ...link, url: socialLinks.linkedin };
+      }
+      if (link.id === 'link-github' && socialLinks?.github) {
+        return { ...link, url: socialLinks.github };
+      }
+      return link;
+    });
+    return [...customLinks, ...dynamicDefaults];
+  }, [customLinks, socialLinks]);
 
   // Filter links based on search query
   const filteredLinks = useMemo(() => {

@@ -41,9 +41,9 @@ export default function SystemSettingsModal({
   const [localSocials, setLocalSocials] = useState(socialLinks || {
     youtube: 'https://youtube.com',
     linkedin: 'https://linkedin.com',
-    instagram: 'https://instagram.com',
+    instagram: 'https://instagram.com/heyishant',
     twitter: 'https://twitter.com',
-    github: 'https://github.com'
+    github: 'https://github.com/heyishantofficial'
   });
 
   const [localDashboard, setLocalDashboard] = useState(dashboardConfig || {
@@ -136,7 +136,7 @@ export default function SystemSettingsModal({
     { id: "aurora", name: "Dark Aurora Borealis", type: "gradient", bgClass: "bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-950" }
   ];
 
-  // The password is checked on the server, so it is never present in the
+  // Unlock the panel. We verify with the server so the password isn't in the
   // browser bundle for a visitor to read out of DevTools.
   const handleUnlockSettings = async (e) => {
     e.preventDefault();
@@ -164,7 +164,7 @@ export default function SystemSettingsModal({
     setPublishState("saving");
     setPublishError("");
     try {
-      await saveSiteSettings({
+      const res = await saveSiteSettings({
         password: adminPassword.current,
         wallpaper,
         lockWallpaper,
@@ -173,6 +173,11 @@ export default function SystemSettingsModal({
       });
       if (onUpdateSocialLinks) onUpdateSocialLinks(localSocials);
       if (onUpdateDashboardConfig) onUpdateDashboardConfig(localDashboard);
+      if (res?.fallback) {
+        setPublishError("⚠️ Saved in this browser only: Backend /api/settings is unreachable. Ensure Dokploy Publish Directory is empty and Port is 3000.");
+        setPublishState("error");
+        return;
+      }
       setPublishState("saved");
       setTimeout(() => setPublishState("idle"), 2500);
     } catch (err) {

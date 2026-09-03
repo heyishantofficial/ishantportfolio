@@ -300,8 +300,8 @@ export function FinderModal({ onSelectProject, onLaunchApp, onClose }) {
 }
 
 // 3. Safari Browser Modal (Powered by macOS Sequoia Safari Engine)
-export function SafariModal({ onClose, onMinimize }) {
-  return <SafariBrowser onClose={onClose} onMinimize={onMinimize} />;
+export function SafariModal({ onClose, onMinimize, socialLinks }) {
+  return <SafariBrowser onClose={onClose} onMinimize={onMinimize} socialLinks={socialLinks} />;
 }
 
 
@@ -739,7 +739,7 @@ export function PhotosModal({ onClose }) {
 
 // 9. Instagram Modal
 export function InstagramModal({ onClose, instagramUrl, onOpenSettings }) {
-  const targetUrl = instagramUrl || PROFILE_INFO.socials.instagram || 'https://instagram.com/ishantvibecode';
+  const targetUrl = instagramUrl || PROFILE_INFO.socials.instagram || 'https://instagram.com/heyishant';
   let handle = '@ishantvibecode';
   try {
     const urlObj = new URL(targetUrl);

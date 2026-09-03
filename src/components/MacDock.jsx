@@ -242,6 +242,7 @@ export default function MacDock({
       {openApps.safari && (
         <SafariModal 
           onClose={() => onCloseApp('safari')} 
+          socialLinks={socialLinks}
         />
       )}
       {openApps['system-info'] && (

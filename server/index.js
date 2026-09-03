@@ -25,9 +25,9 @@ const FALLBACK = {
   socialLinks: {
     youtube: 'https://youtube.com',
     linkedin: 'https://linkedin.com',
-    instagram: 'https://instagram.com',
+    instagram: 'https://instagram.com/heyishant',
     twitter: 'https://twitter.com',
-    github: 'https://github.com'
+    github: 'https://github.com/heyishantofficial'
   },
   dashboardConfig: {
     openLinksInNewTab: false,

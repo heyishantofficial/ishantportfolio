@@ -896,7 +896,7 @@ const CONTACT = folder(
   [
     { id: 'contact-email', name: 'Email', kind: 'mail', description: 'Write to me without leaving the desktop.' },
     link('contact-linkedin', 'LinkedIn', 'https://linkedin.com', 'The professional one.'),
-    link('contact-instagram', 'Instagram', 'https://instagram.com', 'The less professional one.'),
+    link('contact-instagram', 'Instagram', 'https://instagram.com/heyishant', 'The less professional one.'),
     link('contact-website', 'Portfolio', 'https://heyishant.com', 'This, but on a normal URL.')
   ],
   { createdAt: '2022', modifiedAt: 'Today', meta: { owner: 'Ishant', status: 'Replies within a day or two.' } }

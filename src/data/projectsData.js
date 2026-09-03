@@ -179,7 +179,8 @@ export const PROFILE_INFO = {
   socials: {
     twitter: 'https://twitter.com',
     linkedin: 'https://linkedin.com',
-    github: 'https://github.com',
+    instagram: 'https://instagram.com/heyishant',
+    github: 'https://github.com/heyishantofficial',
     substack: 'https://substack.com'
   },
   pillars: [

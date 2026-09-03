@@ -4,6 +4,7 @@ import {
   registerCustomNode,
   renameNodeInTree,
   deleteNodeFromTree,
+  updateNodeBodyInTree,
   findNode
 } from '../data/ishantOS';
 
@@ -92,6 +93,10 @@ export function useFileSystem() {
     return await renameNodeInTree(nodeId, newName.trim());
   }, []);
 
+  const updateFileContent = useCallback(async (nodeId, newBody) => {
+    return await updateNodeBodyInTree(nodeId, newBody);
+  }, []);
+
   const deleteNode = useCallback(async (nodeId) => {
     return await deleteNodeFromTree(nodeId);
   }, []);
@@ -102,6 +107,7 @@ export function useFileSystem() {
     addFile,
     addWorkLink,
     renameNode,
+    updateFileContent,
     deleteNode,
     findNode
   };

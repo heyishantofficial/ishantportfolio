@@ -963,25 +963,29 @@ indexTree([HOME]);
 const STORAGE_KEY_CUSTOM = 'custom_nodes';
 const STORAGE_KEY_RENAMES = 'renamed_nodes';
 const STORAGE_KEY_DELETED = 'deleted_nodes';
+const STORAGE_KEY_EDITS = 'edited_nodes_body';
 
 let customNodesCache = [];
 let renamesCache = {};
 let deletedCache = [];
+let editsCache = {};
 
 /**
- * Loads persisted custom folders, uploaded files and renamed nodes
+ * Loads persisted custom folders, uploaded files, body edits and renamed nodes
  */
 export async function loadPersistedFS() {
   try {
-    const [savedCustom, savedRenames, savedDeleted] = await Promise.all([
+    const [savedCustom, savedRenames, savedDeleted, savedEdits] = await Promise.all([
       getStorageItem(STORAGE_KEY_CUSTOM, []),
       getStorageItem(STORAGE_KEY_RENAMES, {}),
-      getStorageItem(STORAGE_KEY_DELETED, [])
+      getStorageItem(STORAGE_KEY_DELETED, []),
+      getStorageItem(STORAGE_KEY_EDITS, {})
     ]);
 
     customNodesCache = Array.isArray(savedCustom) ? savedCustom : [];
     renamesCache = savedRenames && typeof savedRenames === 'object' ? savedRenames : {};
     deletedCache = Array.isArray(savedDeleted) ? savedDeleted : [];
+    editsCache = savedEdits && typeof savedEdits === 'object' ? savedEdits : {};
 
     // Apply custom nodes with multi-pass resolution for nested folders
     let pending = [...customNodesCache];
@@ -1017,6 +1021,15 @@ export async function loadPersistedFS() {
       const target = INDEX.get(id);
       if (target && newName) {
         target.name = newName;
+      }
+    }
+
+    // Apply body edits
+    for (const [id, edit] of Object.entries(editsCache)) {
+      const target = INDEX.get(id);
+      if (target && edit && typeof edit.body === 'string') {
+        target.body = edit.body;
+        if (edit.modifiedAt) target.modifiedAt = edit.modifiedAt;
       }
     }
 
@@ -1114,6 +1127,61 @@ export async function deleteNodeFromTree(nodeId) {
     deletedCache.push(nodeId);
     await setStorageItem(STORAGE_KEY_DELETED, deletedCache);
   }
+
+  notifyFSChange();
+  return true;
+}
+
+/**
+ * Updates the text body of a node (built-in or custom note) and persists it
+ */
+export async function updateNodeBodyInTree(nodeId, newBody) {
+  const node = INDEX.get(nodeId);
+  if (!node) return false;
+
+  const now = new Date();
+  const timeStr = now.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }) + ' at ' + now.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+
+  node.body = newBody;
+  node.modifiedAt = timeStr;
+
+  // If node has description mentioning size or words, refresh it
+  const bytes = new Blob([newBody]).size;
+  const k = 1024;
+  const sizeStr = bytes < k ? `${bytes} B` : `${(bytes / k).toFixed(1)} KB`;
+  if (node.meta) {
+    node.meta.size = sizeStr;
+  }
+
+  // Update in customNodesCache if it's a custom node
+  let isCustom = false;
+  for (const item of customNodesCache) {
+    if (item?.node?.id === nodeId) {
+      item.node.body = newBody;
+      item.node.modifiedAt = timeStr;
+      if (item.node.meta) item.node.meta.size = sizeStr;
+      isCustom = true;
+      break;
+    }
+  }
+
+  if (isCustom) {
+    await setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache);
+  }
+
+  // Also persist in editsCache to guarantee survival for built-in or custom nodes
+  editsCache[nodeId] = {
+    body: newBody,
+    modifiedAt: timeStr
+  };
+  await setStorageItem(STORAGE_KEY_EDITS, editsCache);
 
   notifyFSChange();
   return true;

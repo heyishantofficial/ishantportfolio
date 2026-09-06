@@ -536,3 +536,110 @@ html, body, #root {
   }
 }
 
+/* ==========================================================================
+   iOS 18 / iPadOS Mobile Ecosystem Tokens & Materials
+   ========================================================================== */
+
+:root {
+  --ios-safe-top: env(safe-area-inset-top, 0px);
+  --ios-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --ios-safe-left: env(safe-area-inset-left, 0px);
+  --ios-safe-right: env(safe-area-inset-right, 0px);
+}
+
+.pt-safe {
+  padding-top: max(12px, env(safe-area-inset-top, 12px));
+}
+
+.pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+}
+
+/* iOS 18 App Icon Squircle */
+.ios-squircle {
+  border-radius: 22.5%;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 18px -4px rgba(0, 0, 0, 0.35),
+    0 2px 6px -1px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+/* iOS 18 Floating Glass Dock */
+.ios-glass-dock {
+  background: rgba(255, 255, 255, 0.32);
+  backdrop-filter: blur(40px) saturate(220%);
+  -webkit-backdrop-filter: blur(40px) saturate(220%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 
+    0 16px 36px -6px rgba(0, 0, 0, 0.35),
+    0 4px 12px -2px rgba(0, 0, 0, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7);
+}
+
+.dark .ios-glass-dock {
+  background: rgba(18, 20, 26, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    0 16px 36px -6px rgba(0, 0, 0, 0.6),
+    0 4px 12px -2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+/* iOS 18 Glass Card Material */
+.ios-glass-card {
+  background: rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: 
+    0 12px 28px -6px rgba(0, 0, 0, 0.22),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.dark .ios-glass-card {
+  background: rgba(22, 25, 33, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 
+    0 12px 28px -6px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+/* iOS 18 Modal Sheet Surface */
+.ios-sheet-surface {
+  background: rgba(248, 250, 252, 0.94);
+  backdrop-filter: blur(48px) saturate(220%);
+  -webkit-backdrop-filter: blur(48px) saturate(220%);
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 
+    0 -16px 48px -8px rgba(0, 0, 0, 0.45),
+    0 -4px 16px -2px rgba(0, 0, 0, 0.2);
+}
+
+.dark .ios-sheet-surface {
+  background: rgba(15, 18, 24, 0.94);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    0 -16px 48px -8px rgba(0, 0, 0, 0.7),
+    0 -4px 16px -2px rgba(0, 0, 0, 0.4);
+}
+
+/* iOS Home Indicator Bar */
+.ios-home-indicator {
+  width: 134px;
+  height: 5px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* iOS Dynamic Island Pill */
+.ios-dynamic-island {
+  background: #000000;
+  color: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 10px 24px -2px rgba(0, 0, 0, 0.5);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+

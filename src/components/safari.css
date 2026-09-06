@@ -921,3 +921,32 @@
   z-index: 45;
 }
 
+/* Mobile & Embedded Container Responsive Overrides */
+@media (max-width: 768px) {
+  .safari-floating-window {
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+  .safari-resize-corner,
+  .safari-resize-edge-e,
+  .safari-resize-edge-s,
+  .safari-resize-edge-w {
+    display: none !important;
+  }
+}
+
+.safari-embedded,
+.is-embedded .safari-floating-window {
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+

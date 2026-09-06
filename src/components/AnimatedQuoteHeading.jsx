@@ -98,6 +98,16 @@ export default function AnimatedQuoteHeading() {
     setMousePos({ x: null, y: null });
   };
 
+  const handleTouchMove = (e) => {
+    if (e.touches && e.touches[0]) {
+      setMousePos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setMousePos({ x: null, y: null });
+  };
+
   // Blur & Opacity calculation for the one-time morph entrance
   const blurVal = Math.max(0, (1 - animProgress) * 12);
   const opacityVal = Math.pow(animProgress, 0.5);
@@ -109,6 +119,9 @@ export default function AnimatedQuoteHeading() {
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchMove}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       className="text-center max-w-5xl w-full px-2 mb-2 select-none relative z-10 flex flex-col items-center justify-center font-montserrat"
       style={{
         filter: `blur(${blurVal.toFixed(1)}px)`,

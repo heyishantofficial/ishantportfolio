@@ -182,7 +182,7 @@ const SECTIONS = [
   }
 ];
 
-export default function SafariBrowser({ onClose, onMinimize, socialLinks, dashboardConfig }) {
+export default function SafariBrowser({ onClose, onMinimize, socialLinks, dashboardConfig, isEmbedded = false }) {
   // Window geometry, drag, resize, maximize states
   const [bounds, setBounds] = useState(getInitialBounds);
   const [prevBounds, setPrevBounds] = useState(getInitialBounds);
@@ -438,41 +438,56 @@ export default function SafariBrowser({ onClose, onMinimize, socialLinks, dashbo
     }
   };
 
-  const windowStyle = isMaximized
+  const windowStyle = isEmbedded
     ? {
-        top: MENU_BAR_H,
-        left: 8,
-        width: 'calc(100vw - 16px)',
-        height: `calc(100vh - ${MENU_BAR_H + DOCK_GUARD}px)`,
-        transition: isInteracting ? 'none' : 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+        position: 'relative',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
+        minHeight: 0,
+        borderRadius: 0,
+        border: 'none',
+        boxShadow: 'none'
       }
-    : {
-        top: bounds.y,
-        left: bounds.x,
-        width: bounds.w,
-        height: bounds.h,
-        transition: isInteracting ? 'none' : 'box-shadow 0.2s ease'
-      };
+    : isMaximized
+      ? {
+          top: MENU_BAR_H,
+          left: 8,
+          width: 'calc(100vw - 16px)',
+          height: `calc(100vh - ${MENU_BAR_H + DOCK_GUARD}px)`,
+          transition: isInteracting ? 'none' : 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+        }
+      : {
+          top: bounds.y,
+          left: bounds.x,
+          width: bounds.w,
+          height: bounds.h,
+          transition: isInteracting ? 'none' : 'box-shadow 0.2s ease'
+        };
 
   return (
     <div 
-      className="safari-floating-window" 
+      className={`safari-floating-window ${isEmbedded ? 'safari-embedded' : ''}`} 
       style={windowStyle}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="safari-window-container">
         {/* Safari Unified Navigation Toolbar (Draggable) */}
         <div 
-          className={`safari-toolbar ${isMaximized ? '' : 'cursor-grab active:cursor-grabbing'}`}
-          onPointerDown={handleToolbarPointerDown}
-          onDoubleClick={toggleMaximize}
+          className={`safari-toolbar ${isMaximized || isEmbedded ? '' : 'cursor-grab active:cursor-grabbing'}`}
+          onPointerDown={isEmbedded ? undefined : handleToolbarPointerDown}
+          onDoubleClick={isEmbedded ? undefined : toggleMaximize}
         >
           {/* Traffic Lights */}
-          <div className="safari-traffic-lights" data-no-drag>
-            <button className="safari-traffic-btn safari-traffic-close" onClick={onClose} title="Close">✕</button>
-            <button className="safari-traffic-btn safari-traffic-min" onClick={onMinimize || onClose} title="Minimize">—</button>
-            <button className="safari-traffic-btn safari-traffic-max" onClick={toggleMaximize} title={isMaximized ? "Restore" : "Full Screen"}>⤢</button>
-          </div>
+          {!isEmbedded && (
+            <div className="safari-traffic-lights" data-no-drag>
+              <button className="safari-traffic-btn safari-traffic-close" onClick={onClose} title="Close">✕</button>
+              <button className="safari-traffic-btn safari-traffic-min" onClick={onMinimize || onClose} title="Minimize">—</button>
+              <button className="safari-traffic-btn safari-traffic-max" onClick={toggleMaximize} title={isMaximized ? "Restore" : "Full Screen"}>⤢</button>
+            </div>
+          )}
 
           {/* Navigation Controls */}
           <div className="flex items-center gap-0.5" data-no-drag>

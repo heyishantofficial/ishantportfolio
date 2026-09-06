@@ -9,7 +9,7 @@ import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
 import { Trash2, Lock, Edit3, Copy, Clipboard, CopyPlus } from 'lucide-react';
 
 const HINT_KEY = 'ishantos.hint.dismissed';
-const POSITIONS_KEY = 'ishantos.desktop.positions_v3';
+const POSITIONS_KEY = 'ishantos.desktop.positions_v4';
 const LEGACY_POSITIONS_KEY = 'ishantos.desktop.positions';
 
 const ITEM_W = 100;
@@ -204,6 +204,7 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
     setPositions(gridPos);
     try {
       localStorage.removeItem(POSITIONS_KEY);
+      localStorage.removeItem('ishantos.desktop.positions_v3');
       localStorage.removeItem(LEGACY_POSITIONS_KEY);
     } catch {}
   }, [items]);

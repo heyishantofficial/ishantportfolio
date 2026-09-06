@@ -198,6 +198,7 @@ export default function MacMenuBar({
               items={[
                 { label: 'New Finder Window', shortcut: '\u2318N', action: () => onNewFinderWindow && onNewFinderWindow() },
                 { separator: true },
+                { label: 'Open About Me', action: () => openFromMenu('about-me') },
                 { label: 'Open The Journey', action: () => openFromMenu('experience') },
                 { label: 'Open Work', action: () => openFromMenu('work') },
                 { label: 'Open side projects', action: () => openFromMenu('ai-lab') },
@@ -268,14 +269,13 @@ export default function MacMenuBar({
               items={[
                 { label: 'Home', shortcut: '⇧⌘H', action: () => openFromMenu('home') },
                 { separator: true },
+                { label: 'About Me', action: () => openFromMenu('about-me') },
                 { label: 'The Journey', action: () => openFromMenu('experience') },
                 { label: 'Work', action: () => openFromMenu('work') },
                 { label: 'side projects', action: () => openFromMenu('ai-lab') },
-                { label: 'About Me', action: () => openFromMenu('about-me') },
                 { label: 'Random', action: () => openFromMenu('random') },
-                { label: 'Contact', action: () => openFromMenu('contact') },
-                { separator: true },
-                { label: 'Resume.pdf', action: () => openFromMenu('resume') }
+                { label: 'Resume.pdf', action: () => openFromMenu('resume') },
+                { label: 'Contact', action: () => openFromMenu('contact') }
               ]}
             />
             <MenuBarMenu

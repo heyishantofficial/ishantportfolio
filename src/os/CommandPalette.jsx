@@ -6,7 +6,7 @@ import { findNode, searchNodes } from '../data/ishantOS';
 
 // The recruiter's path: the five things someone evaluating Ishant actually
 // needs, reachable without exploring a single folder.
-const QUICK_ACCESS = ['experience', 'work', 'ai-lab', 'resume', 'contact'];
+const QUICK_ACCESS = ['about-me', 'experience', 'work', 'ai-lab', 'resume', 'contact'];
 
 /**
  * Cmd + K. Opens on Quick Access, becomes a search as soon as you type.

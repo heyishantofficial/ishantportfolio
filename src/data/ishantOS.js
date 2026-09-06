@@ -908,7 +908,7 @@ const CONTACT = folder(
 // The tree
 // ---------------------------------------------------------------------------
 
-export const FILESYSTEM = [EXPERIENCE, WORK, AI_LAB, ABOUT, RANDOM, RESUME, CONTACT];
+export const FILESYSTEM = [ABOUT, EXPERIENCE, WORK, AI_LAB, RANDOM, RESUME, CONTACT];
 
 // The Finder root. Opening Finder from the Dock lands here, and it gives
 // breadcrumbs somewhere to terminate.
@@ -919,8 +919,7 @@ export const HOME = folder('home', 'Home', 'Everything on this machine.', FILESY
 });
 
 // Shown on the desktop and in the Finder sidebar, in priority order
-// (work and experience first — the fun interface must not bury the work).
-export const DESKTOP_ORDER = ['work', 'experience', 'ai-lab', 'about-me', 'random', 'resume', 'contact'];
+export const DESKTOP_ORDER = ['about-me', 'experience', 'work', 'ai-lab', 'random', 'resume', 'contact'];
 
 // Trash is an easter egg, not part of the real tree.
 export const TRASH_ITEMS = [

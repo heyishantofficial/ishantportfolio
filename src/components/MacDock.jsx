@@ -110,10 +110,10 @@ export default function MacDock({
     },
     {
       id: "arcade",
-      name: "Retro Arcade",
+      name: "Games",
       type: "app",
       renderIcon: () => (
-        <img src="/icons/Games.png" alt="Retro Arcade" className="w-full h-full object-contain drop-shadow-md select-none" />
+        <img src="/icons/Games.png" alt="Games" className="w-full h-full object-contain drop-shadow-md select-none" />
       )
     },
     {

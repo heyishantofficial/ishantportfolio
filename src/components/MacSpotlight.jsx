@@ -31,7 +31,7 @@ export default function MacSpotlight({ onClose, onLaunchApp, onOpenNode, isMuted
     { id: 'app-notes', title: 'Notes', subtitle: 'Scratchpad', group: 'APPLICATIONS', icon: FileText, action: () => onLaunchApp('notes') },
     { id: 'app-ipod', title: 'Music', subtitle: 'iPod Classic', group: 'APPLICATIONS', icon: Music, action: () => onLaunchApp('ipod') },
     { id: 'app-system', title: 'About This Mac', subtitle: 'System information', group: 'APPLICATIONS', icon: Sparkles, action: () => onLaunchApp('system-info') },
-    { id: 'app-arcade', title: 'Retro Arcade', subtitle: 'Classic Games: Pac-Man, Tetris, Super Mario, Road Rage', keywords: 'arcade games game pacman tetris mario road rage', group: 'APPLICATIONS', icon: Gamepad2, action: () => onLaunchApp('arcade') }
+    { id: 'app-arcade', title: 'Games', subtitle: 'Pac-Man, Tetris, Super Mario, Road Rage', keywords: 'games arcade pacman tetris mario road rage', group: 'APPLICATIONS', icon: Gamepad2, action: () => onLaunchApp('arcade') }
   ]), [onLaunchApp]);
 
   const results = useMemo(() => {

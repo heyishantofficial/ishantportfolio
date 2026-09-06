@@ -367,7 +367,8 @@ export default function App() {
       safari: "Chrome Browser",
       photos: "Photos Library",
       mail: "Mail",
-      arcade: "Retro Arcade"
+      arcade: "Games",
+      games: "Games"
     };
     setActiveAppTitle(titleMap[targetApp] || targetApp);
     setOpenApps(prev => ({

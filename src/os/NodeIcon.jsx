@@ -75,6 +75,8 @@ export default function NodeIcon({ node, size = 48, className = '' }) {
         <img
           src={thumbUrl}
           alt={node.name}
+          loading="lazy"
+          decoding="async"
           onError={() => setImgError(true)}
           className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
         />
@@ -93,7 +95,8 @@ export default function NodeIcon({ node, size = 48, className = '' }) {
   }
 
   // Uploaded standard image
-  if (node.kind === 'image' && (node.preview || node.dataUrl) && !imgError) {
+  const imageThumb = node.thumbnailUrl || node.preview || (node.dataUrl && node.dataUrl.length < 50000 ? node.dataUrl : null);
+  if (node.kind === 'image' && imageThumb && !imgError) {
     return (
       <span
         style={{ width: px, height: px }}
@@ -101,8 +104,10 @@ export default function NodeIcon({ node, size = 48, className = '' }) {
         className={`shrink-0 rounded-[18%] bg-white border border-black/10 shadow-sm flex items-center justify-center overflow-hidden p-0.5 ${className}`}
       >
         <img
-          src={node.preview || node.dataUrl}
+          src={imageThumb}
           alt={node.name}
+          loading="lazy"
+          decoding="async"
           onError={() => setImgError(true)}
           className="w-full h-full object-cover rounded-[14%]"
         />

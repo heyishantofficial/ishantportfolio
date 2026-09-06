@@ -15,6 +15,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ishucreationz';
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
 const SETTINGS_FILE = path.join(DATA_DIR, 'site-settings.json');
 const FS_FILE = path.join(DATA_DIR, 'filesystem.json');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
 // Wallpapers that every visitor can load. Uploaded wallpapers are deliberately
 // excluded: they are blob: URLs local to the admin's own browser, so they
@@ -120,6 +121,7 @@ async function writeFilesystemState(state) {
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
+app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));
 
 // Health check endpoint for control panel connectivity diagnosis
 app.get('/health', (_req, res) => {
@@ -356,6 +358,42 @@ app.post('/api/filesystem', async (req, res) => {
   } catch (err) {
     console.error('[filesystem] write failed:', err);
     res.status(500).json({ error: 'Could not save filesystem state to server.' });
+  }
+});
+
+// Admin: Upload media/file to static uploads directory
+app.post('/api/upload', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+
+  try {
+    const { filename, dataBase64, mimeType } = req.body || {};
+    if (!filename || !dataBase64) {
+      return res.status(400).json({ error: 'Missing filename or data' });
+    }
+
+    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+
+    const ext = path.extname(filename) || '';
+    const base = path.basename(filename, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+    const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${base}${ext}`;
+    const filePath = path.join(UPLOADS_DIR, safeName);
+
+    const base64Data = dataBase64.replace(/^data:[^;]+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    await fs.writeFile(filePath, buffer);
+
+    const fileUrl = `/uploads/${safeName}`;
+    res.json({
+      ok: true,
+      url: fileUrl,
+      filename: safeName,
+      size: buffer.length,
+      mimeType: mimeType || 'application/octet-stream'
+    });
+  } catch (err) {
+    console.error('[upload] failed:', err);
+    res.status(500).json({ error: 'Failed to save uploaded file' });
   }
 });
 

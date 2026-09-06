@@ -4,6 +4,8 @@
  * and renamed nodes without hitting localStorage 5MB quota limits.
  */
 
+import { getAdminPassword } from './useAdminAuth';
+
 const DB_NAME = 'ishant_os_db';
 const DB_VERSION = 1;
 const STORE_FS = 'filesystem_store';
@@ -89,27 +91,171 @@ export function formatBytes(bytes, decimals = 1) {
 }
 
 /**
- * Reads a File object and converts it into a node payload
+ * Generates a lightweight compressed image thumbnail (~4-8 KB) using HTML Canvas
  */
-export function readFileAsNode(file) {
+export function generateImageThumbnail(file, maxWidth = 160, maxHeight = 160) {
   return new Promise((resolve) => {
-    const isImage = file.type.startsWith('image/');
-    const isVideo = file.type.startsWith('video/');
-    const isAudio = file.type.startsWith('audio/');
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    const isText = file.type.startsWith('text/') ||
-      /\.(txt|md|json|js|jsx|ts|tsx|css|html|py|sh|csv|xml|yml|yaml)$/i.test(file.name);
+    if (typeof window === 'undefined' || !window.URL) return resolve(null);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const thumb = canvas.toDataURL('image/jpeg', 0.65);
+        URL.revokeObjectURL(url);
+        resolve(thumb);
+      } catch {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
 
-    let kind = 'file';
-    if (isImage) kind = 'image';
-    else if (isVideo) kind = 'video';
-    else if (isAudio) kind = 'audio';
-    else if (isPdf) kind = 'pdf';
-    else if (isText) kind = 'text';
+/**
+ * Generates a lightweight video snapshot thumbnail (~4-6 KB) from timestamp 0.1s
+ */
+export function generateVideoThumbnail(file, maxWidth = 200, maxHeight = 120) {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !window.URL) return resolve(null);
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
 
+    let resolved = false;
+    const finish = (result) => {
+      if (resolved) return;
+      resolved = true;
+      video.remove();
+      URL.revokeObjectURL(url);
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => finish(null), 4500);
+
+    video.onloadeddata = () => {
+      try {
+        video.currentTime = Math.min(0.5, (video.duration || 1) * 0.1);
+      } catch {
+        finish(null);
+      }
+    };
+
+    video.onseeked = () => {
+      clearTimeout(timer);
+      try {
+        const vw = video.videoWidth || 320;
+        const vh = video.videoHeight || 180;
+        let w = maxWidth;
+        let h = Math.round((vh * maxWidth) / vw);
+        if (h > maxHeight) {
+          h = maxHeight;
+          w = Math.round((vw * maxHeight) / vh);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, w);
+        canvas.height = Math.max(1, h);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, w, h);
+        const thumb = canvas.toDataURL('image/jpeg', 0.65);
+        finish(thumb);
+      } catch {
+        finish(null);
+      }
+    };
+
+    video.onerror = () => finish(null);
+    video.src = url;
+    video.load();
+  });
+}
+
+/**
+ * Uploads original binary file to the Express server /api/upload
+ */
+export async function uploadFileToServer(file) {
+  const password = getAdminPassword();
+  if (!password) {
+    return { ok: false, error: 'Admin authentication required.' };
+  }
+
+  return new Promise((resolve) => {
     const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            password,
+            filename: file.name,
+            dataBase64: reader.result,
+            mimeType: file.type
+          })
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          resolve({ ok: false, error: errData.error || 'Upload failed' });
+          return;
+        }
+        const data = await res.json();
+        resolve(data);
+      } catch (err) {
+        resolve({ ok: false, error: err.message });
+      }
+    };
+    reader.onerror = () => resolve({ ok: false, error: 'Could not read file.' });
+    reader.readAsDataURL(file);
+  });
+}
 
-    if (isText) {
+/**
+ * Reads a File object and converts it into a node payload.
+ * Generates lightweight thumbnails for media previews in Finder,
+ * while saving the full heavy file to the server so it is loaded strictly on demand.
+ */
+export async function readFileAsNode(file) {
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  const isAudio = file.type.startsWith('audio/');
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  const isText = file.type.startsWith('text/') ||
+    /\.(txt|md|json|js|jsx|ts|tsx|css|html|py|sh|csv|xml|yml|yaml)$/i.test(file.name);
+
+  let kind = 'file';
+  if (isImage) kind = 'image';
+  else if (isVideo) kind = 'video';
+  else if (isAudio) kind = 'audio';
+  else if (isPdf) kind = 'pdf';
+  else if (isText) kind = 'text';
+
+  if (isText) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
       reader.onload = () => {
         resolve({
           name: file.name,
@@ -132,32 +278,39 @@ export function readFileAsNode(file) {
         });
       };
       reader.readAsText(file);
-    } else {
-      reader.onload = () => {
-        const dataUrl = reader.result;
-        resolve({
-          name: file.name,
-          kind,
-          preview: dataUrl,
-          dataUrl,
-          file: dataUrl,
-          description: `${formatBytes(file.size)} ${kind.toUpperCase()} file`,
-          meta: {
-            size: formatBytes(file.size),
-            type: file.type || 'application/octet-stream',
-            owner: 'Ishant (Admin)'
-          }
-        });
-      };
-      reader.onerror = () => {
-        resolve({
-          name: file.name,
-          kind: 'file',
-          description: formatBytes(file.size),
-          meta: { size: formatBytes(file.size) }
-        });
-      };
-      reader.readAsDataURL(file);
+    });
+  }
+
+  // Generate lightweight visual thumbnail (~4-8 KB) for fast folder previews
+  let thumbnailUrl = null;
+  if (isImage) {
+    thumbnailUrl = await generateImageThumbnail(file);
+  } else if (isVideo) {
+    thumbnailUrl = await generateVideoThumbnail(file);
+  }
+
+  // Upload full file to server uploads directory
+  const uploadRes = await uploadFileToServer(file);
+  let fileUrl = null;
+  if (uploadRes && uploadRes.ok && uploadRes.url) {
+    fileUrl = uploadRes.url;
+  } else {
+    // Offline/fallback: use local ObjectURL
+    fileUrl = URL.createObjectURL(file);
+  }
+
+  return {
+    name: file.name,
+    kind,
+    thumbnailUrl: thumbnailUrl || null,
+    preview: thumbnailUrl || null,
+    fileUrl,
+    file: fileUrl,
+    description: `${formatBytes(file.size)} ${kind.toUpperCase()} file`,
+    meta: {
+      size: formatBytes(file.size),
+      type: file.type || 'application/octet-stream',
+      owner: 'Ishant (Admin)'
     }
-  });
+  };
 }

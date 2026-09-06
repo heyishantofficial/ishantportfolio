@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   ArrowLeft, ArrowRight, Download, ExternalLink, Send, Minus, Plus, Trash2, Check,
-  Save, Lock, RotateCcw, ShieldCheck, Type, Copy, FileText
+  Save, Lock, RotateCcw, ShieldCheck, Type, Copy, FileText, Loader2
 } from 'lucide-react';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
@@ -495,15 +495,18 @@ export function PdfWindow(props) {
 export function MediaWindow(props) {
   const node = findNode(props.win.nodeId);
   const [zoom, setZoom] = useState(1);
+  const [isMediaLoaded, setIsMediaLoaded] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
   if (!node) return null;
 
-  const fileUrl = node.dataUrl || node.file || node.videoUrl || node.href || node.preview;
+  const fileUrl = node.fileUrl || node.dataUrl || node.file || node.videoUrl || node.href || node.preview;
   const isImage = node.kind === 'image';
   const isYt = isYouTubeUrl(node.videoUrl || node.href || fileUrl);
   const ytEmbed = isYt ? getYouTubeEmbedUrl(node.videoUrl || node.href || fileUrl) : null;
   const isVideo = node.kind === 'video' || isYt;
   const isAudio = node.kind === 'audio';
   const externalLink = node.href || (isYt ? (node.href || fileUrl) : null);
+  const thumbUrl = node.thumbnailUrl || node.preview;
 
   return (
     <OSWindow {...chrome(props)} title={node.name} subtitle={node.description || (isYt ? 'YouTube Video' : 'Media Preview')}>
@@ -558,14 +561,55 @@ export function MediaWindow(props) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
+        <div className="relative flex-1 overflow-auto p-4 flex items-center justify-center min-h-[260px]">
           {isImage ? (
-            <img
-              src={fileUrl}
-              alt={node.name}
-              style={{ transform: `scale(${zoom})`, transformOrigin: 'center center', transition: 'transform 0.15s ease-out' }}
-              className="max-h-[85vh] max-w-[90vw] object-contain shadow-2xl rounded-md bg-transparent select-none"
-            />
+            <>
+              {!isMediaLoaded && !mediaError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 z-10 bg-slate-100/60 dark:bg-slate-950/60 backdrop-blur-[2px]">
+                  <Loader2 className="w-6 h-6 text-[#007aff] animate-spin" />
+                  <span className="text-[11px] font-medium text-slate-500">Loading full image...</span>
+                </div>
+              )}
+              {!isMediaLoaded && thumbUrl && !mediaError && (
+                <img
+                  src={thumbUrl}
+                  alt=""
+                  aria-hidden="true"
+                  style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+                  className="max-h-[85vh] max-w-[90vw] object-contain rounded-md filter blur-sm opacity-60 absolute pointer-events-none select-none"
+                />
+              )}
+              {mediaError ? (
+                <div className="flex flex-col items-center justify-center gap-2 text-center p-6">
+                  <span className="text-2xl">⚠️</span>
+                  <p className="text-[12px] font-medium text-slate-600 dark:text-slate-400">Could not preview image.</p>
+                  {fileUrl && (
+                    <a
+                      href={fileUrl}
+                      download={node.name}
+                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-[#007aff]"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download File
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <img
+                  src={fileUrl}
+                  alt={node.name}
+                  onLoad={() => setIsMediaLoaded(true)}
+                  onError={() => setMediaError(true)}
+                  style={{
+                    transform: `scale(${zoom})`,
+                    transformOrigin: 'center center',
+                    transition: 'transform 0.15s ease-out, opacity 0.25s ease'
+                  }}
+                  className={`max-h-[85vh] max-w-[90vw] object-contain shadow-2xl rounded-md bg-transparent select-none ${
+                    isMediaLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              )}
+            </>
           ) : isVideo ? (
             ytEmbed ? (
               <div className="w-full h-full p-2 sm:p-4 flex items-center justify-center">
@@ -580,12 +624,25 @@ export function MediaWindow(props) {
                 </div>
               </div>
             ) : (
-              <video
-                src={fileUrl}
-                controls
-                autoPlay
-                className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl bg-black"
-              />
+              <div className="relative max-h-[85vh] max-w-[90vw] flex items-center justify-center">
+                {!isMediaLoaded && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 z-10 bg-black/40 backdrop-blur-sm rounded-lg pointer-events-none">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <span className="text-[11px] font-medium text-white/80">Buffering video...</span>
+                  </div>
+                )}
+                <video
+                  src={fileUrl}
+                  poster={thumbUrl}
+                  controls
+                  autoPlay
+                  preload="metadata"
+                  onLoadedData={() => setIsMediaLoaded(true)}
+                  onWaiting={() => setIsMediaLoaded(false)}
+                  onPlaying={() => setIsMediaLoaded(true)}
+                  className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl bg-black"
+                />
+              </div>
             )
           ) : isAudio ? (
             <div className="flex flex-col items-center gap-4 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-black/10 dark:border-white/10 max-w-sm w-full">

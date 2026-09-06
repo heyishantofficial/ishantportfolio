@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { PROFILE_INFO } from '../data/projectsData';
 import { playMacClick } from '../utils/macAudioEngine';
+import { useClipboard } from '../utils/fsClipboard';
 
 export default function MacMenuBar({ 
   activeAppTitle = 'Finder',
@@ -23,6 +24,7 @@ export default function MacMenuBar({
   onCloseWindow,
   onOpenPalette
 }) {
+  const { clipboard } = useClipboard();
   const [timeStr, setTimeStr] = useState('');
   const [showAppleMenu, setShowAppleMenu] = useState(false);
   const [showVolumeMenu, setShowVolumeMenu] = useState(false);
@@ -202,6 +204,60 @@ export default function MacMenuBar({
                 { label: 'Open Resume', action: () => openFromMenu('resume') },
                 { separator: true },
                 { label: 'Close Window', shortcut: '⌘W', action: () => onCloseWindow && onCloseWindow() }
+              ]}
+            />
+            <MenuBarMenu
+              label="Edit"
+              isOpen={openMenu === 'edit'}
+              onToggle={() => { playMacClick(isMuted); setOpenMenu(openMenu === 'edit' ? null : 'edit'); setShowAppleMenu(false); }}
+              onClose={() => setOpenMenu(null)}
+              items={[
+                { label: 'Undo', shortcut: '⌘Z', disabled: true },
+                { label: 'Redo', shortcut: '⇧⌘Z', disabled: true },
+                { separator: true },
+                { label: 'Cut', shortcut: '⌘X', disabled: true },
+                { 
+                  label: 'Copy', 
+                  shortcut: '⌘C', 
+                  action: () => {
+                    const active = document.activeElement;
+                    if (active) {
+                      active.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true, bubbles: true }));
+                    }
+                  } 
+                },
+                { 
+                  label: clipboard ? `Paste "${clipboard.name}"` : 'Paste', 
+                  shortcut: '⌘V', 
+                  disabled: !clipboard,
+                  action: () => {
+                    const active = document.activeElement;
+                    if (active) {
+                      active.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', metaKey: true, bubbles: true }));
+                    }
+                  } 
+                },
+                { 
+                  label: 'Duplicate', 
+                  shortcut: '⌘D', 
+                  action: () => {
+                    const active = document.activeElement;
+                    if (active) {
+                      active.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', metaKey: true, bubbles: true }));
+                    }
+                  } 
+                },
+                { separator: true },
+                { 
+                  label: 'Select All', 
+                  shortcut: '⌘A', 
+                  action: () => {
+                    const active = document.activeElement;
+                    if (active) {
+                      active.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', metaKey: true, bubbles: true }));
+                    }
+                  } 
+                }
               ]}
             />
             <MenuBarMenu
@@ -417,11 +473,20 @@ function MenuBarMenu({ label, items, isOpen, onToggle, onClose }) {
               <button
                 key={item.label}
                 role="menuitem"
-                onClick={() => { item.action(); onClose(); }}
-                className="w-full text-left px-3 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between gap-6 font-medium"
+                disabled={item.disabled}
+                onClick={() => {
+                  if (item.disabled) return;
+                  item.action?.();
+                  onClose();
+                }}
+                className={`w-full text-left px-3 py-1.5 flex items-center justify-between gap-6 font-medium transition-colors ${
+                  item.disabled
+                    ? 'opacity-40 cursor-not-allowed pointer-events-none'
+                    : 'hover:bg-blue-600 hover:text-white cursor-pointer'
+                }`}
               >
-                <span>{item.label}</span>
-                {item.shortcut && <span className="text-[10px] opacity-60 font-mono">{item.shortcut}</span>}
+                <span className="truncate">{item.label}</span>
+                {item.shortcut && <span className="text-[10px] opacity-60 font-mono shrink-0">{item.shortcut}</span>}
               </button>
             )
           )}

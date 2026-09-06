@@ -126,9 +126,11 @@ export default function SystemSettingsModal({
 
   const handleResetDesktopPositions = () => {
     try {
+      localStorage.removeItem('ishantos.desktop.positions_v3');
       localStorage.removeItem('ishantos.desktop.positions');
       setDockSavedNotice(true);
       setTimeout(() => setDockSavedNotice(false), 2000);
+      window.dispatchEvent(new CustomEvent('ishantos:reset-folders'));
       window.dispatchEvent(new Event('storage'));
     } catch {}
   };

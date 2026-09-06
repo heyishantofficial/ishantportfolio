@@ -6,12 +6,20 @@ import {
   deleteNodeFromTree,
   updateNodeBodyInTree,
   findNode,
+  getParentId,
   subscribeFSSync,
   syncFSToServer
 } from '../data/ishantOS';
 
 import { isYouTubeUrl, getYouTubeThumbnail, getYouTubeEmbedUrl } from './mediaHelpers';
 import { checkIsAdmin } from './useAdminAuth';
+import { playMacClick } from './macAudioEngine';
+import {
+  useClipboard,
+  getClipboard,
+  generateCopyName,
+  cloneNodeRecursive
+} from './fsClipboard';
 
 export function useFileSystem() {
   const [version, setVersion] = useState(0);
@@ -119,6 +127,54 @@ export function useFileSystem() {
     return await deleteNodeFromTree(nodeId);
   }, []);
 
+  const { clipboard, copy: copyNode, cut: cutNode, clear: clearClipboard } = useClipboard();
+
+  const pasteNode = useCallback(async (targetParentId = 'home') => {
+    if (!checkIsAdmin()) {
+      console.warn('Unauthorized: Pasting is only permitted in Admin Mode.');
+      return null;
+    }
+    const { node: sourceNode } = getClipboard();
+    if (!sourceNode) return null;
+
+    const parent = findNode(targetParentId);
+    if (!parent) return null;
+
+    const existingNames = (parent.children || []).map((c) => c.name);
+    const newName = generateCopyName(existingNames, sourceNode.name);
+
+    const cloned = cloneNodeRecursive(sourceNode, newName);
+    const ok = await registerCustomNode(targetParentId, cloned);
+    if (ok) {
+      playMacClick(false);
+      return cloned;
+    }
+    return null;
+  }, []);
+
+  const duplicateNode = useCallback(async (nodeId, customParentId = null) => {
+    if (!checkIsAdmin()) {
+      console.warn('Unauthorized: Duplicating is only permitted in Admin Mode.');
+      return null;
+    }
+    const sourceNode = findNode(nodeId);
+    if (!sourceNode) return null;
+    const parentId = customParentId || getParentId(nodeId) || 'home';
+    const parent = findNode(parentId);
+    if (!parent) return null;
+
+    const existingNames = (parent.children || []).map((c) => c.name);
+    const newName = generateCopyName(existingNames, sourceNode.name);
+
+    const cloned = cloneNodeRecursive(sourceNode, newName);
+    const ok = await registerCustomNode(parentId, cloned);
+    if (ok) {
+      playMacClick(false);
+      return cloned;
+    }
+    return null;
+  }, []);
+
   return {
     version,
     syncStatus,
@@ -129,6 +185,12 @@ export function useFileSystem() {
     renameNode,
     updateFileContent,
     deleteNode,
-    findNode
+    findNode,
+    clipboard,
+    copyNode,
+    cutNode,
+    clearClipboard,
+    pasteNode,
+    duplicateNode
   };
 }

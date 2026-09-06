@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, Search, LayoutGrid, List as ListIcon,
   FileText, Sparkles, Mail, Link2, FileType2, Info, HardDrive, X,
   Lock, Unlock, FolderPlus, Upload, Edit3, Trash2, ShieldCheck, Film, FilePlus,
-  Cloud, CloudOff, RefreshCw
+  Cloud, CloudOff, RefreshCw, Copy, Clipboard, CopyPlus
 } from 'lucide-react';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
@@ -53,7 +53,10 @@ export default function FinderWindow({
 
   // Admin & FileSystem hooks
   const { isAdmin, lock } = useAdminAuth();
-  const { addFolder, addFile, addWorkLink, renameNode, deleteNode, version, syncStatus, syncFSToServer } = useFileSystem();
+  const {
+    addFolder, addFile, addWorkLink, renameNode, deleteNode, version,
+    syncStatus, syncFSToServer, clipboard, copyNode, pasteNode, duplicateNode
+  } = useFileSystem();
 
   // Auth modal & pending action states
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -307,8 +310,14 @@ export default function FinderWindow({
     } else if (pendingAction?.type === 'add-link') {
       setShowAddLinkModal(true);
       setPendingAction(null);
+    } else if (pendingAction?.type === 'paste') {
+      pasteNode(pendingAction.targetParentId || currentId);
+      setPendingAction(null);
+    } else if (pendingAction?.type === 'duplicate' && pendingAction.nodeId) {
+      duplicateNode(pendingAction.nodeId, pendingAction.targetParentId || currentId);
+      setPendingAction(null);
     }
-  }, [pendingUploadFiles, pendingAction, processUploadedFiles, handleNewFolder, handleNewTextFile, startRenaming, syncFSToServer]);
+  }, [pendingUploadFiles, pendingAction, processUploadedFiles, handleNewFolder, handleNewTextFile, startRenaming, syncFSToServer, pasteNode, duplicateNode, currentId]);
 
   // Keyboard navigation
   const handleKeyDown = (e) => {
@@ -316,6 +325,50 @@ export default function FinderWindow({
     if (e.key === 'Escape') { setMenu(null); setShowAdminDropdown(false); return; }
 
     const index = children.findIndex((c) => c.id === selectedId);
+
+    const meta = e.metaKey || e.ctrlKey;
+
+    // Cmd + C (Copy selected item)
+    if (meta && e.key.toLowerCase() === 'c') {
+      if (selectedId) {
+        const target = findNode(selectedId);
+        if (target) {
+          e.preventDefault();
+          copyNode(target);
+        }
+      }
+      return;
+    }
+
+    // Cmd + V (Paste item)
+    if (meta && e.key.toLowerCase() === 'v') {
+      if (clipboard) {
+        e.preventDefault();
+        if (!isAdmin) {
+          setAuthPrompt('Enter admin password to paste items.');
+          setPendingAction({ type: 'paste', targetParentId: currentId });
+          setShowAuthModal(true);
+        } else {
+          pasteNode(currentId);
+        }
+      }
+      return;
+    }
+
+    // Cmd + D (Duplicate selected item)
+    if (meta && e.key.toLowerCase() === 'd') {
+      if (selectedId) {
+        e.preventDefault();
+        if (!isAdmin) {
+          setAuthPrompt('Enter admin password to duplicate items.');
+          setPendingAction({ type: 'duplicate', targetParentId: currentId, nodeId: selectedId });
+          setShowAuthModal(true);
+        } else {
+          duplicateNode(selectedId, currentId);
+        }
+      }
+      return;
+    }
 
     // In macOS Finder, Return starts renaming selected item!
     if (e.key === 'Enter') {
@@ -823,6 +876,31 @@ export default function FinderWindow({
         >
           {menu.isBackground ? (
             <>
+              {clipboard && (
+                <>
+                  <button
+                    onClick={async () => {
+                      if (!isAdmin) {
+                        setAuthPrompt('Enter admin password to paste items.');
+                        setPendingAction({ type: 'paste', targetParentId: currentId });
+                        setShowAuthModal(true);
+                        setMenu(null);
+                        return;
+                      }
+                      await pasteNode(currentId);
+                      setMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between text-[#007aff] dark:text-[#0a84ff] font-medium hover:!text-white transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Clipboard className="w-3.5 h-3.5" />
+                      <span className="truncate">Paste &ldquo;{clipboard.name}&rdquo;</span>
+                    </div>
+                    <span className="text-[10px] opacity-60 font-mono">⌘V</span>
+                  </button>
+                  <div className="my-1 border-t border-black/5 dark:border-white/5" />
+                </>
+              )}
               {isAdmin ? (
                 <>
                   <button
@@ -895,6 +973,56 @@ export default function FinderWindow({
               >
                 <Info className="w-3.5 h-3.5" /> Get Info
               </button>
+              <button
+                onClick={() => {
+                  copyNode(menu.node);
+                  setMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy</span>
+                </div>
+                <span className="text-[10px] opacity-60 font-mono">⌘C</span>
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={async () => {
+                    await duplicateNode(menu.node.id, currentId);
+                    setMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <CopyPlus className="w-3.5 h-3.5" />
+                    <span>Duplicate</span>
+                  </div>
+                  <span className="text-[10px] opacity-60 font-mono">⌘D</span>
+                </button>
+              )}
+              {menu.node.kind === 'folder' && clipboard && (
+                <button
+                  onClick={async () => {
+                    if (!isAdmin) {
+                      setAuthPrompt('Enter admin password to paste items.');
+                      setPendingAction({ type: 'paste', targetParentId: menu.node.id });
+                      setShowAuthModal(true);
+                      setMenu(null);
+                      return;
+                    }
+                    await pasteNode(menu.node.id);
+                    setMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between text-[#007aff] dark:text-[#0a84ff] hover:!text-white font-medium"
+                >
+                  <div className="flex items-center gap-2">
+                    <Clipboard className="w-3.5 h-3.5" />
+                    <span className="truncate">Paste into &ldquo;{menu.node.name}&rdquo;</span>
+                  </div>
+                  <span className="text-[10px] opacity-60 font-mono">⌘V</span>
+                </button>
+              )}
 
               <div className="my-1 border-t border-black/5 dark:border-white/5" />
 

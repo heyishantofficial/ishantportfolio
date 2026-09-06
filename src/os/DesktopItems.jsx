@@ -1,24 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import NodeIcon from './NodeIcon';
-import { DESKTOP_ORDER, findNode, itemCountLabel } from '../data/ishantOS';
+import { DESKTOP_ORDER, findNode, getParentId, itemCountLabel } from '../data/ishantOS';
 import { useFileSystem } from '../utils/useFileSystem';
 import { useAdminAuth } from '../utils/useAdminAuth';
 import AdminAuthModal from '../components/AdminAuthModal';
-import { playTrashSound } from '../utils/macAudioEngine';
-import { Trash2, Lock, Edit3 } from 'lucide-react';
+import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
+import { Trash2, Lock, Edit3, Copy, Clipboard, CopyPlus } from 'lucide-react';
 
 const HINT_KEY = 'ishantos.hint.dismissed';
-const POSITIONS_KEY = 'ishantos.desktop.positions';
+const POSITIONS_KEY = 'ishantos.desktop.positions_v3';
+const LEGACY_POSITIONS_KEY = 'ishantos.desktop.positions';
 
-const ITEM_W = 92;
-const ITEM_H = 96;
-const TOP_MARGIN = 44;
+const ITEM_W = 100;
+const ITEM_H = 108;
+const TOP_MARGIN = 38;
 const LEFT_MARGIN = 20;
 
-function getDefaultPosition(index) {
+function getDefaultPosition(index, totalItems = 7) {
   const windowH = typeof window !== 'undefined' ? window.innerHeight : 800;
-  const usableH = Math.max(200, windowH - 140);
-  const rowsPerCol = Math.max(1, Math.floor(usableH / ITEM_H));
+  // If window height comfortably allows the default desktop items in 1 column:
+  const minHeightForSingleCol = TOP_MARGIN + totalItems * ITEM_H + 40;
+  const usableH = Math.max(200, windowH - 80);
+  const rowsPerCol = (windowH >= minHeightForSingleCol) 
+    ? totalItems 
+    : Math.max(1, Math.floor(usableH / ITEM_H));
 
   const col = Math.floor(index / rowsPerCol);
   const row = index % rowsPerCol;
@@ -41,7 +46,7 @@ function loadSavedPositions() {
 }
 
 /**
- * The desktop: seven items that can be dragged freely to any location on the desktop screen,
+ * The desktop: items that can be dragged freely to any location on the desktop screen,
  * scattered randomly, or snapped back into a clean grid alignment.
  *
  * Below the phone breakpoint this becomes a touch list for mobile accessibility.
@@ -52,12 +57,28 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
   const [showHint, setShowHint] = useState(false);
   const [activeDragId, setActiveDragId] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameText, setRenameText] = useState('');
   const renameInputRef = useRef(null);
 
-  const { version, deleteNode, renameNode } = useFileSystem();
+  const { version, deleteNode, renameNode, clipboard, copyNode, pasteNode, duplicateNode } = useFileSystem();
   const { isAdmin } = useAdminAuth();
+
+  const handleAuthSuccess = async () => {
+    setShowAuthModal(false);
+    if (pendingAction) {
+      if (pendingAction.type === 'paste') {
+        await pasteNode(pendingAction.targetId || 'home');
+        playMacClick(isMuted);
+      } else if (pendingAction.type === 'duplicate') {
+        const parentId = getParentId(pendingAction.targetId) || 'home';
+        await duplicateNode(pendingAction.targetId, parentId);
+        playMacClick(isMuted);
+      }
+      setPendingAction(null);
+    }
+  };
 
   const startRenaming = useCallback((node) => {
     if (!isAdmin) {
@@ -87,7 +108,15 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
       }, 50);
     }
   }, [renamingId]);
-  const items = useMemo(() => DESKTOP_ORDER.map(findNode).filter(Boolean), [version]);
+
+  const items = useMemo(() => {
+    const homeNode = findNode('home');
+    const allChildren = homeNode?.children || [];
+    const ordered = DESKTOP_ORDER.map(findNode).filter(Boolean);
+    const orderedIds = new Set(ordered.map((n) => n.id));
+    const extra = allChildren.filter((n) => n && !orderedIds.has(n.id));
+    return [...ordered, ...extra];
+  }, [version]);
 
   const [positions, setPositions] = useState(() => {
     const saved = loadSavedPositions();
@@ -96,11 +125,26 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
       if (saved[node.id] && typeof saved[node.id].x === 'number' && typeof saved[node.id].y === 'number') {
         initial[node.id] = saved[node.id];
       } else {
-        initial[node.id] = getDefaultPosition(idx);
+        initial[node.id] = getDefaultPosition(idx, items.length);
       }
     });
     return initial;
   });
+
+  // Assign default positions to newly added/pasted items
+  useEffect(() => {
+    setPositions((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      items.forEach((node, idx) => {
+        if (!next[node.id]) {
+          next[node.id] = getDefaultPosition(idx, items.length);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [items]);
 
   const dragInfo = useRef(null);
 
@@ -109,7 +153,7 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
     const winW = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const winH = typeof window !== 'undefined' ? window.innerHeight : 800;
     const minX = 24;
-    const maxX = Math.max(minX + 50, winW - 120);
+    const maxX = Math.max(minX + 50, winW - 130);
     const minY = 46;
     const maxY = Math.max(minY + 50, winH - 160);
 
@@ -122,10 +166,10 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
       let y = minY;
       let ok = false;
 
-      while (attempts < 35 && !ok) {
+      while (attempts < 40 && !ok) {
         x = Math.round(minX + Math.random() * (maxX - minX));
         y = Math.round(minY + Math.random() * (maxY - minY));
-        const collision = placed.some(p => Math.hypot(p.x - x, p.y - y) < 85);
+        const collision = placed.some(p => Math.hypot(p.x - x, p.y - y) < 105);
         if (!collision) ok = true;
         attempts++;
       }
@@ -144,11 +188,12 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
   const resetPositions = useCallback(() => {
     const gridPos = {};
     items.forEach((node, idx) => {
-      gridPos[node.id] = getDefaultPosition(idx);
+      gridPos[node.id] = getDefaultPosition(idx, items.length);
     });
     setPositions(gridPos);
     try {
       localStorage.removeItem(POSITIONS_KEY);
+      localStorage.removeItem(LEGACY_POSITIONS_KEY);
     } catch {}
   }, [items]);
 
@@ -158,9 +203,11 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
     const handleReset = () => resetPositions();
     window.addEventListener('ishantos:randomize-folders', handleRandomize);
     window.addEventListener('ishantos:reset-folders', handleReset);
+    window.addEventListener('storage', handleReset);
     return () => {
       window.removeEventListener('ishantos:randomize-folders', handleRandomize);
       window.removeEventListener('ishantos:reset-folders', handleReset);
+      window.removeEventListener('storage', handleReset);
     };
   }, [randomizePositions, resetPositions]);
 
@@ -343,6 +390,32 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
                   playTrashSound(isMuted);
                   deleteNode(node.id);
                   setSelectedId(null);
+                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
+                  e.preventDefault();
+                  copyNode(node);
+                  playMacClick(isMuted);
+                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'd' || e.key === 'D')) {
+                  e.preventDefault();
+                  if (!isAdmin) {
+                    setPendingAction({ type: 'duplicate', targetId: node.id });
+                    setShowAuthModal(true);
+                  } else {
+                    const parentId = getParentId(node.id) || 'home';
+                    duplicateNode(node.id, parentId);
+                    playMacClick(isMuted);
+                  }
+                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'v' || e.key === 'V')) {
+                  e.preventDefault();
+                  if (clipboard) {
+                    const targetParentId = node.kind === 'folder' ? node.id : 'home';
+                    if (!isAdmin) {
+                      setPendingAction({ type: 'paste', targetId: targetParentId });
+                      setShowAuthModal(true);
+                    } else {
+                      pasteNode(targetParentId);
+                      playMacClick(isMuted);
+                    }
+                  }
                 }
               }}
               onContextMenu={(e) => {
@@ -353,7 +426,7 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
               }}
               title={node.description}
               tabIndex={0}
-              className={`absolute pointer-events-auto touch-none w-[88px] p-1.5 rounded-lg flex flex-col items-center text-center gap-1 focus:outline-none select-none transition-transform ${
+              className={`absolute pointer-events-auto touch-none w-[100px] p-1.5 rounded-lg flex flex-col items-center text-center gap-1 focus:outline-none select-none transition-transform ${
                 isDragging
                   ? 'cursor-grabbing z-30 scale-105 opacity-90'
                   : 'cursor-grab z-10 hover:scale-[1.02]'
@@ -381,7 +454,7 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
                   onClick={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="text-[11.5px] font-medium leading-tight px-1.5 py-0.5 rounded bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-white border-2 border-[#007aff] shadow-xl outline-none text-center max-w-[96px] w-full z-40"
+                  className="text-[11.5px] font-medium leading-tight px-1.5 py-0.5 rounded bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-white border-2 border-[#007aff] shadow-xl outline-none text-center max-w-[100px] w-full z-40"
                 />
               ) : (
                 <span
@@ -391,7 +464,8 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
                       startRenaming(node);
                     }
                   }}
-                  className={`text-[11.5px] font-medium leading-tight line-clamp-2 px-1.5 py-0.5 rounded-[4px] pointer-events-auto transition-colors ${
+                  title={node.name}
+                  className={`text-[11.5px] font-medium leading-tight whitespace-nowrap max-w-[98px] truncate px-1.5 py-0.5 rounded-[4px] pointer-events-auto transition-colors ${
                     isSelected
                       ? 'bg-[#007aff] text-white shadow-sm font-semibold'
                       : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
@@ -401,7 +475,7 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
                 </span>
               )}
               {node.kind === 'folder' && (
-                <span className="text-[9.5px] text-white/80 font-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none -mt-0.5">
+                <span className="text-[9.5px] text-white/80 font-normal whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none -mt-0.5">
                   {itemCountLabel(node)}
                 </span>
               )}
@@ -411,86 +485,161 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
         })}
       </div>
 
-      {menu && (
-        <div
-          style={{ top: menu.y, left: menu.x }}
-          className="fixed z-[99998] w-52 py-1.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl text-[12px] select-none animate-in fade-in zoom-in-95 duration-100"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={() => { onOpenNode(findNode(menu.id)); setMenu(null); }}
-            className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
+      {menu && (() => {
+        const targetNode = findNode(menu.id);
+        return (
+          <div
+            style={{ top: menu.y, left: menu.x }}
+            className="fixed z-[99998] w-56 py-1.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl text-[12px] select-none animate-in fade-in zoom-in-95 duration-100"
+            onClick={(e) => e.stopPropagation()}
           >
-            <span>📂 Open</span>
-          </button>
-          <button
-            onClick={() => { onGetInfo(menu.id); setMenu(null); }}
-            className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
-          >
-            <span>ℹ️ Get Info</span>
-          </button>
-          {isAdmin ? (
-            <>
-              <div className="my-1 border-t border-black/10 dark:border-white/15" />
-              <button
-                onClick={() => {
-                  const target = findNode(menu.id);
-                  setMenu(null);
-                  if (target) startRenaming(target);
-                }}
-                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2 transition-colors"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Rename</span>
-              </button>
-              <button
-                onClick={() => {
-                  playTrashSound(isMuted);
-                  deleteNode(menu.id);
-                  setMenu(null);
-                }}
-                className="w-full text-left px-3.5 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 font-medium flex items-center gap-2 transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="my-1 border-t border-black/10 dark:border-white/15" />
-              <button
-                onClick={() => {
+            <button
+              onClick={() => { if (targetNode) onOpenNode(targetNode); setMenu(null); }}
+              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
+            >
+              <span>📂 Open</span>
+            </button>
+            <button
+              onClick={() => { onGetInfo(menu.id); setMenu(null); }}
+              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
+            >
+              <span>ℹ️ Get Info</span>
+            </button>
+
+            <div className="my-1 border-t border-black/10 dark:border-white/15" />
+
+            {/* Copy */}
+            <button
+              onClick={() => {
+                if (targetNode) {
+                  copyNode(targetNode);
+                  playMacClick(isMuted);
+                }
+                setMenu(null);
+              }}
+              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+              </span>
+              <span className="text-[10px] opacity-60 font-mono">⌘C</span>
+            </button>
+
+            {/* Duplicate */}
+            <button
+              onClick={async () => {
+                const targetId = menu.id;
+                setMenu(null);
+                if (!isAdmin) {
+                  setPendingAction({ type: 'duplicate', targetId });
                   setShowAuthModal(true);
+                  return;
+                }
+                const parentId = getParentId(targetId) || 'home';
+                await duplicateNode(targetId, parentId);
+                playMacClick(isMuted);
+              }}
+              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <CopyPlus className="w-3.5 h-3.5" />
+                <span>Duplicate</span>
+              </span>
+              <span className="text-[10px] opacity-60 font-mono">⌘D</span>
+            </button>
+
+            {/* Paste into Folder if folder and clipboard has node */}
+            {targetNode?.kind === 'folder' && clipboard && (
+              <button
+                onClick={async () => {
+                  const folderId = menu.id;
                   setMenu(null);
+                  if (!isAdmin) {
+                    setPendingAction({ type: 'paste', targetId: folderId });
+                    setShowAuthModal(true);
+                    return;
+                  }
+                  await pasteNode(folderId);
+                  playMacClick(isMuted);
                 }}
-                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2 text-amber-600 dark:text-amber-400 transition-colors"
+                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between text-blue-600 dark:text-blue-400 hover:text-white transition-colors"
               >
-                <Lock className="w-3.5 h-3.5" />
-                <span>Admin Login to Edit...</span>
+                <span className="flex items-center gap-2 truncate mr-2">
+                  <Clipboard className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Paste into "{targetNode.name}"</span>
+                </span>
+                <span className="text-[10px] opacity-60 font-mono shrink-0">⌘V</span>
               </button>
-            </>
-          )}
-          <div className="my-1 border-t border-black/10 dark:border-white/15" />
-          <button
-            onClick={() => { randomizePositions(); setMenu(null); }}
-            className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
-          >
-            <span>🎲 Scatter Folders Randomly</span>
-          </button>
-          <button
-            onClick={() => { resetPositions(); setMenu(null); }}
-            className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
-          >
-            <span>🧹 Clean Up / Reset Grid</span>
-          </button>
-        </div>
-      )}
+            )}
+
+            {isAdmin ? (
+              <>
+                <div className="my-1 border-t border-black/10 dark:border-white/15" />
+                <button
+                  onClick={() => {
+                    const target = findNode(menu.id);
+                    setMenu(null);
+                    if (target) startRenaming(target);
+                  }}
+                  className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2 transition-colors"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Rename</span>
+                </button>
+                <button
+                  onClick={() => {
+                    playTrashSound(isMuted);
+                    deleteNode(menu.id);
+                    setMenu(null);
+                  }}
+                  className="w-full text-left px-3.5 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 font-medium flex items-center gap-2 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="my-1 border-t border-black/10 dark:border-white/15" />
+                <button
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    setMenu(null);
+                  }}
+                  className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2 text-amber-600 dark:text-amber-400 transition-colors"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Admin Login to Edit...</span>
+                </button>
+              </>
+            )}
+            <div className="my-1 border-t border-black/10 dark:border-white/15" />
+            <button
+              onClick={() => { randomizePositions(); setMenu(null); }}
+              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
+            >
+              <span>🎲 Scatter Folders Randomly</span>
+            </button>
+            <button
+              onClick={() => { resetPositions(); setMenu(null); }}
+              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
+            >
+              <span>🧹 Clean Up / Reset Grid</span>
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Admin Auth Modal for Desktop context menu */}
       <AdminAuthModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        initialPrompt="Enter admin password to manage and delete folders and files."
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingAction(null);
+        }}
+        onSuccess={handleAuthSuccess}
+        initialPrompt="Enter admin password to manage, paste, and duplicate folders and files."
       />
 
       {/* The recruiter shortcut — quiet, and only shown once */}

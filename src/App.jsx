@@ -13,9 +13,12 @@ import ProjectModal from './components/ProjectModal';
 import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
 import { CircularProgressCombined } from './components/CircularProgress';
-import { playBootChime } from './utils/macAudioEngine';
+import { playBootChime, playMacClick } from './utils/macAudioEngine';
 import { DEFAULT_SETTINGS } from './lib/siteSettings';
 import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
+import { useFileSystem } from './utils/useFileSystem';
+import { useAdminAuth } from './utils/useAdminAuth';
+import AdminAuthModal from './components/AdminAuthModal';
 
 export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -36,6 +39,29 @@ export default function App() {
   const [settingsInitialTab, setSettingsInitialTab] = useState('wallpaper');
   const [desktopContextMenu, setDesktopContextMenu] = useState(null);
   const [desktopNotice, setDesktopNotice] = useState(null);
+
+  const { clipboard, pasteNode } = useFileSystem();
+  const { isAdmin } = useAdminAuth();
+  const [showDesktopAuthModal, setShowDesktopAuthModal] = useState(false);
+
+  const handleDesktopPaste = async () => {
+    setDesktopContextMenu(null);
+    if (!clipboard) return;
+    if (!isAdmin) {
+      setShowDesktopAuthModal(true);
+      return;
+    }
+    await pasteNode('home');
+    playMacClick(isMuted);
+  };
+
+  const handleDesktopAuthSuccess = async () => {
+    setShowDesktopAuthModal(false);
+    if (clipboard) {
+      await pasteNode('home');
+      playMacClick(isMuted);
+    }
+  };
 
   const osRef = useRef(null);
   const videoRef = useRef(null);
@@ -528,9 +554,21 @@ export default function App() {
           {desktopContextMenu && (
             <div 
               style={{ top: `${desktopContextMenu.y}px`, left: `${desktopContextMenu.x}px` }}
-              className="fixed z-[99999] w-52 bg-white/85 dark:bg-slate-900/90 backdrop-blur-2xl rounded-xl shadow-2xl border border-white/40 dark:border-slate-700/60 py-1 text-xs text-slate-800 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-100 font-sans select-none"
+              className="fixed z-[99999] w-56 bg-white/85 dark:bg-slate-900/90 backdrop-blur-2xl rounded-xl shadow-2xl border border-white/40 dark:border-slate-700/60 py-1 text-xs text-slate-800 dark:text-slate-100 animate-in fade-in zoom-in-95 duration-100 font-sans select-none"
               onClick={(e) => e.stopPropagation()}
             >
+              {clipboard && (
+                <>
+                  <button 
+                    onClick={handleDesktopPaste}
+                    className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium text-blue-600 dark:text-blue-400 hover:text-white transition-colors"
+                  >
+                    <span className="truncate mr-2">📥 Paste "{clipboard.name}"</span>
+                    <span className="text-[10px] opacity-60 font-mono">⌘V</span>
+                  </button>
+                  <div className="my-1 border-t border-slate-300/40 dark:border-slate-700/40" />
+                </>
+              )}
               <button 
                 onClick={() => { setDesktopContextMenu(null); osRef.current?.openPalette(); }}
                 className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white flex items-center justify-between font-medium transition-colors"
@@ -573,6 +611,13 @@ export default function App() {
             </div>
           )}
 
+          {/* Admin Auth Modal for desktop wallpaper paste */}
+          <AdminAuthModal
+            isOpen={showDesktopAuthModal}
+            onClose={() => setShowDesktopAuthModal(false)}
+            onSuccess={handleDesktopAuthSuccess}
+            initialPrompt="Enter admin password to paste files or folders onto the Desktop."
+          />
         </div>
 
 

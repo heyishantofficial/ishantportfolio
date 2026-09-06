@@ -18,8 +18,40 @@ export const DEFAULT_SETTINGS = {
     soundEffects: true,
     statusMessage: '',
     contactEmail: 'ishant.vibecode@gmail.com'
-  }
+  },
+  folderIcons: {}
 };
+
+// In-memory reactive folder icons store
+let currentFolderIcons = {};
+
+if (typeof window !== 'undefined') {
+  try {
+    const cached = localStorage.getItem('site_folderIcons');
+    if (cached) {
+      currentFolderIcons = JSON.parse(cached) || {};
+    }
+  } catch {}
+}
+
+export function getFolderIcon(nodeId) {
+  if (!nodeId) return null;
+  return currentFolderIcons[nodeId] || null;
+}
+
+export function getAllFolderIcons() {
+  return { ...currentFolderIcons };
+}
+
+export function setLocalFolderIcons(icons) {
+  currentFolderIcons = { ...(icons || {}) };
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('site_folderIcons', JSON.stringify(currentFolderIcons));
+    } catch {}
+    window.dispatchEvent(new CustomEvent('ishantos:folder-icons-updated', { detail: currentFolderIcons }));
+  }
+}
 
 // Wallpapers that can be published globally. Uploaded wallpapers are blob: URLs
 // scoped to the admin's own browser, so they can never be shown to a visitor.
@@ -75,11 +107,15 @@ export async function fetchSiteSettings() {
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) throw new Error();
     const data = await res.json();
+    const folderIcons = (data.folderIcons && typeof data.folderIcons === 'object') ? data.folderIcons : DEFAULT_SETTINGS.folderIcons;
+    setLocalFolderIcons(folderIcons);
+
     return {
       wallpaper: data.wallpaper || DEFAULT_SETTINGS.wallpaper,
       lockWallpaper: data.lockWallpaper || DEFAULT_SETTINGS.lockWallpaper,
       socialLinks: { ...DEFAULT_SETTINGS.socialLinks, ...(data.socialLinks || {}) },
       dashboardConfig: { ...DEFAULT_SETTINGS.dashboardConfig, ...(data.dashboardConfig || {}) },
+      folderIcons,
       updatedAt: data.updatedAt || null,
       isServerConnected: true
     };
@@ -90,11 +126,16 @@ export async function fetchSiteSettings() {
       const lockWp = localStorage.getItem('site_lockWallpaper');
       const storedSocials = localStorage.getItem('site_socialLinks');
       const storedDashboard = localStorage.getItem('site_dashboardConfig');
+      const storedFolderIcons = localStorage.getItem('site_folderIcons');
+      const folderIcons = storedFolderIcons ? JSON.parse(storedFolderIcons) : DEFAULT_SETTINGS.folderIcons;
+      setLocalFolderIcons(folderIcons);
+
       return {
         wallpaper: wp || DEFAULT_SETTINGS.wallpaper,
         lockWallpaper: lockWp || DEFAULT_SETTINGS.lockWallpaper,
         socialLinks: storedSocials ? { ...DEFAULT_SETTINGS.socialLinks, ...JSON.parse(storedSocials) } : DEFAULT_SETTINGS.socialLinks,
         dashboardConfig: storedDashboard ? { ...DEFAULT_SETTINGS.dashboardConfig, ...JSON.parse(storedDashboard) } : DEFAULT_SETTINGS.dashboardConfig,
+        folderIcons,
         updatedAt: null,
         isServerConnected: false
       };
@@ -116,9 +157,11 @@ export async function verifyAdminPassword(password) {
   }
 }
 
-export async function saveSiteSettings({ password, wallpaper, lockWallpaper, socialLinks, dashboardConfig }) {
+export async function saveSiteSettings({ password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons }) {
   try {
-    return await postJson('/api/settings', { password, wallpaper, lockWallpaper, socialLinks, dashboardConfig });
+    const res = await postJson('/api/settings', { password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons });
+    if (folderIcons) setLocalFolderIcons(folderIcons);
+    return res;
   } catch (err) {
     // Fallback: save to localStorage on static host
     if (password === getStoredPassword()) {
@@ -127,8 +170,23 @@ export async function saveSiteSettings({ password, wallpaper, lockWallpaper, soc
         if (lockWallpaper) localStorage.setItem('site_lockWallpaper', lockWallpaper);
         if (socialLinks) localStorage.setItem('site_socialLinks', JSON.stringify(socialLinks));
         if (dashboardConfig) localStorage.setItem('site_dashboardConfig', JSON.stringify(dashboardConfig));
+        if (folderIcons) setLocalFolderIcons(folderIcons);
       } catch {}
-      return { ok: true, wallpaper, lockWallpaper, socialLinks, dashboardConfig, fallback: true };
+      return { ok: true, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, fallback: true };
+    }
+    throw err;
+  }
+}
+
+export async function saveFolderIcons({ password, folderIcons }) {
+  try {
+    const res = await postJson('/api/settings/folder-icons', { password, folderIcons });
+    setLocalFolderIcons(folderIcons);
+    return res;
+  } catch (err) {
+    if (password === getStoredPassword()) {
+      setLocalFolderIcons(folderIcons);
+      return { ok: true, folderIcons, fallback: true };
     }
     throw err;
   }
@@ -148,4 +206,5 @@ export async function changeAdminPassword({ password, newPassword }) {
     throw err;
   }
 }
+
 

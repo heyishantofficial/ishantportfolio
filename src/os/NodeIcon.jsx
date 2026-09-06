@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Sparkles, Mail, Link2, Image as ImageIcon, Film, Music, File, Globe } from 'lucide-react';
 import { isYouTubeUrl, getYouTubeThumbnail, isInstagramUrl } from '../utils/mediaHelpers';
+import { FolderArtwork } from '../data/folderIconsCatalog';
+import { getFolderIcon } from '../lib/siteSettings';
 
 function YouTubeGlyph({ size = 20, className = '' }) {
   return (
@@ -36,22 +38,30 @@ function InstagramGlyph({ size = 20, className = '' }) {
  * the desktop, Spotlight and the command palette — so a node looks the same
  * wherever the visitor runs into it.
  *
- * Folders use the real macOS folder artwork; video files and YouTube links
- * render rich 16:9 thumbnail cards just like macOS QuickLook.
+ * Folders use custom configured icon artwork (or standard macOS folder artwork);
+ * video files and YouTube links render rich 16:9 thumbnail cards just like macOS QuickLook.
  */
 export default function NodeIcon({ node, size = 48, className = '' }) {
   const [imgError, setImgError] = useState(false);
+  const [folderIconKey, setFolderIconKey] = useState(() => getFolderIcon(node?.id) || node?.icon || null);
   const px = `${size}px`;
+
+  useEffect(() => {
+    setFolderIconKey(getFolderIcon(node?.id) || node?.icon || null);
+    const handleUpdate = () => {
+      setFolderIconKey(getFolderIcon(node?.id) || node?.icon || null);
+    };
+    window.addEventListener('ishantos:folder-icons-updated', handleUpdate);
+    return () => window.removeEventListener('ishantos:folder-icons-updated', handleUpdate);
+  }, [node?.id, node?.icon]);
 
   if (node.kind === 'folder') {
     return (
-      <img
-        src="/icons/Folder.png"
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-        style={{ width: px, height: px }}
-        className={`object-contain drop-shadow-md select-none pointer-events-none ${className}`}
+      <FolderArtwork
+        iconKey={folderIconKey}
+        size={size}
+        className={className}
+        alt={node.name}
       />
     );
   }

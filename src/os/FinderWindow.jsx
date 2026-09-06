@@ -436,7 +436,11 @@ export default function FinderWindow({
 
       {/* Current Folder Title */}
       <div className="flex items-center gap-1.5 min-w-0 mx-1">
-        <img src="/icons/Folder.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0 drop-shadow-sm opacity-90" />
+        {node ? (
+          <NodeIcon node={node} size={15} className="shrink-0 drop-shadow-sm opacity-90" />
+        ) : (
+          <img src="/icons/Folder.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0 drop-shadow-sm opacity-90" />
+        )}
         <h2 className="text-[13px] font-semibold tracking-tight text-[#1d1d1f] dark:text-[#f5f5f7] truncate">
           {node?.name || 'Finder'}
         </h2>

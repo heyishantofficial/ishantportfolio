@@ -16,6 +16,7 @@ import {
   SafariModal,
   SystemInfoModal
 } from './macDockModals';
+import RetroArcadeApp from './RetroArcade/RetroArcadeApp';
 import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
 
 export default function MacDock({ 
@@ -45,7 +46,9 @@ export default function MacDock({
   socialLinks,
   onUpdateSocialLinks,
   dashboardConfig,
-  onUpdateDashboardConfig
+  onUpdateDashboardConfig,
+  folderIcons,
+  onUpdateFolderIcons
 }) {
   const [mouseX, setMouseX] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
@@ -103,6 +106,14 @@ export default function MacDock({
       type: "app",
       renderIcon: () => (
         <img src="/icons/Photos.png" alt="Photos" className="w-full h-full object-contain drop-shadow-md select-none" />
+      )
+    },
+    {
+      id: "arcade",
+      name: "Retro Arcade",
+      type: "app",
+      renderIcon: () => (
+        <img src="/icons/Games.png" alt="Retro Arcade" className="w-full h-full object-contain drop-shadow-md select-none" />
       )
     },
     {
@@ -266,6 +277,14 @@ export default function MacDock({
       {openApps.photos && (
         <PhotosModal onClose={() => onCloseApp('photos')} />
       )}
+      {openApps.arcade && (
+        <RetroArcadeApp 
+          onClose={() => onCloseApp('arcade')} 
+          isMuted={isMuted}
+          onToggleMute={onToggleMute}
+          volume={volume}
+        />
+      )}
       {openApps.youtube && (
         <YouTubeModal 
           youtubeUrl={socialLinks?.youtube}
@@ -317,6 +336,8 @@ export default function MacDock({
           onUpdateSocialLinks={onUpdateSocialLinks}
           dashboardConfig={dashboardConfig}
           onUpdateDashboardConfig={onUpdateDashboardConfig}
+          folderIcons={folderIcons}
+          onUpdateFolderIcons={onUpdateFolderIcons}
         />
       )}
       {openApps.trash && (

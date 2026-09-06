@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Folder, Music, FileText, Globe, Sparkles, X } from 'lucide-react';
+import { Search, Folder, Music, FileText, Globe, Sparkles, X, Gamepad2 } from 'lucide-react';
 import NodeIcon from '../os/NodeIcon';
 import { getPath, searchNodes } from '../data/ishantOS';
 import { playSpotlightSound, playMacClick } from '../utils/macAudioEngine';
@@ -30,7 +30,8 @@ export default function MacSpotlight({ onClose, onLaunchApp, onOpenNode, isMuted
     { id: 'app-safari', title: 'Safari', subtitle: "Ishant's internet", group: 'APPLICATIONS', icon: Globe, action: () => onLaunchApp('safari') },
     { id: 'app-notes', title: 'Notes', subtitle: 'Scratchpad', group: 'APPLICATIONS', icon: FileText, action: () => onLaunchApp('notes') },
     { id: 'app-ipod', title: 'Music', subtitle: 'iPod Classic', group: 'APPLICATIONS', icon: Music, action: () => onLaunchApp('ipod') },
-    { id: 'app-system', title: 'About This Mac', subtitle: 'System information', group: 'APPLICATIONS', icon: Sparkles, action: () => onLaunchApp('system-info') }
+    { id: 'app-system', title: 'About This Mac', subtitle: 'System information', group: 'APPLICATIONS', icon: Sparkles, action: () => onLaunchApp('system-info') },
+    { id: 'app-arcade', title: 'Retro Arcade', subtitle: 'Classic Games: Pac-Man, Tetris, Super Mario, Road Rage', keywords: 'arcade games game pacman tetris mario road rage', group: 'APPLICATIONS', icon: Gamepad2, action: () => onLaunchApp('arcade') }
   ]), [onLaunchApp]);
 
   const results = useMemo(() => {
@@ -50,7 +51,7 @@ export default function MacSpotlight({ onClose, onLaunchApp, onOpenNode, isMuted
     }));
 
     const appHits = apps.filter(
-      (a) => a.title.toLowerCase().includes(q) || a.subtitle.toLowerCase().includes(q)
+      (a) => a.title.toLowerCase().includes(q) || a.subtitle.toLowerCase().includes(q) || (a.keywords && a.keywords.includes(q))
     );
 
     return [...nodeHits, ...appHits];

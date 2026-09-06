@@ -37,7 +37,8 @@ const FALLBACK = {
     soundEffects: true,
     statusMessage: '',
     contactEmail: 'ishant.vibecode@gmail.com'
-  }
+  },
+  folderIcons: {}
 };
 
 if (!process.env.ADMIN_PASSWORD) {
@@ -61,6 +62,7 @@ async function readState() {
       lockWallpaper: VALID_WALLPAPERS.includes(parsed.lockWallpaper) ? parsed.lockWallpaper : FALLBACK.lockWallpaper,
       socialLinks: { ...FALLBACK.socialLinks, ...(parsed.socialLinks || {}) },
       dashboardConfig: { ...FALLBACK.dashboardConfig, ...(parsed.dashboardConfig || {}) },
+      folderIcons: parsed.folderIcons && typeof parsed.folderIcons === 'object' ? parsed.folderIcons : (FALLBACK.folderIcons || {}),
       updatedAt: parsed.updatedAt || null,
       // A password set through the UI overrides the env var.
       password: typeof parsed.password === 'string' && parsed.password ? parsed.password : null
@@ -400,13 +402,14 @@ app.post('/api/upload', async (req, res) => {
 // Public: every visitor reads the current global defaults on boot.
 // The stored password is never included in the response.
 app.get('/api/settings', async (_req, res) => {
-  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, updatedAt } = await readState();
+  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, updatedAt } = await readState();
   res.set('Cache-Control', 'no-store');
   res.json({
     wallpaper,
     lockWallpaper,
     socialLinks,
     dashboardConfig,
+    folderIcons: folderIcons || {},
     updatedAt,
     serverStatus: 'online'
   });
@@ -422,7 +425,7 @@ app.post('/api/settings/verify', async (req, res) => {
 app.post('/api/settings', async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
 
-  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig } = req.body || {};
+  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons } = req.body || {};
   if (wallpaper && !VALID_WALLPAPERS.includes(wallpaper)) {
     return res.status(400).json({
       error: 'Uploaded wallpapers only exist in your own browser, so they cannot be published to visitors. Pick one of the built-in wallpapers.'
@@ -441,6 +444,7 @@ app.post('/api/settings', async (req, res) => {
     ...(lockWallpaper ? { lockWallpaper } : {}), 
     ...(socialLinks ? { socialLinks: { ...state.socialLinks, ...socialLinks } } : {}),
     ...(dashboardConfig ? { dashboardConfig: { ...state.dashboardConfig, ...dashboardConfig } } : {}),
+    ...(folderIcons && typeof folderIcons === 'object' ? { folderIcons } : {}),
     updatedAt: new Date().toISOString() 
   };
   try {
@@ -450,11 +454,40 @@ app.post('/api/settings', async (req, res) => {
       lockWallpaper: next.lockWallpaper, 
       socialLinks: next.socialLinks,
       dashboardConfig: next.dashboardConfig,
+      folderIcons: next.folderIcons,
       updatedAt: next.updatedAt 
     });
   } catch (err) {
     console.error('[settings] write failed:', err);
     res.status(500).json({ error: 'Could not save settings.' });
+  }
+});
+
+// Admin: update folder icons directly
+app.post('/api/settings/folder-icons', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+  const { folderIcons } = req.body || {};
+  if (!folderIcons || typeof folderIcons !== 'object') {
+    return res.status(400).json({ error: 'Missing or invalid folderIcons object' });
+  }
+
+  const state = await readState();
+  const next = {
+    ...state,
+    folderIcons,
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    await writeState(next);
+    res.json({
+      ok: true,
+      folderIcons: next.folderIcons,
+      updatedAt: next.updatedAt
+    });
+  } catch (err) {
+    console.error('[settings] folder-icons write failed:', err);
+    res.status(500).json({ error: 'Could not save folder icons.' });
   }
 });
 

@@ -801,7 +801,26 @@ Onboarding without a manual.
 Feedback on every input.
 Difficulty that respects the player.
 
-Most apps still cannot do this.`)
+Most apps still cannot do this.`),
+      text('random-games-arcade', 'arcade-classics.txt', `RETRO ARCADE (4 CLASSIC GAMES)
+
+Built into the macOS Dock and Spotlight:
+
+1. PAC-MAN (1980)
+   Classic maze navigation with Blinky, Pinky, Inky & Clyde.
+   Power pellets, fruit bonuses, and ghost hunting.
+
+2. TETRIS (1984)
+   Falling polyominoes, wall kicks, ghost piece projections,
+   and 4-line Tetris clears.
+
+3. SUPER MARIO (1985)
+   NES 2D platforming, coin-bumping question blocks,
+   stomping Goombas, and conquering the flagpole.
+
+4. ROAD RAGE (1988)
+   High-speed highway racing. Weave between commuter cars,
+   trucks, and police cruisers. Grab nitro and gas.`)
     ]),
 
     text('random-shower-thoughts', 'shower-thoughts.txt', `SHOWER THOUGHTS

@@ -71,6 +71,7 @@ export default function App() {
 
   const [socialLinks, setSocialLinks] = useState(DEFAULT_SETTINGS.socialLinks);
   const [dashboardConfig, setDashboardConfig] = useState(DEFAULT_SETTINGS.dashboardConfig);
+  const [folderIcons, setFolderIcons] = useState(DEFAULT_SETTINGS.folderIcons);
 
   // Open apps state object
   const [openApps, setOpenApps] = useState({
@@ -81,7 +82,8 @@ export default function App() {
     settings: false,
     youtube: false,
     linkedin: false,
-    instagram: false
+    instagram: false,
+    arcade: false
   });
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
@@ -163,6 +165,7 @@ export default function App() {
       if (settings?.wallpaper) setWallpaper(settings.wallpaper);
       if (settings?.lockWallpaper) setLockWallpaper(settings.lockWallpaper);
       if (settings?.socialLinks) setSocialLinks(settings.socialLinks);
+      if (settings?.folderIcons) setFolderIcons(settings.folderIcons);
       if (settings?.dashboardConfig) {
         setDashboardConfig(settings.dashboardConfig);
         if (settings.dashboardConfig.soundEffects === false) {
@@ -363,7 +366,8 @@ export default function App() {
       instagram: "Instagram Profile",
       safari: "Chrome Browser",
       photos: "Photos Library",
-      mail: "Mail"
+      mail: "Mail",
+      arcade: "Retro Arcade"
     };
     setActiveAppTitle(titleMap[targetApp] || targetApp);
     setOpenApps(prev => ({
@@ -521,6 +525,8 @@ export default function App() {
             onUpdateSocialLinks={setSocialLinks}
             dashboardConfig={dashboardConfig}
             onUpdateDashboardConfig={setDashboardConfig}
+            folderIcons={folderIcons}
+            onUpdateFolderIcons={setFolderIcons}
           />
 
           {/* Nexus Cyberdeck Music Player Floating Widget */}

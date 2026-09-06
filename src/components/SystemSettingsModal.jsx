@@ -1,10 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { 
-  Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2, Share2, Link, ExternalLink, LayoutGrid, User, RotateCcw, CheckCircle2
+  Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2, Share2, Link, ExternalLink, LayoutGrid, User, RotateCcw, CheckCircle2, Folder, FolderCog, Search, AlertCircle
 } from "lucide-react";
 import { MacWindow } from "./macDockModals";
 import { playMacClick } from "../utils/macAudioEngine";
-import { verifyAdminPassword, saveSiteSettings, changeAdminPassword, isPublishable, checkServerHealth } from "../lib/siteSettings";
+import { verifyAdminPassword, saveSiteSettings, saveFolderIcons, changeAdminPassword, isPublishable, checkServerHealth, getAllFolderIcons, setLocalFolderIcons } from "../lib/siteSettings";
+import { 
+  FOLDER_COLOR_PRESETS, FOLDER_BADGE_PRESETS, FOLDER_SYSTEM_APP_PRESETS, FolderArtwork, findPresetById 
+} from "../data/folderIconsCatalog";
+import { processIconFile, fileToBase64 } from "../utils/icnsParser";
+import { allNodes } from "../data/ishantOS";
 
 export default function SystemSettingsModal({ 
   onClose,
@@ -27,7 +32,9 @@ export default function SystemSettingsModal({
   socialLinks,
   onUpdateSocialLinks,
   dashboardConfig,
-  onUpdateDashboardConfig
+  onUpdateDashboardConfig,
+  folderIcons,
+  onUpdateFolderIcons
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   
@@ -36,6 +43,23 @@ export default function SystemSettingsModal({
   const [settingsPasswordInput, setSettingsPasswordInput] = useState("");
   const [settingsAuthError, setSettingsAuthError] = useState("");
   const [isShaking, setIsShaking] = useState(false);
+
+  // Folder Icons Customization State
+  const [localFolderIcons, setLocalFolderIconsState] = useState(() => folderIcons || getAllFolderIcons() || {});
+  const [folderIconsSavedNotice, setFolderIconsSavedNotice] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState('work');
+  const [folderSearchQuery, setFolderSearchQuery] = useState('');
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [customUrlInput, setCustomUrlInput] = useState('');
+  const [folderTabCategory, setFolderTabCategory] = useState('colors'); // 'colors' | 'badges' | 'apps' | 'upload'
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (folderIcons) {
+      setLocalFolderIconsState(folderIcons);
+    }
+  }, [folderIcons]);
 
   // Social Links & Dashboard Config State
   const [localSocials, setLocalSocials] = useState(socialLinks || {
@@ -200,6 +224,114 @@ export default function SystemSettingsModal({
     }
   };
 
+  const availableFolders = useMemo(() => {
+    try {
+      const nodes = allNodes ? allNodes() : [];
+      const folders = nodes.filter((n) => n && n.kind === 'folder' && n.id !== 'home');
+      const desktopPriority = ['about-me', 'experience', 'work', 'ai-lab', 'random', 'contact'];
+      return folders.sort((a, b) => {
+        const aIdx = desktopPriority.indexOf(a.id);
+        const bIdx = desktopPriority.indexOf(b.id);
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const filteredFolders = useMemo(() => {
+    if (!folderSearchQuery.trim()) return availableFolders;
+    const q = folderSearchQuery.toLowerCase();
+    return availableFolders.filter(
+      (f) => f.name?.toLowerCase().includes(q) || f.id?.toLowerCase().includes(q) || f.description?.toLowerCase().includes(q)
+    );
+  }, [availableFolders, folderSearchQuery]);
+
+  const activeFolder = useMemo(() => {
+    return availableFolders.find((f) => f.id === selectedFolderId) || availableFolders[0] || null;
+  }, [availableFolders, selectedFolderId]);
+
+  const handleAssignIcon = (folderId, iconKey) => {
+    const next = { ...localFolderIcons };
+    if (!iconKey || iconKey === 'default') {
+      delete next[folderId];
+    } else {
+      next[folderId] = iconKey;
+    }
+    setLocalFolderIconsState(next);
+    setLocalFolderIcons(next);
+    if (onUpdateFolderIcons) onUpdateFolderIcons(next);
+  };
+
+  const handleSaveFolderIcons = async () => {
+    try {
+      await saveFolderIcons({
+        password: adminPassword.current,
+        folderIcons: localFolderIcons
+      });
+      if (onUpdateFolderIcons) onUpdateFolderIcons(localFolderIcons);
+      setFolderIconsSavedNotice(true);
+      setTimeout(() => setFolderIconsSavedNotice(false), 2200);
+    } catch (err) {
+      console.error('Failed to save folder icons:', err);
+    }
+  };
+
+  const handleResetAllFolderIcons = () => {
+    if (window.confirm('Reset all customized folder icons back to macOS defaults?')) {
+      setLocalFolderIconsState({});
+      setLocalFolderIcons({});
+      if (onUpdateFolderIcons) onUpdateFolderIcons({});
+    }
+  };
+
+  const handleIconFileUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !activeFolder) return;
+    setIsUploadingIcon(true);
+    setUploadError('');
+
+    try {
+      const processedFile = await processIconFile(file);
+      const base64 = await fileToBase64(processedFile);
+
+      // Upload to server /api/upload
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: adminPassword.current,
+          filename: processedFile.name,
+          dataBase64: base64,
+          mimeType: processedFile.type || 'image/png'
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
+        handleAssignIcon(activeFolder.id, data.url);
+      } else {
+        handleAssignIcon(activeFolder.id, base64);
+      }
+    } catch (err) {
+      console.error('Icon upload failed:', err);
+      setUploadError(err.message || 'Failed to process icon file');
+    } finally {
+      setIsUploadingIcon(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleApplyCustomUrl = (e) => {
+    e.preventDefault();
+    if (!customUrlInput.trim() || !activeFolder) return;
+    handleAssignIcon(activeFolder.id, customUrlInput.trim());
+    setCustomUrlInput('');
+  };
+
   const handlePublishDefaults = async () => {
     setPublishState("saving");
     setPublishError("");
@@ -209,10 +341,12 @@ export default function SystemSettingsModal({
         wallpaper,
         lockWallpaper,
         socialLinks: localSocials,
-        dashboardConfig: localDashboard
+        dashboardConfig: localDashboard,
+        folderIcons: localFolderIcons
       });
       if (onUpdateSocialLinks) onUpdateSocialLinks(localSocials);
       if (onUpdateDashboardConfig) onUpdateDashboardConfig(localDashboard);
+      if (onUpdateFolderIcons) onUpdateFolderIcons(localFolderIcons);
       if (res?.fallback) {
         setPublishError("⚠️ Saved in this browser only: Backend /api/settings is unreachable. Ensure Dokploy Publish Directory is empty and Port is 3000.");
         setPublishState("error");
@@ -364,6 +498,7 @@ export default function SystemSettingsModal({
                 <div className="space-y-1">
                   {[
                     { id: "socials", label: "Social & Links Hub", icon: Share2, badge: "Live" },
+                    { id: "folder-icons", label: "Folder Icons", icon: Folder, badge: "Custom" },
                     { id: "dock", label: "Dock & Desktop", icon: LayoutGrid },
                     { id: "profile", label: "Identity & Status", icon: User },
                     { id: "wallpaper", label: "Desktop Wallpaper", icon: Image },
@@ -653,6 +788,379 @@ export default function SystemSettingsModal({
                         className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
                       />
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: Folder Icons Customization */}
+              {activeTab === "folder-icons" && (
+                <div className="space-y-4">
+                  {/* Tab Top Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight mb-0.5 flex items-center gap-2">
+                        <Folder className="w-4 h-4 text-blue-500" />
+                        <span>Folder Icons & Customization</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Change individual folder icons one by one. Presets and uploaded .icns images sync to cloud for all visitors.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleResetAllFolderIcons}
+                        className="px-3 py-1.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Reset all customized folders to macOS default"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Reset All</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSaveFolderIcons}
+                        className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                      >
+                        {folderIconsSavedNotice ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                        <span>{folderIconsSavedNotice ? "Saved!" : "Quick Save"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Main Two-Column Layout */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-start">
+                    
+                    {/* Left Column: Folders Picker List */}
+                    <div className="md:col-span-5 p-3 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2.5 shadow-sm">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                          Folders ({filteredFolders.length})
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {Object.keys(localFolderIcons).length} Custom
+                        </span>
+                      </div>
+
+                      {/* Search Filter */}
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="Filter folders..."
+                          value={folderSearchQuery}
+                          onChange={(e) => setFolderSearchQuery(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300/60 dark:border-slate-700/60 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                        />
+                      </div>
+
+                      {/* Scrollable Folder Item List */}
+                      <div className="max-h-[300px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                        {filteredFolders.map((folder) => {
+                          const isSelected = selectedFolderId === folder.id;
+                          const currentIcon = localFolderIcons[folder.id];
+                          const hasCustom = Boolean(currentIcon);
+
+                          return (
+                            <button
+                              key={folder.id}
+                              type="button"
+                              onClick={() => {
+                                playMacClick(isMuted);
+                                setSelectedFolderId(folder.id);
+                              }}
+                              className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all cursor-pointer ${
+                                isSelected
+                                  ? "bg-blue-600 text-white font-bold shadow-md"
+                                  : "hover:bg-white/50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="shrink-0 w-6 h-6 flex items-center justify-center">
+                                  <FolderArtwork iconKey={currentIcon} size={22} alt={folder.name} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs truncate font-medium">
+                                    {folder.name}
+                                  </div>
+                                  <div className={`text-[9px] truncate ${isSelected ? "text-blue-100" : "text-slate-500 dark:text-slate-400"}`}>
+                                    {folder.id}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {hasCustom && (
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? "bg-amber-300" : "bg-blue-500"}`} title="Has custom icon" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Right Column: Active Folder Icon Inspector & Editor */}
+                    <div className="md:col-span-7 space-y-3">
+                      {activeFolder ? (
+                        <>
+                          {/* Folder Card Showcase */}
+                          <div className="p-3 rounded-2xl bg-white/50 dark:bg-white/10 backdrop-blur-2xl border border-white/60 dark:border-white/20 shadow-sm flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-12 h-12 shrink-0 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 flex items-center justify-center p-1 shadow-inner">
+                                <FolderArtwork iconKey={localFolderIcons[activeFolder.id]} size={40} alt={activeFolder.name} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5">
+                                  <span>{activeFolder.name}</span>
+                                  {localFolderIcons[activeFolder.id] && (
+                                    <span className="px-1.5 py-0.2 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400 text-[9px] font-bold border border-blue-500/20">
+                                      Custom
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                  {activeFolder.description || activeFolder.id}
+                                </div>
+                              </div>
+                            </div>
+
+                            {localFolderIcons[activeFolder.id] && (
+                              <button
+                                type="button"
+                                onClick={() => handleAssignIcon(activeFolder.id, null)}
+                                className="px-2.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-rose-500/15 hover:border-rose-500 hover:text-rose-600 text-slate-600 dark:text-slate-300 text-[11px] font-semibold transition-all cursor-pointer shrink-0"
+                              >
+                                Revert Default
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Category Selector Tabs */}
+                          <div className="p-1 rounded-xl bg-slate-200/60 dark:bg-slate-800/60 flex items-center gap-1 text-[11px] font-semibold">
+                            {[
+                              { id: 'colors', label: 'Colors' },
+                              { id: 'badges', label: 'Badges' },
+                              { id: 'apps', label: 'Apps' },
+                              { id: 'upload', label: 'Upload .icns' }
+                            ].map((cat) => (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  playMacClick(isMuted);
+                                  setFolderTabCategory(cat.id);
+                                }}
+                                className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer ${
+                                  folderTabCategory === cat.id
+                                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-bold"
+                                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                                }`}
+                              >
+                                {cat.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Category 1: Colors Grid */}
+                          {folderTabCategory === 'colors' && (
+                            <div className="p-2.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2">
+                              <div className="text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                                Tinted macOS Colors
+                              </div>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                {FOLDER_COLOR_PRESETS.map((preset) => {
+                                  const current = localFolderIcons[activeFolder.id];
+                                  const isSelected = (preset.id === 'default' && !current) || current === preset.id;
+
+                                  return (
+                                    <button
+                                      key={preset.id}
+                                      type="button"
+                                      onClick={() => {
+                                        playMacClick(isMuted);
+                                        handleAssignIcon(activeFolder.id, preset.id);
+                                      }}
+                                      className={`p-1.5 rounded-xl flex flex-col items-center gap-1 border transition-all cursor-pointer relative ${
+                                        isSelected
+                                          ? "bg-blue-500/15 border-blue-500 shadow-sm ring-2 ring-blue-500/40"
+                                          : "border-slate-200/50 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5"
+                                      }`}
+                                    >
+                                      <div className="w-8 h-8 flex items-center justify-center">
+                                        <FolderArtwork iconKey={preset.id} size={30} alt={preset.name} />
+                                      </div>
+                                      <span className="text-[9px] font-medium text-slate-700 dark:text-slate-200 text-center truncate w-full">
+                                        {preset.name}
+                                      </span>
+                                      {isSelected && (
+                                        <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-blue-500 text-white flex items-center justify-center text-[7px] font-bold">
+                                          ✓
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Category 2: Badged Folders Grid */}
+                          {folderTabCategory === 'badges' && (
+                            <div className="p-2.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2">
+                              <div className="text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                                Embossed macOS Badged Folders
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                {FOLDER_BADGE_PRESETS.map((preset) => {
+                                  const current = localFolderIcons[activeFolder.id];
+                                  const isSelected = current === preset.id;
+
+                                  return (
+                                    <button
+                                      key={preset.id}
+                                      type="button"
+                                      onClick={() => {
+                                        playMacClick(isMuted);
+                                        handleAssignIcon(activeFolder.id, preset.id);
+                                      }}
+                                      className={`p-1.5 rounded-xl flex flex-col items-center gap-1 border transition-all cursor-pointer relative ${
+                                        isSelected
+                                          ? "bg-blue-500/15 border-blue-500 shadow-sm ring-2 ring-blue-500/40"
+                                          : "border-slate-200/50 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5"
+                                      }`}
+                                    >
+                                      <div className="w-8 h-8 flex items-center justify-center">
+                                        <FolderArtwork iconKey={preset.id} size={30} alt={preset.name} />
+                                      </div>
+                                      <div className="text-center w-full min-w-0">
+                                        <div className="text-[9px] font-bold text-slate-800 dark:text-slate-100 truncate">
+                                          {preset.name}
+                                        </div>
+                                      </div>
+                                      {isSelected && (
+                                        <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-blue-500 text-white flex items-center justify-center text-[7px] font-bold">
+                                          ✓
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Category 3: System Apps Grid */}
+                          {folderTabCategory === 'apps' && (
+                            <div className="p-2.5 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-2">
+                              <div className="text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                                Apple System App Icons
+                              </div>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                {FOLDER_SYSTEM_APP_PRESETS.map((preset) => {
+                                  const current = localFolderIcons[activeFolder.id];
+                                  const isSelected = current === preset.id;
+
+                                  return (
+                                    <button
+                                      key={preset.id}
+                                      type="button"
+                                      onClick={() => {
+                                        playMacClick(isMuted);
+                                        handleAssignIcon(activeFolder.id, preset.id);
+                                      }}
+                                      className={`p-1.5 rounded-xl flex flex-col items-center gap-1 border transition-all cursor-pointer relative ${
+                                        isSelected
+                                          ? "bg-blue-500/15 border-blue-500 shadow-sm ring-2 ring-blue-500/40"
+                                          : "border-slate-200/50 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5"
+                                      }`}
+                                    >
+                                      <div className="w-8 h-8 flex items-center justify-center">
+                                        <img src={preset.src} alt={preset.name} className="w-7 h-7 object-contain drop-shadow-sm" />
+                                      </div>
+                                      <span className="text-[9px] font-medium text-slate-700 dark:text-slate-200 text-center truncate w-full">
+                                        {preset.name}
+                                      </span>
+                                      {isSelected && (
+                                        <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-blue-500 text-white flex items-center justify-center text-[7px] font-bold">
+                                          ✓
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Category 4: Upload .icns / Custom URL */}
+                          {folderTabCategory === 'upload' && (
+                            <div className="p-3 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-3">
+                              {/* Drag & Drop / File Input Box */}
+                              <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="border-2 border-dashed border-blue-500/40 hover:border-blue-500/80 rounded-2xl p-3.5 text-center cursor-pointer bg-blue-500/5 hover:bg-blue-500/10 transition-all flex flex-col items-center justify-center gap-1.5 group"
+                              >
+                                <input
+                                  type="file"
+                                  ref={fileInputRef}
+                                  onChange={handleIconFileUpload}
+                                  accept=".icns,.png,.jpg,.jpeg,.svg,.webp,.ico"
+                                  className="hidden"
+                                />
+
+                                <div className="w-9 h-9 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                  {isUploadingIcon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                </div>
+
+                                <div>
+                                  <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                                    {isUploadingIcon ? "Parsing .icns & Uploading to Cloud..." : "Upload an Apple .icns or PNG file"}
+                                  </div>
+                                  <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 max-w-xs">
+                                    Native .icns parser extracts 1024px retina PNG and hosts it permanently on server for all visitors.
+                                  </div>
+                                </div>
+                              </div>
+
+                              {uploadError && (
+                                <div className="p-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-[10px] flex items-center gap-1.5">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <span>{uploadError}</span>
+                                </div>
+                              )}
+
+                              {/* Custom URL Option */}
+                              <div className="pt-2 border-t border-slate-200/50 dark:border-slate-800">
+                                <label className="block text-[10px] font-bold text-slate-700 dark:text-slate-200 mb-1">
+                                  Or paste direct image URL:
+                                </label>
+                                <form onSubmit={handleApplyCustomUrl} className="flex gap-2">
+                                  <input
+                                    type="url"
+                                    placeholder="https://example.com/icon.png"
+                                    value={customUrlInput}
+                                    onChange={(e) => setCustomUrlInput(e.target.value)}
+                                    className="flex-1 px-2.5 py-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300/60 dark:border-slate-700/60 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100"
+                                  />
+                                  <button
+                                    type="submit"
+                                    disabled={!customUrlInput.trim()}
+                                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer"
+                                  >
+                                    Apply
+                                  </button>
+                                </form>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="p-8 text-center text-slate-400 text-xs">
+                          No folder selected. Pick a folder on the left to customize its icon.
+                        </div>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               )}
@@ -1145,10 +1653,10 @@ export default function SystemSettingsModal({
                 {publishState === "error"
                   ? publishError
                   : publishState === "saved"
-                  ? "Saved — all future visitors will now load these wallpapers, social links, and dashboard settings."
+                  ? "Saved — all future visitors will now load these wallpapers, custom folder icons, social links, and dashboard settings."
                   : !canPublish
                   ? "Uploaded wallpapers live only in your browser and can't be published. Pick a built-in one."
-                  : "Saves current wallpapers, social links, and dashboard preferences for all future visitors."}
+                  : "Saves current wallpapers, custom folder icons, social links, and dashboard preferences for all future visitors."}
               </p>
             </div>
           </div>

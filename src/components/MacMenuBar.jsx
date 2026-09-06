@@ -196,12 +196,12 @@ export default function MacMenuBar({
               items={[
                 { label: 'New Finder Window', shortcut: '\u2318N', action: () => onNewFinderWindow && onNewFinderWindow() },
                 { separator: true },
-                { label: 'Open Experience', action: () => openFromMenu('experience') },
+                { label: 'Open The Journey', action: () => openFromMenu('experience') },
                 { label: 'Open Work', action: () => openFromMenu('work') },
-                { label: 'Open AI Lab', action: () => openFromMenu('ai-lab') },
+                { label: 'Open side projects', action: () => openFromMenu('ai-lab') },
                 { label: 'Open Resume', action: () => openFromMenu('resume') },
                 { separator: true },
-                { label: 'Close Window', shortcut: '\u2318W', action: () => onCloseWindow && onCloseWindow() }
+                { label: 'Close Window', shortcut: '⌘W', action: () => onCloseWindow && onCloseWindow() }
               ]}
             />
             <MenuBarMenu
@@ -210,11 +210,11 @@ export default function MacMenuBar({
               onToggle={() => { playMacClick(isMuted); setOpenMenu(openMenu === 'go' ? null : 'go'); setShowAppleMenu(false); }}
               onClose={() => setOpenMenu(null)}
               items={[
-                { label: 'Home', shortcut: '\u21E7\u2318H', action: () => openFromMenu('home') },
+                { label: 'Home', shortcut: '⇧⌘H', action: () => openFromMenu('home') },
                 { separator: true },
-                { label: 'Experience', action: () => openFromMenu('experience') },
+                { label: 'The Journey', action: () => openFromMenu('experience') },
                 { label: 'Work', action: () => openFromMenu('work') },
-                { label: 'AI Lab', action: () => openFromMenu('ai-lab') },
+                { label: 'side projects', action: () => openFromMenu('ai-lab') },
                 { label: 'About Me', action: () => openFromMenu('about-me') },
                 { label: 'Random', action: () => openFromMenu('random') },
                 { label: 'Contact', action: () => openFromMenu('contact') },

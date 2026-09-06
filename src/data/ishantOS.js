@@ -70,12 +70,12 @@ const link = (id, name, href, description) => ({
 });
 
 // ---------------------------------------------------------------------------
-// EXPERIENCE
+// THE JOURNEY
 // ---------------------------------------------------------------------------
 
 const EXPERIENCE = folder(
   'experience',
-  'EXPERIENCE',
+  'The Journey',
   'Where I have worked, and what I actually did there.',
   [
     folder('exp-emami', 'Emami', 'Brand & Creative Strategist · Feb 2026 — Present', [
@@ -546,12 +546,12 @@ const WORK = folder(
 );
 
 // ---------------------------------------------------------------------------
-// AI LAB
+// SIDE PROJECTS
 // ---------------------------------------------------------------------------
 
 const AI_LAB = folder(
   'ai-lab',
-  'AI LAB',
+  'side projects',
   'Things I build with AI. Some finished, some honestly not.',
   [
     project('lab-notchdrawer', 'NotchDrawer', {

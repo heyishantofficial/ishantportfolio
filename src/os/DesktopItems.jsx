@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import NodeIcon from './NodeIcon';
 import { DESKTOP_ORDER, findNode, itemCountLabel } from '../data/ishantOS';
 import { useFileSystem } from '../utils/useFileSystem';
+import { useAdminAuth } from '../utils/useAdminAuth';
+import AdminAuthModal from '../components/AdminAuthModal';
+import { playTrashSound } from '../utils/macAudioEngine';
+import { Trash2, Lock, Edit3 } from 'lucide-react';
 
 const HINT_KEY = 'ishantos.hint.dismissed';
 const POSITIONS_KEY = 'ishantos.desktop.positions';
@@ -42,13 +46,47 @@ function loadSavedPositions() {
  *
  * Below the phone breakpoint this becomes a touch list for mobile accessibility.
  */
-export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayClick }) {
+export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayClick, isMuted }) {
   const [selectedId, setSelectedId] = useState(null);
   const [menu, setMenu] = useState(null);
   const [showHint, setShowHint] = useState(false);
   const [activeDragId, setActiveDragId] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameText, setRenameText] = useState('');
+  const renameInputRef = useRef(null);
 
-  const { version } = useFileSystem();
+  const { version, deleteNode, renameNode } = useFileSystem();
+  const { isAdmin } = useAdminAuth();
+
+  const startRenaming = useCallback((node) => {
+    if (!isAdmin) {
+      setShowAuthModal(true);
+      return;
+    }
+    setRenamingId(node.id);
+    setRenameText(node.name);
+  }, [isAdmin]);
+
+  const commitRename = useCallback(async (nodeId) => {
+    if (renameText && renameText.trim()) {
+      await renameNode(nodeId, renameText.trim());
+    }
+    setRenamingId(null);
+  }, [renameText, renameNode]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingId(null);
+  }, []);
+
+  useEffect(() => {
+    if (renamingId) {
+      setTimeout(() => {
+        renameInputRef.current?.focus();
+        renameInputRef.current?.select();
+      }, 50);
+    }
+  }, [renamingId]);
   const items = useMemo(() => DESKTOP_ORDER.map(findNode).filter(Boolean), [version]);
 
   const [positions, setPositions] = useState(() => {
@@ -268,7 +306,10 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
     <>
       <div
         className="mac-desktop-icons absolute inset-0 z-[10] pointer-events-none select-none overflow-hidden"
-        onClick={() => setSelectedId(null)}
+        onClick={() => {
+          setSelectedId(null);
+          if (renamingId) commitRename(renamingId);
+        }}
       >
         {items.map((node) => {
           const isSelected = selectedId === node.id;
@@ -289,7 +330,21 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onDoubleClick={(e) => { e.stopPropagation(); onOpenNode(node); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') onOpenNode(node); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (isAdmin) {
+                    e.preventDefault();
+                    startRenaming(node);
+                  } else {
+                    onOpenNode(node);
+                  }
+                } else if ((e.key === 'Backspace' || e.key === 'Delete') && isAdmin) {
+                  e.preventDefault();
+                  playTrashSound(isMuted);
+                  deleteNode(node.id);
+                  setSelectedId(null);
+                }
+              }}
               onContextMenu={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -307,15 +362,44 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
               <div className="relative mb-0.5 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]">
                 <NodeIcon node={node} size={54} />
               </div>
-              <span
-                className={`text-[11.5px] font-medium leading-tight line-clamp-2 px-1.5 py-0.5 rounded-[4px] pointer-events-none transition-colors ${
-                  isSelected
-                    ? 'bg-[#007aff] text-white shadow-sm font-semibold'
-                    : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
-                }`}
-              >
-                {node.name}
-              </span>
+              {renamingId === node.id ? (
+                <input
+                  ref={renameInputRef}
+                  type="text"
+                  value={renameText}
+                  onChange={(e) => setRenameText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      commitRename(node.id);
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      cancelRename();
+                    }
+                  }}
+                  onBlur={() => commitRename(node.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="text-[11.5px] font-medium leading-tight px-1.5 py-0.5 rounded bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-white border-2 border-[#007aff] shadow-xl outline-none text-center max-w-[96px] w-full z-40"
+                />
+              ) : (
+                <span
+                  onClick={(e) => {
+                    if (isSelected && isAdmin) {
+                      e.stopPropagation();
+                      startRenaming(node);
+                    }
+                  }}
+                  className={`text-[11.5px] font-medium leading-tight line-clamp-2 px-1.5 py-0.5 rounded-[4px] pointer-events-auto transition-colors ${
+                    isSelected
+                      ? 'bg-[#007aff] text-white shadow-sm font-semibold'
+                      : 'text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
+                  }`}
+                >
+                  {node.name}
+                </span>
+              )}
               {node.kind === 'folder' && (
                 <span className="text-[9.5px] text-white/80 font-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] pointer-events-none -mt-0.5">
                   {itemCountLabel(node)}
@@ -345,6 +429,47 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
           >
             <span>ℹ️ Get Info</span>
           </button>
+          {isAdmin ? (
+            <>
+              <div className="my-1 border-t border-black/10 dark:border-white/15" />
+              <button
+                onClick={() => {
+                  const target = findNode(menu.id);
+                  setMenu(null);
+                  if (target) startRenaming(target);
+                }}
+                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2 transition-colors"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Rename</span>
+              </button>
+              <button
+                onClick={() => {
+                  playTrashSound(isMuted);
+                  deleteNode(menu.id);
+                  setMenu(null);
+                }}
+                className="w-full text-left px-3.5 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 font-medium flex items-center gap-2 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="my-1 border-t border-black/10 dark:border-white/15" />
+              <button
+                onClick={() => {
+                  setShowAuthModal(true);
+                  setMenu(null);
+                }}
+                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2 text-amber-600 dark:text-amber-400 transition-colors"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Admin Login to Edit...</span>
+              </button>
+            </>
+          )}
           <div className="my-1 border-t border-black/10 dark:border-white/15" />
           <button
             onClick={() => { randomizePositions(); setMenu(null); }}
@@ -360,6 +485,13 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
           </button>
         </div>
       )}
+
+      {/* Admin Auth Modal for Desktop context menu */}
+      <AdminAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialPrompt="Enter admin password to manage and delete folders and files."
+      />
 
       {/* The recruiter shortcut — quiet, and only shown once */}
       {showHint && (

@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   ChevronLeft, ChevronRight, Search, LayoutGrid, List as ListIcon,
   FileText, Sparkles, Mail, Link2, FileType2, Info, HardDrive, X,
-  Lock, Unlock, FolderPlus, Upload, Edit3, Trash2, ShieldCheck, Film, FilePlus
+  Lock, Unlock, FolderPlus, Upload, Edit3, Trash2, ShieldCheck, Film, FilePlus,
+  Cloud, CloudOff, RefreshCw
 } from 'lucide-react';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
@@ -10,6 +11,7 @@ import { DESKTOP_ORDER, findNode, getParentId, getPath, itemCountLabel } from '.
 import { useAdminAuth } from '../utils/useAdminAuth';
 import { useFileSystem } from '../utils/useFileSystem';
 import { readFileAsNode } from '../utils/fsStorage';
+import { playTrashSound } from '../utils/macAudioEngine';
 import AdminAuthModal from '../components/AdminAuthModal';
 import AddWorkLinkModal from '../components/AddWorkLinkModal';
 
@@ -36,7 +38,7 @@ const KIND_ICON = {
 
 export default function FinderWindow({
   win, isActive, isCompact, onClose, onMinimize, onToggleMaximize, onFocus, onMove, onResize,
-  onOpenNode, onGetInfo, onPlayClick
+  onOpenNode, onGetInfo, onPlayClick, isMuted
 }) {
   // Per-window navigation history, so Back/Forward behave like Finder's.
   const [history, setHistory] = useState([win.nodeId || 'home']);
@@ -51,7 +53,7 @@ export default function FinderWindow({
 
   // Admin & FileSystem hooks
   const { isAdmin, lock } = useAdminAuth();
-  const { addFolder, addFile, addWorkLink, renameNode, deleteNode, version } = useFileSystem();
+  const { addFolder, addFile, addWorkLink, renameNode, deleteNode, version, syncStatus, syncFSToServer } = useFileSystem();
 
   // Auth modal & pending action states
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -86,13 +88,20 @@ export default function FinderWindow({
     setRenamingId(null);
   }, [currentId]);
 
-  const navigate = (nodeId) => {
+  const navigate = useCallback((nodeId) => {
     setHistory((prev) => [...prev.slice(0, cursor + 1), nodeId]);
     setCursor((c) => c + 1);
     setQuery('');
     setSelectedId(null);
     setRenamingId(null);
-  };
+  }, [cursor]);
+
+  // If current folder was deleted, navigate back to home
+  useEffect(() => {
+    if (!node && currentId !== 'home') {
+      navigate('home');
+    }
+  }, [node, currentId, navigate]);
 
   const goBack = () => {
     if (cursor > 0) {
@@ -279,6 +288,9 @@ export default function FinderWindow({
 
   // Auth Success Callback
   const handleAuthSuccess = useCallback(() => {
+    // Automatically trigger cloud sync to push any local folders/notes to the server
+    syncFSToServer();
+
     if (pendingUploadFiles.length > 0) {
       processUploadedFiles(pendingUploadFiles);
       setPendingUploadFiles([]);
@@ -296,7 +308,7 @@ export default function FinderWindow({
       setShowAddLinkModal(true);
       setPendingAction(null);
     }
-  }, [pendingUploadFiles, pendingAction, processUploadedFiles, handleNewFolder, handleNewTextFile, startRenaming]);
+  }, [pendingUploadFiles, pendingAction, processUploadedFiles, handleNewFolder, handleNewTextFile, startRenaming, syncFSToServer]);
 
   // Keyboard navigation
   const handleKeyDown = (e) => {
@@ -317,6 +329,16 @@ export default function FinderWindow({
         }
       }
       return;
+    }
+
+    if (e.metaKey && e.key === 'Backspace') {
+      if (isAdmin && selectedId) {
+        e.preventDefault();
+        playTrashSound(isMuted);
+        deleteNode(selectedId);
+        setSelectedId(null);
+        return;
+      }
     }
 
     if (e.key === 'Backspace' || (e.metaKey && e.key === '[')) {
@@ -470,12 +492,18 @@ export default function FinderWindow({
                 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 ring-1 ring-amber-500/30'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/10'
             }`}
-            title={isAdmin ? 'Admin Mode Active (Click to manage/lock)' : 'Admin Access (Locked - Click to modify)'}
+            title={isAdmin ? (syncStatus?.status === 'syncing' ? 'Syncing to cloud...' : 'Admin Mode Active (Click to manage/lock)') : 'Admin Access (Locked - Click to modify)'}
           >
             {isAdmin ? (
               <div className="relative flex items-center justify-center">
-                <Unlock className="w-3.5 h-3.5" />
-                <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+                {syncStatus?.status === 'syncing' ? (
+                  <RefreshCw className="w-3.5 h-3.5 text-[#007aff] animate-spin" />
+                ) : (
+                  <>
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+                  </>
+                )}
               </div>
             ) : (
               <Lock className="w-3.5 h-3.5" />
@@ -485,12 +513,29 @@ export default function FinderWindow({
           {/* Admin Popover Dropdown when unlocked */}
           {showAdminDropdown && isAdmin && (
             <div
-              className="absolute right-0 top-full mt-1.5 w-48 py-1 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl text-[12px] z-[999] animate-in fade-in zoom-in-95 duration-100"
+              className="absolute right-0 top-full mt-1.5 w-52 py-1 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl text-[12px] z-[999] animate-in fade-in zoom-in-95 duration-100"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-3 py-1.5 flex items-center gap-2 border-b border-black/5 dark:border-white/5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Admin Mode Active</span>
+              <div className="px-3 py-1.5 flex items-center justify-between border-b border-black/5 dark:border-white/5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>Admin Mode</span>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-medium">
+                  {syncStatus?.status === 'syncing' ? (
+                    <span className="text-[#007aff] flex items-center gap-1">
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Saving...
+                    </span>
+                  ) : syncStatus?.status === 'error' ? (
+                    <span className="text-amber-500 flex items-center gap-1" title={syncStatus.message}>
+                      <CloudOff className="w-2.5 h-2.5" /> Offline
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <Cloud className="w-2.5 h-2.5" /> Cloud Live
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => { handleOpenAddLink(); setShowAdminDropdown(false); }}
@@ -515,6 +560,15 @@ export default function FinderWindow({
                 className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 transition-colors"
               >
                 <Upload className="w-3.5 h-3.5" /> Upload Files...
+              </button>
+              <button
+                onClick={async () => {
+                  await syncFSToServer();
+                  setShowAdminDropdown(false);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 transition-colors text-slate-700 dark:text-slate-200"
+              >
+                <Cloud className="w-3.5 h-3.5 text-blue-500" /> Force Sync to Cloud
               </button>
               <div className="my-1 border-t border-black/5 dark:border-white/5" />
               <button
@@ -564,6 +618,12 @@ export default function FinderWindow({
               <button
                 key={id}
                 onClick={() => (item.kind === 'folder' ? navigate(id) : onOpenNode(item))}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedId(id);
+                  setMenu({ x: e.clientX, y: e.clientY, node: item });
+                }}
                 className={`w-full text-left px-2.5 py-1.5 rounded-[6px] text-[12.5px] font-medium flex items-center gap-2.5 transition-all ${
                   isHere
                     ? 'bg-[#007aff] text-white shadow-sm font-semibold'
@@ -846,25 +906,27 @@ export default function FinderWindow({
                   >
                     <Edit3 className="w-3.5 h-3.5" /> Rename
                   </button>
-                  {menu.node.isCustom && (
-                    <button
-                      onClick={() => { deleteNode(menu.node.id); setMenu(null); }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 flex items-center gap-2"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Delete
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      playTrashSound(isMuted);
+                      deleteNode(menu.node.id);
+                      setMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 flex items-center gap-2 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
                 </>
               ) : (
                 <button
                   onClick={() => {
-                    setAuthPrompt('Enter admin password to rename or modify items.');
+                    setAuthPrompt('Enter admin password to rename or delete items.');
                     setShowAuthModal(true);
                     setMenu(null);
                   }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 text-slate-500"
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 text-amber-600 dark:text-amber-400 transition-colors"
                 >
-                  <Lock className="w-3.5 h-3.5" /> Rename (Admin Only)...
+                  <Lock className="w-3.5 h-3.5" /> Admin Login to Edit...
                 </button>
               )}
             </>

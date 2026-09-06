@@ -21,7 +21,7 @@ export default function AdminAuthModal({ isOpen, onClose, onSuccess, initialProm
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!password.trim()) {
       setError('Please enter a password.');
@@ -29,7 +29,7 @@ export default function AdminAuthModal({ isOpen, onClose, onSuccess, initialProm
       return;
     }
 
-    const ok = verifyAdminPassword(password);
+    const ok = await verifyAdminPassword(password);
     if (ok) {
       setError('');
       onSuccess?.();

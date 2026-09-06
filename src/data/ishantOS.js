@@ -19,6 +19,8 @@
 
 import { PROJECTS_DATA } from './projectsData';
 import { getStorageItem, setStorageItem } from '../utils/fsStorage';
+import { fetchServerFilesystem, saveServerFilesystem } from '../lib/filesystemApi';
+import { getAdminPassword } from '../utils/useAdminAuth';
 
 // ---------------------------------------------------------------------------
 // Case studies
@@ -970,22 +972,124 @@ let renamesCache = {};
 let deletedCache = [];
 let editsCache = {};
 
+let syncTimeout = null;
+const fsSyncListeners = new Set();
+let currentSyncStatus = { status: 'idle', message: '', lastSynced: null };
+
+export function subscribeFSSync(fn) {
+  fsSyncListeners.add(fn);
+  fn(currentSyncStatus);
+  return () => fsSyncListeners.delete(fn);
+}
+
+function notifySyncStatus(update) {
+  currentSyncStatus = { ...currentSyncStatus, ...update };
+  fsSyncListeners.forEach((fn) => {
+    try { fn(currentSyncStatus); } catch { /* ignore */ }
+  });
+}
+
+export async function syncFSToServer() {
+  const password = getAdminPassword();
+  if (!password) {
+    return { ok: false, error: 'Admin authentication required.' };
+  }
+
+  notifySyncStatus({ status: 'syncing', message: 'Saving to cloud...' });
+
+  try {
+    const res = await saveServerFilesystem({
+      password,
+      customNodes: customNodesCache,
+      renames: renamesCache,
+      deleted: deletedCache,
+      edits: editsCache
+    });
+
+    notifySyncStatus({
+      status: 'synced',
+      message: 'Saved to cloud for all visitors',
+      lastSynced: res.updatedAt || new Date().toISOString()
+    });
+
+    return { ok: true, data: res };
+  } catch (err) {
+    console.warn('[ishantOS] Cloud sync failed:', err.message);
+    notifySyncStatus({
+      status: 'error',
+      message: err.message || 'Failed to sync to cloud'
+    });
+    return { ok: false, error: err.message };
+  }
+}
+
+export function queueFSSync(delay = 600) {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    syncFSToServer();
+  }, delay);
+}
+
 /**
  * Loads persisted custom folders, uploaded files, body edits and renamed nodes
+ * from Express backend with seamless fallback to IndexedDB.
  */
 export async function loadPersistedFS() {
   try {
-    const [savedCustom, savedRenames, savedDeleted, savedEdits] = await Promise.all([
+    const [serverFS, savedCustom, savedRenames, savedDeleted, savedEdits] = await Promise.all([
+      fetchServerFilesystem(),
       getStorageItem(STORAGE_KEY_CUSTOM, []),
       getStorageItem(STORAGE_KEY_RENAMES, {}),
       getStorageItem(STORAGE_KEY_DELETED, []),
       getStorageItem(STORAGE_KEY_EDITS, {})
     ]);
 
-    customNodesCache = Array.isArray(savedCustom) ? savedCustom : [];
-    renamesCache = savedRenames && typeof savedRenames === 'object' ? savedRenames : {};
-    deletedCache = Array.isArray(savedDeleted) ? savedDeleted : [];
-    editsCache = savedEdits && typeof savedEdits === 'object' ? savedEdits : {};
+    const hasServerData = serverFS && (
+      (Array.isArray(serverFS.customNodes) && serverFS.customNodes.length > 0) ||
+      (serverFS.renames && Object.keys(serverFS.renames).length > 0) ||
+      (Array.isArray(serverFS.deleted) && serverFS.deleted.length > 0) ||
+      (serverFS.edits && Object.keys(serverFS.edits).length > 0) ||
+      serverFS.updatedAt
+    );
+
+    const hasLocalData = Array.isArray(savedCustom) && savedCustom.length > 0;
+
+    if (hasServerData) {
+      customNodesCache = Array.isArray(serverFS.customNodes) ? serverFS.customNodes : [];
+      renamesCache = serverFS.renames && typeof serverFS.renames === 'object' ? serverFS.renames : {};
+      deletedCache = Array.isArray(serverFS.deleted) ? serverFS.deleted : [];
+      editsCache = serverFS.edits && typeof serverFS.edits === 'object' ? serverFS.edits : {};
+
+      // Sync down to local IndexedDB for fast offline/subsequent boots
+      await Promise.all([
+        setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache),
+        setStorageItem(STORAGE_KEY_RENAMES, renamesCache),
+        setStorageItem(STORAGE_KEY_DELETED, deletedCache),
+        setStorageItem(STORAGE_KEY_EDITS, editsCache)
+      ]);
+
+      notifySyncStatus({
+        status: 'synced',
+        message: 'Loaded from cloud',
+        lastSynced: serverFS.updatedAt
+      });
+    } else if (hasLocalData) {
+      // Server has no data yet, but local browser has existing custom nodes (e.g. Ishant's E01-E05)
+      customNodesCache = savedCustom;
+      renamesCache = savedRenames && typeof savedRenames === 'object' ? savedRenames : {};
+      deletedCache = Array.isArray(savedDeleted) ? savedDeleted : [];
+      editsCache = savedEdits && typeof savedEdits === 'object' ? savedEdits : {};
+
+      // If admin password is already in session, auto-upload local nodes to server
+      if (getAdminPassword()) {
+        queueFSSync(200);
+      }
+    } else {
+      customNodesCache = [];
+      renamesCache = {};
+      deletedCache = [];
+      editsCache = {};
+    }
 
     // Apply custom nodes with multi-pass resolution for nested folders
     let pending = [...customNodesCache];
@@ -1086,6 +1190,7 @@ export async function registerCustomNode(parentId, node) {
   await setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache);
 
   notifyFSChange();
+  queueFSSync();
   return true;
 }
 
@@ -1093,6 +1198,9 @@ export async function registerCustomNode(parentId, node) {
  * Renames a folder or file node in the tree
  */
 export async function renameNodeInTree(nodeId, newName) {
+  if (typeof window !== 'undefined' && sessionStorage.getItem('ishant_admin_auth') !== 'true') {
+    return false;
+  }
   const node = INDEX.get(nodeId);
   if (!node) return false;
 
@@ -1101,13 +1209,17 @@ export async function renameNodeInTree(nodeId, newName) {
   await setStorageItem(STORAGE_KEY_RENAMES, renamesCache);
 
   notifyFSChange();
+  queueFSSync();
   return true;
 }
 
 /**
- * Deletes a custom folder or file node from the tree
+ * Deletes a folder or file node from the tree
  */
 export async function deleteNodeFromTree(nodeId) {
+  if (typeof window !== 'undefined' && sessionStorage.getItem('ishant_admin_auth') !== 'true') {
+    return false;
+  }
   const parentId = PARENTS.get(nodeId);
   if (parentId) {
     const parent = INDEX.get(parentId);
@@ -1116,19 +1228,31 @@ export async function deleteNodeFromTree(nodeId) {
     }
   }
 
-  INDEX.delete(nodeId);
-  PARENTS.delete(nodeId);
-
-  // Update storage
-  customNodesCache = customNodesCache.filter((c) => c?.node?.id !== nodeId);
-  await setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache);
-
-  if (!deletedCache.includes(nodeId)) {
-    deletedCache.push(nodeId);
-    await setStorageItem(STORAGE_KEY_DELETED, deletedCache);
+  function removeRecursive(id) {
+    const target = INDEX.get(id);
+    if (target?.children && Array.isArray(target.children)) {
+      for (const child of target.children) {
+        removeRecursive(child.id);
+      }
+    }
+    INDEX.delete(id);
+    PARENTS.delete(id);
+    customNodesCache = customNodesCache.filter((c) => c?.node?.id !== id);
+    if (!deletedCache.includes(id)) {
+      deletedCache.push(id);
+    }
   }
 
+  removeRecursive(nodeId);
+
+  // Update storage
+  await Promise.all([
+    setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache),
+    setStorageItem(STORAGE_KEY_DELETED, deletedCache)
+  ]);
+
   notifyFSChange();
+  queueFSSync();
   return true;
 }
 
@@ -1184,6 +1308,7 @@ export async function updateNodeBodyInTree(nodeId, newBody) {
   await setStorageItem(STORAGE_KEY_EDITS, editsCache);
 
   notifyFSChange();
+  queueFSSync();
   return true;
 }
 

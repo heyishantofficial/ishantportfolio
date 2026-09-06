@@ -14,6 +14,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ishucreationz';
 // Point DATA_DIR at a mounted volume so settings survive redeploys.
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
 const SETTINGS_FILE = path.join(DATA_DIR, 'site-settings.json');
+const FS_FILE = path.join(DATA_DIR, 'filesystem.json');
 
 // Wallpapers that every visitor can load. Uploaded wallpapers are deliberately
 // excluded: they are blob: URLs local to the admin's own browser, so they
@@ -89,8 +90,36 @@ async function requireAdmin(req, res) {
   return true;
 }
 
+async function readFilesystemState() {
+  try {
+    const parsed = JSON.parse(await fs.readFile(FS_FILE, 'utf8'));
+    return {
+      customNodes: Array.isArray(parsed.customNodes) ? parsed.customNodes : [],
+      renames: parsed.renames && typeof parsed.renames === 'object' ? parsed.renames : {},
+      deleted: Array.isArray(parsed.deleted) ? parsed.deleted : [],
+      edits: parsed.edits && typeof parsed.edits === 'object' ? parsed.edits : {},
+      updatedAt: parsed.updatedAt || null
+    };
+  } catch {
+    return {
+      customNodes: [],
+      renames: {},
+      deleted: [],
+      edits: {},
+      updatedAt: null
+    };
+  }
+}
+
+async function writeFilesystemState(state) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  const tmp = `${FS_FILE}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(state, null, 2), 'utf8');
+  await fs.rename(tmp, FS_FILE);
+}
+
 const app = express();
-app.use(express.json({ limit: '16kb' }));
+app.use(express.json({ limit: '50mb' }));
 
 // Health check endpoint for control panel connectivity diagnosis
 app.get('/health', (_req, res) => {
@@ -290,6 +319,44 @@ app.get('/api/version', (_req, res) => {
     version: 'latest-admin-notes',
     timestamp: new Date().toISOString()
   });
+});
+
+// Public: Every visitor reads the persisted filesystem on boot.
+app.get('/api/filesystem', async (_req, res) => {
+  const fsState = await readFilesystemState();
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    ok: true,
+    ...fsState
+  });
+});
+
+// Admin: Save or sync folders, notes, renames, and deletions to the persistent server volume.
+app.post('/api/filesystem', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const { customNodes, renames, deleted, edits } = req.body || {};
+  const current = await readFilesystemState();
+
+  const next = {
+    customNodes: Array.isArray(customNodes) ? customNodes : current.customNodes,
+    renames: renames && typeof renames === 'object' ? renames : current.renames,
+    deleted: Array.isArray(deleted) ? deleted : current.deleted,
+    edits: edits && typeof edits === 'object' ? edits : current.edits,
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    await writeFilesystemState(next);
+    res.json({
+      ok: true,
+      updatedAt: next.updatedAt,
+      customCount: next.customNodes.length
+    });
+  } catch (err) {
+    console.error('[filesystem] write failed:', err);
+    res.status(500).json({ error: 'Could not save filesystem state to server.' });
+  }
 });
 
 // Public: every visitor reads the current global defaults on boot.

@@ -5,17 +5,27 @@ import {
   renameNodeInTree,
   deleteNodeFromTree,
   updateNodeBodyInTree,
-  findNode
+  findNode,
+  subscribeFSSync,
+  syncFSToServer
 } from '../data/ishantOS';
 
 import { isYouTubeUrl, getYouTubeThumbnail, getYouTubeEmbedUrl } from './mediaHelpers';
+import { checkIsAdmin } from './useAdminAuth';
 
 export function useFileSystem() {
   const [version, setVersion] = useState(0);
+  const [syncStatus, setSyncStatus] = useState({ status: 'idle', message: '', lastSynced: null });
 
   useEffect(() => {
     return subscribeFSEvents(() => {
       setVersion((v) => v + 1);
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeFSSync((status) => {
+      setSyncStatus(status);
     });
   }, []);
 
@@ -89,6 +99,10 @@ export function useFileSystem() {
   }, []);
 
   const renameNode = useCallback(async (nodeId, newName) => {
+    if (!checkIsAdmin()) {
+      console.warn('Unauthorized: Renaming is only permitted in Admin Mode.');
+      return false;
+    }
     if (!newName || !newName.trim()) return false;
     return await renameNodeInTree(nodeId, newName.trim());
   }, []);
@@ -98,11 +112,17 @@ export function useFileSystem() {
   }, []);
 
   const deleteNode = useCallback(async (nodeId) => {
+    if (!checkIsAdmin()) {
+      console.warn('Unauthorized: Deleting is only permitted in Admin Mode.');
+      return false;
+    }
     return await deleteNodeFromTree(nodeId);
   }, []);
 
   return {
     version,
+    syncStatus,
+    syncFSToServer,
     addFolder,
     addFile,
     addWorkLink,

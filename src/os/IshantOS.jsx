@@ -144,6 +144,7 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
         onOpenNode={openNode}
         onGetInfo={wm.openGetInfo}
         onPlayClick={click}
+        isMuted={isMuted}
       />
 
       <AnimatePresence>

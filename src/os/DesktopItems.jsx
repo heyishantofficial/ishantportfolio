@@ -399,32 +399,20 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
                 } else if ((e.key === 'Backspace' || e.key === 'Delete') && isAdmin) {
                   e.preventDefault();
                   setDeleteTarget(node);
-                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
+                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C') && isAdmin) {
                   e.preventDefault();
                   copyNode(node);
                   playMacClick(isMuted);
-                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'd' || e.key === 'D')) {
+                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'd' || e.key === 'D') && isAdmin) {
                   e.preventDefault();
-                  if (!isAdmin) {
-                    setPendingAction({ type: 'duplicate', targetId: node.id });
-                    setShowAuthModal(true);
-                  } else {
-                    const parentId = getParentId(node.id) || 'home';
-                    duplicateNode(node.id, parentId);
-                    playMacClick(isMuted);
-                  }
-                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'v' || e.key === 'V')) {
+                  const parentId = getParentId(node.id) || 'home';
+                  duplicateNode(node.id, parentId);
+                  playMacClick(isMuted);
+                } else if ((e.metaKey || e.ctrlKey) && (e.key === 'v' || e.key === 'V') && isAdmin && clipboard) {
                   e.preventDefault();
-                  if (clipboard) {
-                    const targetParentId = node.kind === 'folder' ? node.id : 'home';
-                    if (!isAdmin) {
-                      setPendingAction({ type: 'paste', targetId: targetParentId });
-                      setShowAuthModal(true);
-                    } else {
-                      pasteNode(targetParentId);
-                      playMacClick(isMuted);
-                    }
-                  }
+                  const targetParentId = node.kind === 'folder' ? node.id : 'home';
+                  pasteNode(targetParentId);
+                  playMacClick(isMuted);
                 }
               }}
               onContextMenu={(e) => {
@@ -515,75 +503,65 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
               <span>ℹ️ Get Info</span>
             </button>
 
-            <div className="my-1 border-t border-black/10 dark:border-white/15" />
-
-            {/* Copy */}
-            <button
-              onClick={() => {
-                if (targetNode) {
-                  copyNode(targetNode);
-                  playMacClick(isMuted);
-                }
-                setMenu(null);
-              }}
-              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
-              </span>
-              <span className="text-[10px] opacity-60 font-mono">⌘C</span>
-            </button>
-
-            {/* Duplicate */}
-            <button
-              onClick={async () => {
-                const targetId = menu.id;
-                setMenu(null);
-                if (!isAdmin) {
-                  setPendingAction({ type: 'duplicate', targetId });
-                  setShowAuthModal(true);
-                  return;
-                }
-                const parentId = getParentId(targetId) || 'home';
-                await duplicateNode(targetId, parentId);
-                playMacClick(isMuted);
-              }}
-              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <CopyPlus className="w-3.5 h-3.5" />
-                <span>Duplicate</span>
-              </span>
-              <span className="text-[10px] opacity-60 font-mono">⌘D</span>
-            </button>
-
-            {/* Paste into Folder if folder and clipboard has node */}
-            {targetNode?.kind === 'folder' && clipboard && (
-              <button
-                onClick={async () => {
-                  const folderId = menu.id;
-                  setMenu(null);
-                  if (!isAdmin) {
-                    setPendingAction({ type: 'paste', targetId: folderId });
-                    setShowAuthModal(true);
-                    return;
-                  }
-                  await pasteNode(folderId);
-                  playMacClick(isMuted);
-                }}
-                className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between text-blue-600 dark:text-blue-400 hover:text-white transition-colors"
-              >
-                <span className="flex items-center gap-2 truncate mr-2">
-                  <Clipboard className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">Paste into "{targetNode.name}"</span>
-                </span>
-                <span className="text-[10px] opacity-60 font-mono shrink-0">⌘V</span>
-              </button>
-            )}
-
             {isAdmin ? (
               <>
+                <div className="my-1 border-t border-black/10 dark:border-white/15" />
+
+                {/* Copy */}
+                <button
+                  onClick={() => {
+                    if (targetNode) {
+                      copyNode(targetNode);
+                      playMacClick(isMuted);
+                    }
+                    setMenu(null);
+                  }}
+                  className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </span>
+                  <span className="text-[10px] opacity-60 font-mono">⌘C</span>
+                </button>
+
+                {/* Duplicate */}
+                <button
+                  onClick={async () => {
+                    const targetId = menu.id;
+                    setMenu(null);
+                    const parentId = getParentId(targetId) || 'home';
+                    await duplicateNode(targetId, parentId);
+                    playMacClick(isMuted);
+                  }}
+                  className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <CopyPlus className="w-3.5 h-3.5" />
+                    <span>Duplicate</span>
+                  </span>
+                  <span className="text-[10px] opacity-60 font-mono">⌘D</span>
+                </button>
+
+                {/* Paste into Folder if folder and clipboard has node */}
+                {targetNode?.kind === 'folder' && clipboard && (
+                  <button
+                    onClick={async () => {
+                      const folderId = menu.id;
+                      setMenu(null);
+                      await pasteNode(folderId);
+                      playMacClick(isMuted);
+                    }}
+                    className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between text-blue-600 dark:text-blue-400 hover:text-white transition-colors"
+                  >
+                    <span className="flex items-center gap-2 truncate mr-2">
+                      <Clipboard className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Paste into "{targetNode.name}"</span>
+                    </span>
+                    <span className="text-[10px] opacity-60 font-mono shrink-0">⌘V</span>
+                  </button>
+                )}
+
                 <div className="my-1 border-t border-black/10 dark:border-white/15" />
                 <button
                   onClick={() => {

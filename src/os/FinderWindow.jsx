@@ -341,7 +341,7 @@ export default function FinderWindow({
 
     // Cmd + C (Copy selected item)
     if (meta && e.key.toLowerCase() === 'c') {
-      if (selectedId) {
+      if (isAdmin && selectedId) {
         const target = findNode(selectedId);
         if (target) {
           e.preventDefault();
@@ -353,30 +353,18 @@ export default function FinderWindow({
 
     // Cmd + V (Paste item)
     if (meta && e.key.toLowerCase() === 'v') {
-      if (clipboard) {
+      if (isAdmin && clipboard) {
         e.preventDefault();
-        if (!isAdmin) {
-          setAuthPrompt('Enter admin password to paste items.');
-          setPendingAction({ type: 'paste', targetParentId: currentId });
-          setShowAuthModal(true);
-        } else {
-          pasteNode(currentId);
-        }
+        pasteNode(currentId);
       }
       return;
     }
 
     // Cmd + D (Duplicate selected item)
     if (meta && e.key.toLowerCase() === 'd') {
-      if (selectedId) {
+      if (isAdmin && selectedId) {
         e.preventDefault();
-        if (!isAdmin) {
-          setAuthPrompt('Enter admin password to duplicate items.');
-          setPendingAction({ type: 'duplicate', targetParentId: currentId, nodeId: selectedId });
-          setShowAuthModal(true);
-        } else {
-          duplicateNode(selectedId, currentId);
-        }
+        duplicateNode(selectedId, currentId);
       }
       return;
     }
@@ -888,17 +876,10 @@ export default function FinderWindow({
         >
           {menu.isBackground ? (
             <>
-              {clipboard && (
+              {isAdmin && clipboard && (
                 <>
                   <button
                     onClick={async () => {
-                      if (!isAdmin) {
-                        setAuthPrompt('Enter admin password to paste items.');
-                        setPendingAction({ type: 'paste', targetParentId: currentId });
-                        setShowAuthModal(true);
-                        setMenu(null);
-                        return;
-                      }
                       await pasteNode(currentId);
                       setMenu(null);
                     }}
@@ -985,20 +966,21 @@ export default function FinderWindow({
               >
                 <Info className="w-3.5 h-3.5" /> Get Info
               </button>
-              <button
-                onClick={() => {
-                  copyNode(menu.node);
-                  setMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copy</span>
-                </div>
-                <span className="text-[10px] opacity-60 font-mono">⌘C</span>
-              </button>
-              {isAdmin && (
+            {isAdmin ? (
+              <>
+                <button
+                  onClick={() => {
+                    copyNode(menu.node);
+                    setMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </div>
+                  <span className="text-[10px] opacity-60 font-mono">⌘C</span>
+                </button>
                 <button
                   onClick={async () => {
                     await duplicateNode(menu.node.id, currentId);
@@ -1012,51 +994,43 @@ export default function FinderWindow({
                   </div>
                   <span className="text-[10px] opacity-60 font-mono">⌘D</span>
                 </button>
-              )}
-              {menu.node.kind === 'folder' && clipboard && (
-                <button
-                  onClick={async () => {
-                    if (!isAdmin) {
-                      setAuthPrompt('Enter admin password to paste items.');
-                      setPendingAction({ type: 'paste', targetParentId: menu.node.id });
-                      setShowAuthModal(true);
-                      setMenu(null);
-                      return;
-                    }
-                    await pasteNode(menu.node.id);
-                    setMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between text-[#007aff] dark:text-[#0a84ff] hover:!text-white font-medium"
-                >
-                  <div className="flex items-center gap-2">
-                    <Clipboard className="w-3.5 h-3.5" />
-                    <span className="truncate">Paste into &ldquo;{menu.node.name}&rdquo;</span>
-                  </div>
-                  <span className="text-[10px] opacity-60 font-mono">⌘V</span>
-                </button>
-              )}
-
-              <div className="my-1 border-t border-black/5 dark:border-white/5" />
-
-              {isAdmin ? (
-                <>
+                {menu.node.kind === 'folder' && clipboard && (
                   <button
-                    onClick={() => { startRenaming(menu.node); setMenu(null); }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" /> Rename
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDeleteTarget(menu.node);
+                    onClick={async () => {
+                      await pasteNode(menu.node.id);
                       setMenu(null);
                     }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between text-[#007aff] dark:text-[#0a84ff] hover:!text-white font-medium"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                    <div className="flex items-center gap-2">
+                      <Clipboard className="w-3.5 h-3.5" />
+                      <span className="truncate">Paste into &ldquo;{menu.node.name}&rdquo;</span>
+                    </div>
+                    <span className="text-[10px] opacity-60 font-mono">⌘V</span>
                   </button>
-                </>
-              ) : (
+                )}
+
+                <div className="my-1 border-t border-black/5 dark:border-white/5" />
+
+                <button
+                  onClick={() => { startRenaming(menu.node); setMenu(null); }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2"
+                >
+                  <Edit3 className="w-3.5 h-3.5" /> Rename
+                </button>
+                <button
+                  onClick={() => {
+                    setDeleteTarget(menu.node);
+                    setMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 flex items-center gap-2 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="my-1 border-t border-black/5 dark:border-white/5" />
                 <button
                   onClick={() => {
                     setAuthPrompt('Enter admin password to rename or delete items.');
@@ -1067,7 +1041,8 @@ export default function FinderWindow({
                 >
                   <Lock className="w-3.5 h-3.5" /> Admin Login to Edit...
                 </button>
-              )}
+              </>
+            )}
             </>
           )}
         </div>

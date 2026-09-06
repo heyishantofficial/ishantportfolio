@@ -4,6 +4,7 @@ import { DESKTOP_ORDER, findNode, getParentId, itemCountLabel } from '../data/is
 import { useFileSystem } from '../utils/useFileSystem';
 import { useAdminAuth } from '../utils/useAdminAuth';
 import AdminAuthModal from '../components/AdminAuthModal';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
 import { Trash2, Lock, Edit3, Copy, Clipboard, CopyPlus } from 'lucide-react';
 
@@ -58,12 +59,22 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
   const [activeDragId, setActiveDragId] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameText, setRenameText] = useState('');
   const renameInputRef = useRef(null);
 
   const { version, deleteNode, renameNode, clipboard, copyNode, pasteNode, duplicateNode } = useFileSystem();
   const { isAdmin } = useAdminAuth();
+
+  const handleConfirmDelete = async () => {
+    if (deleteTarget) {
+      playTrashSound(isMuted);
+      await deleteNode(deleteTarget.id);
+      setSelectedId(null);
+      setDeleteTarget(null);
+    }
+  };
 
   const handleAuthSuccess = async () => {
     setShowAuthModal(false);
@@ -387,9 +398,7 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
                   }
                 } else if ((e.key === 'Backspace' || e.key === 'Delete') && isAdmin) {
                   e.preventDefault();
-                  playTrashSound(isMuted);
-                  deleteNode(node.id);
-                  setSelectedId(null);
+                  setDeleteTarget(node);
                 } else if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
                   e.preventDefault();
                   copyNode(node);
@@ -589,8 +598,8 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
                 </button>
                 <button
                   onClick={() => {
-                    playTrashSound(isMuted);
-                    deleteNode(menu.id);
+                    const target = findNode(menu.id) || { id: menu.id, name: 'this item', kind: 'folder' };
+                    setDeleteTarget(target);
                     setMenu(null);
                   }}
                   className="w-full text-left px-3.5 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 font-medium flex items-center gap-2 transition-colors"
@@ -640,6 +649,14 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
         }}
         onSuccess={handleAuthSuccess}
         initialPrompt="Enter admin password to manage, paste, and duplicate folders and files."
+      />
+
+      {/* Confirmation Modal before deleting */}
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        target={deleteTarget}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteTarget(null)}
       />
 
       {/* The recruiter shortcut — quiet, and only shown once */}

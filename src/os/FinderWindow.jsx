@@ -14,6 +14,7 @@ import { readFileAsNode } from '../utils/fsStorage';
 import { playTrashSound } from '../utils/macAudioEngine';
 import AdminAuthModal from '../components/AdminAuthModal';
 import AddWorkLinkModal from '../components/AddWorkLinkModal';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
 const KIND_LABEL = {
   folder: 'Folder',
@@ -65,6 +66,16 @@ export default function FinderWindow({
   const [pendingUploadFiles, setPendingUploadFiles] = useState([]);
   const [pendingAction, setPendingAction] = useState(null);
   const [showAdminDropdown, setShowAdminDropdown] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const handleConfirmDelete = async () => {
+    if (deleteTarget) {
+      playTrashSound(isMuted);
+      await deleteNode(deleteTarget.id);
+      setSelectedId(null);
+      setDeleteTarget(null);
+    }
+  };
 
   // Renaming state
   const [renamingId, setRenamingId] = useState(null);
@@ -384,12 +395,13 @@ export default function FinderWindow({
       return;
     }
 
-    if (e.metaKey && e.key === 'Backspace') {
+    if ((e.metaKey && e.key === 'Backspace') || e.key === 'Delete') {
       if (isAdmin && selectedId) {
         e.preventDefault();
-        playTrashSound(isMuted);
-        deleteNode(selectedId);
-        setSelectedId(null);
+        const target = findNode(selectedId);
+        if (target) {
+          setDeleteTarget(target);
+        }
         return;
       }
     }
@@ -1036,8 +1048,7 @@ export default function FinderWindow({
                   </button>
                   <button
                     onClick={() => {
-                      playTrashSound(isMuted);
-                      deleteNode(menu.node.id);
+                      setDeleteTarget(menu.node);
                       setMenu(null);
                     }}
                     className="w-full text-left px-3 py-1.5 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 flex items-center gap-2 transition-colors"
@@ -1080,6 +1091,14 @@ export default function FinderWindow({
         onClose={() => setShowAddLinkModal(false)}
         folderNode={node}
         onAddLink={handleAddLinkSubmit}
+      />
+
+      {/* Confirmation Modal before deleting */}
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        target={deleteTarget}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteTarget(null)}
       />
     </OSWindow>
   );

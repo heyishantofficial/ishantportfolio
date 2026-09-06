@@ -343,16 +343,16 @@ export default function App() {
       handleOpenSettingsWithTab("socials");
       return;
     }
-    if (appId === "youtube" && dashboardConfig?.openLinksInNewTab && socialLinks?.youtube) {
-      window.open(socialLinks.youtube, '_blank', 'noopener,noreferrer');
+    if (appId === "youtube" && dashboardConfig?.openLinksInNewTab !== false) {
+      window.open(socialLinks?.youtube || 'https://youtube.com/@heyishant', '_blank', 'noopener,noreferrer');
       return;
     }
-    if (appId === "linkedin" && dashboardConfig?.openLinksInNewTab && socialLinks?.linkedin) {
-      window.open(socialLinks.linkedin, '_blank', 'noopener,noreferrer');
+    if (appId === "linkedin" && dashboardConfig?.openLinksInNewTab !== false) {
+      window.open(socialLinks?.linkedin || 'https://linkedin.com', '_blank', 'noopener,noreferrer');
       return;
     }
-    if (appId === "instagram" && dashboardConfig?.openLinksInNewTab && socialLinks?.instagram) {
-      window.open(socialLinks.instagram, '_blank', 'noopener,noreferrer');
+    if (appId === "instagram" && dashboardConfig?.openLinksInNewTab !== false) {
+      window.open(socialLinks?.instagram || 'https://instagram.com/heyishant', '_blank', 'noopener,noreferrer');
       return;
     }
     const targetApp = (appId === "resume" || appId === "resume.pdf") ? "notes" : appId;

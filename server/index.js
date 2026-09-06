@@ -24,14 +24,14 @@ const FALLBACK = {
   wallpaper: 'video', 
   lockWallpaper: 'custom',
   socialLinks: {
-    youtube: 'https://youtube.com',
+    youtube: 'https://youtube.com/@heyishant',
     linkedin: 'https://linkedin.com',
     instagram: 'https://instagram.com/heyishant',
     twitter: 'https://twitter.com',
     github: 'https://github.com/heyishantofficial'
   },
   dashboardConfig: {
-    openLinksInNewTab: false,
+    openLinksInNewTab: true,
     dockMagnification: true,
     soundEffects: true,
     statusMessage: '',

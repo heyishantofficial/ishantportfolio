@@ -78,7 +78,7 @@ const DEFAULT_PORTFOLIO_LINKS = [
     id: 'link-youtube',
     title: 'YouTube Channel',
     category: 'social',
-    url: 'https://youtube.com',
+    url: 'https://youtube.com/@heyishant',
     tag: 'VIDEO MEDIA',
     badgeColor: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20',
     iconBg: 'bg-red-600 text-white',

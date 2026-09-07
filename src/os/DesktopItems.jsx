@@ -355,21 +355,33 @@ export default function DesktopItems({
       const activeEl = document.activeElement;
       const isInput = activeEl && (
         ['INPUT', 'TEXTAREA'].includes(activeEl.tagName) ||
-        activeEl.isContentEditable
+        activeEl.isContentEditable ||
+        activeEl.tagName === 'CANVAS'
       );
       if (isInput || renamingId) return;
 
+      // Never intercept keys if user is currently playing or interacting inside an arcade game or modal
+      const isInArcadeOrModal = typeof document !== 'undefined' && (
+        Boolean(document.querySelector('.retro-arcade-app')) ||
+        Boolean(document.querySelector('.retro-arcade-window')) ||
+        Boolean(e.target?.closest?.('.retro-arcade-app, .retro-arcade-window, canvas, [role="dialog"], .modal-overlay, [data-modal]')) ||
+        Boolean(document.activeElement?.closest?.('.retro-arcade-app, .retro-arcade-window, canvas'))
+      );
+      if (isInArcadeOrModal) return;
+
+      // If desktop is not the active surface or another window is focused, NEVER steal Space or arrows
+      if (!isDesktopActive) return;
+
       const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32;
       if (isSpace) {
-        // If another window is active AND user has not selected a desktop item, yield to that window
-        if (!isDesktopActive && !selectedId) return;
+        // In macOS, Space only opens Quick Look if an item is currently selected
+        if (!selectedId) return;
 
-        e.preventDefault();
-        e.stopPropagation();
-        const validItems = (items || []).filter(Boolean);
-        const targetNode = selectedId ? findNode(selectedId) : validItems[0];
+        const targetNode = findNode(selectedId);
         if (targetNode) {
-          if (!selectedId) setSelectedId(targetNode.id);
+          e.preventDefault();
+          e.stopPropagation();
+          const validItems = (items || []).filter(Boolean);
           onFocusDesktop?.();
           onToggleQuickLook?.(targetNode, validItems);
         }
@@ -377,7 +389,7 @@ export default function DesktopItems({
       }
 
       if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
-        if (!isDesktopActive && !selectedId) return;
+        if (!selectedId) return;
         e.preventDefault();
         const currIdx = items.findIndex((it) => it.id === selectedId);
         const delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;

@@ -444,9 +444,18 @@ export default function FinderWindow({
       const activeEl = document.activeElement;
       const isInput = activeEl && (
         ['INPUT', 'TEXTAREA'].includes(activeEl.tagName) ||
-        activeEl.isContentEditable
+        activeEl.isContentEditable ||
+        activeEl.tagName === 'CANVAS'
       );
       if (isInput) return;
+
+      // Never intercept if user is in an arcade game or modal overlay
+      const isInArcade = typeof document !== 'undefined' && (
+        Boolean(document.querySelector('.retro-arcade-app')) ||
+        Boolean(e.target?.closest?.('.retro-arcade-app, canvas')) ||
+        Boolean(activeEl?.closest?.('.retro-arcade-app, canvas'))
+      );
+      if (isInArcade) return;
 
       const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32;
       if (isSpace && !renamingId) {

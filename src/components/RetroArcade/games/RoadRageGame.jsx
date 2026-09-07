@@ -130,8 +130,9 @@ export default function RoadRageGame({ isMuted, volume, onBackToMenu, externalIn
       } else if (['ArrowDown', 'KeyS'].includes(e.code)) {
         e.preventDefault();
         keys.down = true;
-      } else if (e.code === 'Space') {
+      } else if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
         e.preventDefault();
+        e.stopPropagation();
         if (gameState === 'ready' || gameState === 'gameover') {
           startNewGame();
         } else {

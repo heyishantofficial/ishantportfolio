@@ -149,7 +149,7 @@ export default function RetroArcadeApp({
   return (
     <div
       style={windowStyle}
-      className="fixed flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden bg-white/70 dark:bg-slate-900/75 backdrop-blur-3xl border border-white/60 dark:border-white/15 shadow-[0_25px_80px_rgba(0,0,0,0.35)] select-none text-slate-800 dark:text-slate-100 font-sans transition-all duration-200"
+      className="retro-arcade-app retro-arcade-window fixed flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden bg-white/70 dark:bg-slate-900/75 backdrop-blur-3xl border border-white/60 dark:border-white/15 shadow-[0_25px_80px_rgba(0,0,0,0.35)] select-none text-slate-800 dark:text-slate-100 font-sans transition-all duration-200"
       onClick={(e) => e.stopPropagation()}
     >
       {/* macOS Sequoia Style Titlebar */}

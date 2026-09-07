@@ -163,8 +163,9 @@ export default function MarioGame({ isMuted, volume, onBackToMenu, externalInput
       } else if (['ArrowRight', 'KeyD'].includes(e.code)) {
         e.preventDefault();
         keys.right = true;
-      } else if (['ArrowUp', 'KeyW', 'Space'].includes(e.code)) {
+      } else if (['ArrowUp', 'KeyW', 'Space'].includes(e.code) || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.keyCode === 32) {
         e.preventDefault();
+        e.stopPropagation();
         if (gameState === 'ready' || gameState === 'gameover' || gameState === 'victory') {
           startNewGame();
         } else {

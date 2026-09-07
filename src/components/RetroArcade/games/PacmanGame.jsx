@@ -175,8 +175,9 @@ export default function PacmanGame({ isMuted, volume, onBackToMenu, externalInpu
       } else if (['ArrowRight', 'KeyD'].includes(e.code)) {
         e.preventDefault();
         handleDirection(1, 0);
-      } else if (e.code === 'Space') {
+      } else if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
         e.preventDefault();
+        e.stopPropagation();
         if (gameState === 'ready' || gameState === 'gameover' || gameState === 'victory') {
           startNewGame();
         } else {

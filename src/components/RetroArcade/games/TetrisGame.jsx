@@ -358,8 +358,9 @@ export default function TetrisGame({ isMuted, volume, onBackToMenu, externalInpu
       } else if (['ArrowDown', 'KeyS'].includes(e.code)) {
         e.preventDefault();
         drop();
-      } else if (e.code === 'Space') {
+      } else if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
         e.preventDefault();
+        e.stopPropagation();
         if (gameState === 'ready' || gameState === 'gameover') {
           startNewGame();
         } else if (gameState === 'playing') {

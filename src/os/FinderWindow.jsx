@@ -375,12 +375,19 @@ export default function FinderWindow({
     // Spacebar toggles macOS Quick Look preview!
     const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32;
     if (isSpace) {
-      e.preventDefault();
-      e.stopPropagation();
+      const isInArcade = typeof document !== 'undefined' && (
+        Boolean(document.querySelector('.retro-arcade-app')) ||
+        Boolean(e.target?.closest?.('.retro-arcade-app, canvas')) ||
+        Boolean(document.activeElement?.closest?.('.retro-arcade-app, canvas'))
+      );
+      if (isInArcade) return;
+
+      if (!selectedId) return;
       const validChildren = (children || []).filter(Boolean);
-      const target = (index >= 0 ? validChildren[index] : null) || validChildren[0];
+      const target = validChildren.find((c) => c.id === selectedId);
       if (target) {
-        if (!selectedId) setSelectedId(target.id);
+        e.preventDefault();
+        e.stopPropagation();
         onToggleQuickLook?.(target, validChildren);
       }
       return;
@@ -459,13 +466,12 @@ export default function FinderWindow({
 
       const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32;
       if (isSpace && !renamingId) {
-        e.preventDefault();
-        e.stopPropagation();
+        if (!selectedId) return;
         const validChildren = (children || []).filter(Boolean);
-        const index = validChildren.findIndex((c) => c.id === selectedId);
-        const target = (index >= 0 ? validChildren[index] : null) || validChildren[0];
+        const target = validChildren.find((c) => c.id === selectedId);
         if (target) {
-          if (!selectedId) setSelectedId(target.id);
+          e.preventDefault();
+          e.stopPropagation();
           onToggleQuickLook?.(target, validChildren);
         }
         return;

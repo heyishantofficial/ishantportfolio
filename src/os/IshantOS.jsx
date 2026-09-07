@@ -229,27 +229,10 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
         if (wm.activeId) wm.closeWindow(wm.activeId);
         return;
       }
-
-      // Global Spacebar fallback if not caught by Desktop or Finder
-      if (isSpace) {
-        e.preventDefault();
-        const activeWin = wm.windows.find((w) => w.id === wm.activeId);
-        if (activeWin?.nodeId) {
-          const target = findNode(activeWin.nodeId);
-          if (target) {
-            openQuickLook(target, [target]);
-            return;
-          }
-        }
-        const defaultNode = findNode('about') || findNode('projects') || findNode('home');
-        if (defaultNode) {
-          openQuickLook(defaultNode, [defaultNode]);
-        }
-      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [wm, paletteOpen, quickLook, closeQuickLook, navigateQuickLook, openNode, openQuickLook]);
+  }, [wm, paletteOpen, quickLook, closeQuickLook, navigateQuickLook, openNode]);
 
   const minimized = wm.windows.filter((w) => w.minimized);
 

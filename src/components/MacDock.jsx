@@ -56,6 +56,21 @@ export default function MacDock({
   const [itemsInTrash, setItemsInTrash] = useState(2);
   const dockRef = useRef(null);
 
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
+
+  React.useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 640;
+  const baseIconSize = isMobile
+    ? Math.min(26, Math.max(20, Math.floor((windowWidth - 36) / 13.5)))
+    : 44;
+
   const dockApps = [
     {
       id: "finder",
@@ -86,8 +101,8 @@ export default function MacDock({
       name: "System Settings",
       type: "app",
       renderIcon: () => (
-        <div className="w-full h-full bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 rounded-[22%] flex items-center justify-center p-2 shadow-md border border-slate-600">
-          <Sliders className="w-6 h-6 text-slate-100" />
+        <div className="w-full h-full bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 rounded-[22%] flex items-center justify-center p-[18%] shadow-md border border-slate-600">
+          <Sliders className="w-full h-full text-slate-100" />
         </div>
       )
     },
@@ -171,6 +186,7 @@ export default function MacDock({
   };
 
   const getIconScale = (index) => {
+    if (isMobile) return 1;
     if (dashboardConfig?.dockMagnification === false) return 1;
     if (mouseX === null || !dockRef.current) return 1;
     const iconWidth = 48; 
@@ -200,8 +216,8 @@ export default function MacDock({
       <div 
         ref={dockRef}
         className="mac-dock-container"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onMouseMove={!isMobile ? handleMouseMove : undefined}
+        onMouseLeave={!isMobile ? handleMouseLeave : undefined}
       >
         {dockApps.map((item, index) => {
           if (item.type === 'divider') {
@@ -209,7 +225,7 @@ export default function MacDock({
           }
 
           const scale = getIconScale(index);
-          const iconSize = 44 * scale;
+          const iconSize = baseIconSize * scale;
           const isHovered = hoveredId === item.id;
           const isBouncing = bouncingId === item.id;
           const isOpen = item.id === 'itunes' ? (openApps.itunes || openApps.ipod) : openApps[item.id];
@@ -223,10 +239,10 @@ export default function MacDock({
                 height: `${iconSize}px`,
                 transition: mouseX === null ? 'width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
               }}
-              onMouseEnter={() => setHoveredId(item.id)}
+              onMouseEnter={() => !isMobile && setHoveredId(item.id)}
               onClick={() => handleAppClick(item.id)}
             >
-              {isHovered && mouseX !== null && (
+              {isHovered && mouseX !== null && !isMobile && (
                 <div className="mac-dock-tooltip">
                   {item.name}
                 </div>

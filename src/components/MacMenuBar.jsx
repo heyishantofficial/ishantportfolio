@@ -26,6 +26,7 @@ export default function MacMenuBar({
 }) {
   const { clipboard } = useClipboard();
   const [timeStr, setTimeStr] = useState('');
+  const [shortTimeStr, setShortTimeStr] = useState('');
   const [showAppleMenu, setShowAppleMenu] = useState(false);
   const [showVolumeMenu, setShowVolumeMenu] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
@@ -73,6 +74,7 @@ export default function MacMenuBar({
       const d = new Date();
       const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
       setTimeStr(d.toLocaleDateString('en-US', options).replace(',', ''));
+      setShortTimeStr(d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -106,7 +108,7 @@ export default function MacMenuBar({
   return (
     <>
       {/* Top macOS Translucent Menu Bar with Liquid Glass */}
-      <header className="mac-menu-bar select-none relative z-[9990] flex items-center justify-between px-3 h-7 bg-white/45 dark:bg-black/45 backdrop-blur-2xl border-b border-white/40 dark:border-white/12 text-xs font-sans text-slate-900 dark:text-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+      <header className="mac-menu-bar select-none relative z-[9990] flex items-center justify-between px-2.5 sm:px-3 h-7 bg-white/45 dark:bg-black/45 backdrop-blur-2xl border-b border-white/40 dark:border-white/12 text-xs font-sans text-slate-900 dark:text-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         
         {/* Left Section: Apple Logo & Active App Context Menu */}
         <div className="flex items-center gap-3">
@@ -386,8 +388,9 @@ export default function MacMenuBar({
           </button>
 
           {/* Clock */}
-          <span className="font-semibold tracking-tight ml-1 font-mono text-[11px]">
-            {timeStr || 'Wed Aug 26 2:43 PM'}
+          <span className="font-semibold tracking-tight ml-0.5 sm:ml-1 font-mono text-[11px] whitespace-nowrap">
+            <span className="hidden sm:inline">{timeStr || 'Wed Aug 26 2:43 PM'}</span>
+            <span className="inline sm:hidden">{shortTimeStr || '2:43 PM'}</span>
           </span>
 
         </div>

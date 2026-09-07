@@ -19,23 +19,11 @@ import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
 import { useFileSystem } from './utils/useFileSystem';
 import { useAdminAuth } from './utils/useAdminAuth';
 import AdminAuthModal from './components/AdminAuthModal';
-import IOSMobileOS from './components/IOSMobileOS';
 
 export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
-  );
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const [wallpaper, setWallpaper] = useState(DEFAULT_SETTINGS.wallpaper);
   const [lockWallpaper, setLockWallpaper] = useState(DEFAULT_SETTINGS.lockWallpaper);
@@ -101,6 +89,7 @@ export default function App() {
 
   const [activeAppTitle, setActiveAppTitle] = useState('Finder');
   const [loginTimeStr, setLoginTimeStr] = useState('');
+  const [loginTimeShortStr, setLoginTimeShortStr] = useState('');
   const [viewerName, setViewerName] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -111,6 +100,7 @@ export default function App() {
       const d = new Date();
       const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
       setLoginTimeStr(d.toLocaleDateString('en-US', options).replace(',', ''));
+      setLoginTimeShortStr(d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
     };
     updateLoginTime();
     const interval = setInterval(updateLoginTime, 1000);
@@ -417,43 +407,8 @@ export default function App() {
     aurora: 'wallpaper-aurora'
   };
 
-  // Render authentic iOS 18 Mobile Ecosystem on mobile screens
-  if (isMobile && !isBootLoading) {
-    return (
-      <IOSMobileOS
-        isAppReady={isAppReady}
-        onUnlock={handleBootSystem}
-        viewerName={viewerName}
-        setViewerName={setViewerName}
-        loginError={loginError}
-        setLoginError={setLoginError}
-        isLoggingIn={isLoggingIn}
-        isShaking={isShaking}
-        wallpaper={wallpaper}
-        lockWallpaper={lockWallpaper}
-        onChangeWallpaper={(wp) => setWallpaper(wp)}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        isMuted={isMuted}
-        onToggleMute={() => setIsMuted(!isMuted)}
-        volume={volume}
-        onChangeVolume={handleVolumeChange}
-        socialLinks={socialLinks}
-        dashboardConfig={dashboardConfig}
-        onUpdateSocialLinks={setSocialLinks}
-        onUpdateDashboardConfig={setDashboardConfig}
-        folderIcons={folderIcons}
-        onUpdateFolderIcons={setFolderIcons}
-        customUploadDesktop={customUploadDesktop}
-        customUploadLock={customUploadLock}
-        onUploadDesktopWallpaper={(img) => setCustomUploadDesktop(img)}
-        onUploadLockWallpaper={(img) => setCustomUploadLock(img)}
-      />
-    );
-  }
-
   return (
-    <div className={`w-screen h-screen max-h-screen overflow-hidden fixed inset-0 ${isDarkMode ? 'dark' : ''}`}>
+    <div className={`w-full h-full min-h-[100dvh] max-h-[100dvh] overflow-hidden fixed inset-0 ${isDarkMode ? 'dark' : ''}`}>
 
         {/* macOS Desktop Canvas */}
         <div 
@@ -683,7 +638,7 @@ export default function App() {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.06, filter: 'none' }}
             transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[99999] bg-[#0b0d12] flex flex-col items-center justify-between text-white select-none overflow-hidden p-6"
+            className="fixed inset-0 z-[99999] bg-[#0b0d12] flex flex-col items-center justify-between text-white select-none overflow-hidden p-4 sm:p-6 pt-[max(0.75rem,env(safe-area-inset-top,0.75rem))] pb-[max(1rem,env(safe-area-inset-bottom,1rem))]"
             style={{
               background: 'radial-gradient(circle at 50% 35%, #1a1f2e 0%, #0b0d12 70%)'
             }}
@@ -732,7 +687,7 @@ export default function App() {
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 z-0 pointer-events-none" />
             
             {/* Top Right macOS System Status Indicators (Login Screen only) */}
-            <div className={`w-full flex items-center justify-end gap-3 text-[11px] font-sans text-white/90 drop-shadow-sm font-medium z-10 pt-1 px-2 transition-opacity duration-500 ${isBootLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`w-full flex items-center justify-end gap-2.5 sm:gap-3 text-[11px] font-sans text-white/90 drop-shadow-sm font-medium z-10 pt-1 px-2 transition-opacity duration-500 ${isBootLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <span className="px-1.5 py-0.5 rounded border border-white/30 bg-white/10 text-[10px] font-mono tracking-wider font-semibold">
                 India
               </span>
@@ -741,7 +696,10 @@ export default function App() {
                 <span className="text-[10px] font-mono font-semibold">100%</span>
               </div>
               <Wifi className="w-3.5 h-3.5 text-white" />
-              <span className="ml-1 tracking-tight font-medium">{loginTimeStr || 'Sat Aug 26 16:54'}</span>
+              <span className="ml-1 tracking-tight font-medium font-mono text-[11px] whitespace-nowrap">
+                <span className="hidden sm:inline">{loginTimeStr || 'Sat Aug 26 16:54'}</span>
+                <span className="inline sm:hidden">{loginTimeShortStr || '4:54 PM'}</span>
+              </span>
             </div>
 
             {/* Center Stage — Loading Screen vs User Login Screen */}
@@ -774,7 +732,7 @@ export default function App() {
                   initial={{ opacity: 0, scale: 0.95, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center justify-start mt-16 sm:mt-24 md:mt-28 lg:mt-32 mb-auto z-10 space-y-3.5 w-full max-w-2xl text-center"
+                  className="flex flex-col items-center justify-start mt-8 sm:mt-24 md:mt-28 lg:mt-32 mb-auto z-10 space-y-3.5 w-full max-w-2xl text-center"
                 >
                   {/* One-Time Morphing Entrance & Mouse-Reactive Quote Heading */}
                   <AnimatedQuoteHeading />

@@ -148,10 +148,15 @@ const DEFAULT_PORTFOLIO_LINKS = [
 // Calculate initial window bounds
 const getInitialBounds = () => {
   if (typeof window === 'undefined') return { x: 80, y: 50, w: 980, h: 620 };
-  const w = Math.min(1060, Math.max(MIN_W, window.innerWidth - 60));
-  const h = Math.min(650, Math.max(MIN_H, window.innerHeight - MENU_BAR_H - DOCK_GUARD - 20));
-  const x = Math.max(16, Math.round((window.innerWidth - w) / 2));
-  const y = Math.max(MENU_BAR_H + 8, Math.round((window.innerHeight - DOCK_GUARD - h) / 2));
+  const isMobile = window.innerWidth < 640;
+  const w = isMobile 
+    ? Math.max(300, window.innerWidth - 16) 
+    : Math.min(1060, Math.max(MIN_W, window.innerWidth - 60));
+  const h = isMobile
+    ? Math.max(380, window.innerHeight - MENU_BAR_H - DOCK_GUARD - 12)
+    : Math.min(650, Math.max(MIN_H, window.innerHeight - MENU_BAR_H - DOCK_GUARD - 20));
+  const x = Math.max(8, Math.round((window.innerWidth - w) / 2));
+  const y = Math.max(MENU_BAR_H + 4, Math.round((window.innerHeight - DOCK_GUARD - h) / 2));
   return { x, y, w, h };
 };
 

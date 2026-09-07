@@ -19,19 +19,24 @@ const LEFT_MARGIN = 20;
 
 function getDefaultPosition(index, totalItems = 7) {
   const windowH = typeof window !== 'undefined' ? window.innerHeight : 800;
-  // If window height comfortably allows the default desktop items in 1 column:
-  const minHeightForSingleCol = TOP_MARGIN + totalItems * ITEM_H + 40;
-  const usableH = Math.max(200, windowH - 80);
-  const rowsPerCol = (windowH >= minHeightForSingleCol) 
-    ? totalItems 
-    : Math.max(1, Math.floor(usableH / ITEM_H));
+  const windowW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const isMobile = windowW < 640;
+
+  // On mobile screens, guard space for the bottom dock and top menu bar
+  const topOffset = isMobile ? 38 : TOP_MARGIN;
+  const dockGuard = isMobile ? 100 : 80;
+  const usableH = Math.max(200, windowH - dockGuard);
+  const rowsPerCol = Math.max(1, Math.floor((usableH - topOffset) / ITEM_H));
 
   const col = Math.floor(index / rowsPerCol);
   const row = index % rowsPerCol;
 
+  const maxCol = isMobile ? Math.max(0, Math.floor((windowW - LEFT_MARGIN - ITEM_W) / (ITEM_W + 10))) : 99;
+  const safeCol = Math.min(col, maxCol);
+
   return {
-    x: LEFT_MARGIN + col * (ITEM_W + 16),
-    y: TOP_MARGIN + row * ITEM_H
+    x: LEFT_MARGIN + safeCol * (ITEM_W + (isMobile ? 10 : 16)),
+    y: topOffset + row * ITEM_H
   };
 }
 
@@ -132,8 +137,15 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
   const [positions, setPositions] = useState(() => {
     const saved = loadSavedPositions();
     const initial = {};
+    const winW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const isMobile = winW < 640;
     items.forEach((node, idx) => {
-      if (saved[node.id] && typeof saved[node.id].x === 'number' && typeof saved[node.id].y === 'number') {
+      const hasSaved = saved[node.id] && typeof saved[node.id].x === 'number' && typeof saved[node.id].y === 'number';
+      const isWithinBounds = hasSaved && saved[node.id].x < winW - 90 && saved[node.id].y < (typeof window !== 'undefined' ? window.innerHeight - 100 : 700);
+
+      if (!isMobile && hasSaved) {
+        initial[node.id] = saved[node.id];
+      } else if (isMobile && isWithinBounds) {
         initial[node.id] = saved[node.id];
       } else {
         initial[node.id] = getDefaultPosition(idx, items.length);
@@ -305,6 +317,11 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
       });
     } else {
       onPlayClick?.();
+      // On mobile touchscreens or if already selected, open the folder directly
+      if (e.pointerType === 'touch' || selectedId === nodeId) {
+        const targetNode = findNode(nodeId);
+        if (targetNode) onOpenNode(targetNode);
+      }
       setSelectedId(nodeId);
     }
 
@@ -335,31 +352,6 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
   }, []);
-
-  if (isCompact) {
-    return (
-      <div className="mac-desktop-icons absolute inset-x-0 top-10 bottom-24 z-[10] px-5 overflow-y-auto flex flex-col justify-center">
-        <h1 className="text-center text-white font-black tracking-[0.24em] text-[13px] drop-shadow-lg mb-5">
-          ISHANTOS
-        </h1>
-        <div className="space-y-2">
-          {items.map((node) => (
-            <button
-              key={node.id}
-              onClick={() => onOpenNode(node)}
-              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-[0.99] backdrop-blur-xl border border-white/25 text-left transition-all"
-            >
-              <NodeIcon node={node} size={34} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-[13px] font-bold text-white drop-shadow">{node.name}</span>
-                <span className="block text-[10px] text-white/70 truncate">{node.description}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>

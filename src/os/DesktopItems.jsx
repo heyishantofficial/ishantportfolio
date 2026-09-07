@@ -6,7 +6,7 @@ import { useAdminAuth } from '../utils/useAdminAuth';
 import AdminAuthModal from '../components/AdminAuthModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
-import { Trash2, Lock, Edit3, Copy, Clipboard, CopyPlus } from 'lucide-react';
+import { Trash2, Lock, Edit3, Copy, Clipboard, CopyPlus, Eye } from 'lucide-react';
 
 const HINT_KEY = 'ishantos.hint.dismissed';
 const POSITIONS_KEY = 'ishantos.desktop.positions_v4';
@@ -57,7 +57,17 @@ function loadSavedPositions() {
  *
  * Below the phone breakpoint this becomes a touch list for mobile accessibility.
  */
-export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayClick, isMuted }) {
+export default function DesktopItems({
+  isCompact,
+  onOpenNode,
+  onGetInfo,
+  onPlayClick,
+  isMuted,
+  onToggleQuickLook,
+  onQuickLookChange,
+  isQuickLookOpen,
+  quickLookNodeId
+}) {
   const [selectedId, setSelectedId] = useState(null);
   const [menu, setMenu] = useState(null);
   const [showHint, setShowHint] = useState(false);
@@ -317,17 +327,44 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
       });
     } else {
       onPlayClick?.();
-      // On mobile touchscreens or if already selected, open the folder directly
-      if (e.pointerType === 'touch' || selectedId === nodeId) {
+      // On mobile touchscreens open the folder directly
+      if (e.pointerType === 'touch') {
         const targetNode = findNode(nodeId);
         if (targetNode) onOpenNode(targetNode);
       }
       setSelectedId(nodeId);
+      if (isQuickLookOpen && onQuickLookChange) {
+        const targetNode = findNode(nodeId);
+        if (targetNode) onQuickLookChange(targetNode, items);
+      }
     }
 
     dragInfo.current = null;
     setActiveDragId(null);
   };
+
+  // Desktop Spacebar Quick Look shortcut when item is selected
+  useEffect(() => {
+    const handleDesktopKey = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        ['INPUT', 'TEXTAREA'].includes(activeEl.tagName) ||
+        activeEl.isContentEditable
+      );
+      if (isInput) return;
+
+      if (e.key === ' ' && selectedId && !renamingId) {
+        e.preventDefault();
+        e.stopPropagation();
+        const targetNode = findNode(selectedId);
+        if (targetNode) {
+          onToggleQuickLook?.(targetNode, items);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleDesktopKey);
+    return () => window.removeEventListener('keydown', handleDesktopKey);
+  }, [selectedId, renamingId, items, onToggleQuickLook]);
 
   // The Cmd+K hint is for first-time visitors; once dismissed it stays gone.
   useEffect(() => {
@@ -382,6 +419,28 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
               onPointerUp={handlePointerUp}
               onDoubleClick={(e) => { e.stopPropagation(); onOpenNode(node); }}
               onKeyDown={(e) => {
+                if (e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleQuickLook?.(node, items);
+                  return;
+                }
+                if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+                  e.preventDefault();
+                  const currIdx = items.findIndex((it) => it.id === node.id);
+                  if (currIdx !== -1) {
+                    const delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
+                    const nextIdx = Math.min(items.length - 1, Math.max(0, currIdx + delta));
+                    const nextNode = items[nextIdx];
+                    if (nextNode) {
+                      setSelectedId(nextNode.id);
+                      if (isQuickLookOpen) {
+                        onQuickLookChange?.(nextNode, items);
+                      }
+                    }
+                  }
+                  return;
+                }
                 if (e.key === 'Enter') {
                   if (isAdmin) {
                     e.preventDefault();
@@ -488,6 +547,16 @@ export default function DesktopItems({ isCompact, onOpenNode, onGetInfo, onPlayC
               className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center gap-2"
             >
               <span>📂 Open</span>
+            </button>
+            <button
+              onClick={() => { if (targetNode) onToggleQuickLook?.(targetNode, items); setMenu(null); }}
+              className="w-full text-left px-3.5 py-1.5 hover:bg-blue-600 hover:text-white font-medium flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <Eye className="w-3.5 h-3.5" />
+                <span>Quick Look "{targetNode?.name}"</span>
+              </span>
+              <span className="text-[10px] opacity-70 font-mono">Space</span>
             </button>
             <button
               onClick={() => { onGetInfo(menu.id); setMenu(null); }}

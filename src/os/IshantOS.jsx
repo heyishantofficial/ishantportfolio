@@ -6,8 +6,9 @@ import { TextWindow, ProjectWindow, PdfWindow, MailWindow, InfoWindow, TrashWind
 import CommandPalette from './CommandPalette';
 import DesktopItems from './DesktopItems';
 import NodeIcon from './NodeIcon';
+import QuickLookPanel from './QuickLookPanel';
 import { findNode } from '../data/ishantOS';
-import { playMacClick } from '../utils/macAudioEngine';
+import { playMacClick, playQuickLookSound } from '../utils/macAudioEngine';
 
 const COMPACT_BREAKPOINT = 640;
 
@@ -21,6 +22,7 @@ const COMPACT_BREAKPOINT = 640;
 const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, socialLinks, contactEmail }, ref) {
   const wm = useWindowManager();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [quickLook, setQuickLook] = useState(null); // { node, items: [], currentIndex: number }
   const [isCompact, setIsCompact] = useState(
     typeof window !== 'undefined' ? window.innerWidth < COMPACT_BREAKPOINT : false
   );
@@ -32,6 +34,45 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
   }, []);
 
   const click = useCallback(() => playMacClick(isMuted), [isMuted]);
+
+  const openQuickLook = useCallback((targetNode, siblingItems = []) => {
+    let resolved = targetNode;
+    if (typeof targetNode === 'string') resolved = findNode(targetNode);
+    if (!resolved) return;
+    const items = siblingItems.length > 0 ? siblingItems : [resolved];
+    const idx = items.findIndex((item) => item.id === resolved.id);
+    playQuickLookSound(isMuted, false);
+    setQuickLook({
+      node: resolved,
+      items,
+      currentIndex: idx !== -1 ? idx : 0
+    });
+  }, [isMuted]);
+
+  const closeQuickLook = useCallback(() => {
+    playQuickLookSound(isMuted, true);
+    setQuickLook(null);
+  }, [isMuted]);
+
+  const toggleQuickLook = useCallback((targetNode, siblingItems = []) => {
+    let resolved = targetNode;
+    if (typeof targetNode === 'string') resolved = findNode(targetNode);
+    if (!resolved) return;
+    if (quickLook && quickLook.node?.id === resolved.id) {
+      closeQuickLook();
+    } else {
+      openQuickLook(resolved, siblingItems);
+    }
+  }, [quickLook, closeQuickLook, openQuickLook]);
+
+  const navigateQuickLook = useCallback((nextNode, nextIndex) => {
+    click();
+    setQuickLook((prev) => (prev ? {
+      ...prev,
+      node: nextNode,
+      currentIndex: nextIndex
+    } : null));
+  }, [click]);
 
   const openNode = useCallback((node, options) => {
     click();
@@ -59,8 +100,12 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
     openPalette: () => setPaletteOpen(true),
     newFinderWindow: () => wm.openWindow({ type: 'finder', nodeId: 'home', fresh: true }),
     closeActive: () => wm.activeId && wm.closeWindow(wm.activeId),
-    hasWindows: () => wm.windows.length > 0
-  }), [openNode, wm]);
+    hasWindows: () => wm.windows.length > 0,
+    openQuickLook,
+    toggleQuickLook,
+    closeQuickLook,
+    isQuickLookOpen: Boolean(quickLook)
+  }), [openNode, wm, openQuickLook, toggleQuickLook, closeQuickLook, quickLook]);
 
   // Report the frontmost window's name to the menu bar, the way macOS does.
   useEffect(() => {
@@ -71,9 +116,51 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
     onActiveTitleChange(active.type === 'trash' ? 'Trash' : node?.name || 'Finder');
   }, [wm.activeId, wm.windows, onActiveTitleChange]);
 
-  // Window-level shortcuts. Cmd+Space stays with Spotlight (App.jsx owns it).
+  // Window-level and Quick Look shortcuts.
   useEffect(() => {
     const onKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        ['INPUT', 'TEXTAREA'].includes(activeEl.tagName) ||
+        activeEl.isContentEditable
+      );
+
+      // Quick Look active controls
+      if (quickLook) {
+        if (e.key === ' ' || e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          closeQuickLook();
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          const target = quickLook.node;
+          closeQuickLook();
+          openNode(target);
+          return;
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (quickLook.currentIndex > 0) {
+            const nextIdx = quickLook.currentIndex - 1;
+            navigateQuickLook(quickLook.items[nextIdx], nextIdx);
+          }
+          return;
+        }
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (quickLook.currentIndex < quickLook.items.length - 1) {
+            const nextIdx = quickLook.currentIndex + 1;
+            navigateQuickLook(quickLook.items[nextIdx], nextIdx);
+          }
+          return;
+        }
+      }
+
+      if (isInput) return; // Do not intercept other shortcuts when typing in inputs
+
       const meta = e.metaKey || e.ctrlKey;
 
       if (meta && e.key.toLowerCase() === 'k') {
@@ -98,7 +185,7 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [wm, paletteOpen]);
+  }, [wm, paletteOpen, quickLook, closeQuickLook, navigateQuickLook, openNode]);
 
   const minimized = wm.windows.filter((w) => w.minimized);
 
@@ -124,6 +211,10 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
             onOpenNode={openNode}
             onGetInfo={wm.openGetInfo}
             onPlayClick={click}
+            onToggleQuickLook={toggleQuickLook}
+            onQuickLookChange={openQuickLook}
+            isQuickLookOpen={Boolean(quickLook)}
+            quickLookNodeId={quickLook?.node?.id}
           />
         );
       case 'text': return <TextWindow key={win.id} {...shared} />;
@@ -145,10 +236,30 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
         onGetInfo={wm.openGetInfo}
         onPlayClick={click}
         isMuted={isMuted}
+        onToggleQuickLook={toggleQuickLook}
+        onQuickLookChange={openQuickLook}
+        isQuickLookOpen={Boolean(quickLook)}
+        quickLookNodeId={quickLook?.node?.id}
       />
 
       <AnimatePresence>
         {wm.windows.filter((w) => !w.minimized).map(renderWindow)}
+      </AnimatePresence>
+
+      {/* macOS Spacebar Quick Look Preview Modal */}
+      <AnimatePresence>
+        {quickLook && (
+          <QuickLookPanel
+            key={quickLook.node?.id}
+            node={quickLook.node}
+            items={quickLook.items}
+            currentIndex={quickLook.currentIndex}
+            onNavigate={navigateQuickLook}
+            onClose={closeQuickLook}
+            onOpenNode={openNode}
+            isMuted={isMuted}
+          />
+        )}
       </AnimatePresence>
 
       {/* Minimized windows park here rather than vanishing */}

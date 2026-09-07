@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, Search, LayoutGrid, List as ListIcon,
   FileText, Sparkles, Mail, Link2, FileType2, Info, HardDrive, X,
   Lock, Unlock, FolderPlus, Upload, Edit3, Trash2, ShieldCheck, Film, FilePlus,
-  Cloud, CloudOff, RefreshCw, Copy, Clipboard, CopyPlus
+  Cloud, CloudOff, RefreshCw, Copy, Clipboard, CopyPlus, Eye
 } from 'lucide-react';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
@@ -40,7 +40,8 @@ const KIND_ICON = {
 
 export default function FinderWindow({
   win, isActive, isCompact, onClose, onMinimize, onToggleMaximize, onFocus, onMove, onResize,
-  onOpenNode, onGetInfo, onPlayClick, isMuted
+  onOpenNode, onGetInfo, onPlayClick, isMuted,
+  onToggleQuickLook, onQuickLookChange, isQuickLookOpen, quickLookNodeId
 }) {
   // Per-window navigation history, so Back/Forward behave like Finder's.
   const [history, setHistory] = useState([win.nodeId || 'home']);
@@ -371,6 +372,17 @@ export default function FinderWindow({
       return;
     }
 
+    // Spacebar toggles macOS Quick Look preview!
+    if (e.key === ' ') {
+      e.preventDefault();
+      const target = children[index] || children[0];
+      if (target) {
+        if (!selectedId) setSelectedId(target.id);
+        onToggleQuickLook?.(target, children);
+      }
+      return;
+    }
+
     // In macOS Finder, Return starts renaming selected item!
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -409,7 +421,13 @@ export default function FinderWindow({
     const perRow = view === 'grid' ? 4 : 1;
     const delta = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: perRow, ArrowUp: -perRow }[e.key];
     const nextIndex = index === -1 ? 0 : Math.min(children.length - 1, Math.max(0, index + delta));
-    setSelectedId(children[nextIndex].id);
+    const nextItem = children[nextIndex];
+    if (nextItem) {
+      setSelectedId(nextItem.id);
+      if (isQuickLookOpen) {
+        onQuickLookChange?.(nextItem, children);
+      }
+    }
   };
 
   const toolbar = (
@@ -471,6 +489,24 @@ export default function FinderWindow({
             <ListIcon className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Quick Look Button */}
+        <button
+          onClick={() => {
+            const target = children.find((c) => c.id === selectedId) || children[0];
+            if (target) onToggleQuickLook?.(target, children);
+          }}
+          disabled={!selectedId && children.length === 0}
+          aria-label="Quick Look"
+          className={`w-6 h-6 rounded flex items-center justify-center transition-all ${
+            selectedId
+              ? 'text-[#007aff] hover:bg-black/5 dark:hover:bg-white/10 active:scale-95'
+              : 'text-slate-400 dark:text-slate-500 opacity-50 cursor-default'
+          }`}
+          title="Quick Look (Space)"
+        >
+          <Eye className="w-3.5 h-3.5" />
+        </button>
 
         {/* Search Field */}
         <div className="relative flex items-center">
@@ -827,6 +863,9 @@ export default function FinderWindow({
                     onSelect={() => {
                       onPlayClick?.();
                       setSelectedId(child.id);
+                      if (isQuickLookOpen && onQuickLookChange) {
+                        onQuickLookChange(child, children);
+                      }
                     }}
                     onOpen={() => open(child)}
                     onStartRename={() => startRenaming(child)}
@@ -855,6 +894,9 @@ export default function FinderWindow({
                     onSelect={() => {
                       onPlayClick?.();
                       setSelectedId(child.id);
+                      if (isQuickLookOpen && onQuickLookChange) {
+                        onQuickLookChange(child, children);
+                      }
                     }}
                     onOpen={() => open(child)}
                     onStartRename={() => startRenaming(child)}
@@ -987,6 +1029,16 @@ export default function FinderWindow({
                 className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white"
               >
                 Open
+              </button>
+              <button
+                onClick={() => { onToggleQuickLook?.(menu.node, children); setMenu(null); }}
+                className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center justify-between font-medium"
+              >
+                <div className="flex items-center gap-2">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Quick Look &ldquo;{menu.node.name}&rdquo;</span>
+                </div>
+                <span className="text-[10px] opacity-60 font-mono">Space</span>
               </button>
               <button
                 onClick={() => { onGetInfo(menu.node.id); setMenu(null); }}

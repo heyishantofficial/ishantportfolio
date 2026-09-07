@@ -186,3 +186,32 @@ export const playCameraShutter = (muted = false) => {
     osc.stop(now + 0.04);
   } catch (e) {}
 };
+
+// 7. macOS Quick Look Pop / Swoosh Sound
+export const playQuickLookSound = (muted = false, isClosing = false) => {
+  if (muted) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    const startFreq = isClosing ? 260 : 380;
+    const endFreq = isClosing ? 160 : 220;
+
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.05);
+
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } catch (e) {}
+};

@@ -437,6 +437,9 @@ export default function FinderWindow({
     if (!isActive) return;
 
     const onWindowKeyDown = (e) => {
+      // When Quick Look is already open, IshantOS handles closing and navigation
+      if (isQuickLookOpen) return;
+
       const activeEl = document.activeElement;
       const isInput = activeEl && (
         ['INPUT', 'TEXTAREA'].includes(activeEl.tagName) ||
@@ -444,7 +447,7 @@ export default function FinderWindow({
       );
       if (isInput) return;
 
-      const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space';
+      const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32;
       if (isSpace && !renamingId) {
         e.preventDefault();
         e.stopPropagation();
@@ -772,7 +775,7 @@ export default function FinderWindow({
     >
       <div
         className="h-full flex relative"
-        onClick={() => { setMenu(null); setShowAdminDropdown(false); }}
+        onClick={() => { onFocus?.(); setMenu(null); setShowAdminDropdown(false); }}
       >
         {/* Floating Sync Notice Toast */}
         {syncNotice && (

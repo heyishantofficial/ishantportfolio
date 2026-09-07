@@ -277,6 +277,7 @@ export default function DesktopItems({
   const handlePointerDown = (e, nodeId) => {
     if (e.button !== 0) return; // Only primary click
     e.stopPropagation();
+    onFocusDesktop?.();
 
     const currentPos = positions[nodeId] || { x: 24, y: 48 };
     dragInfo.current = {
@@ -348,7 +349,8 @@ export default function DesktopItems({
   // Desktop Spacebar & Arrow navigation shortcut
   useEffect(() => {
     const handleDesktopKey = (e) => {
-      if (isDesktopActive === false) return;
+      // When Quick Look is already open, IshantOS handles closing and arrow cycling
+      if (isQuickLookOpen) return;
 
       const activeEl = document.activeElement;
       const isInput = activeEl && (
@@ -357,19 +359,24 @@ export default function DesktopItems({
       );
       if (isInput || renamingId) return;
 
-      const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space';
+      const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32;
       if (isSpace) {
+        // If another window is active AND user has not selected a desktop item, yield to that window
+        if (!isDesktopActive && !selectedId) return;
+
         e.preventDefault();
         e.stopPropagation();
         const targetNode = selectedId ? findNode(selectedId) : items[0];
         if (targetNode) {
           if (!selectedId) setSelectedId(targetNode.id);
+          onFocusDesktop?.();
           onToggleQuickLook?.(targetNode, items);
         }
         return;
       }
 
       if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+        if (!isDesktopActive && !selectedId) return;
         e.preventDefault();
         const currIdx = items.findIndex((it) => it.id === selectedId);
         const delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
@@ -377,6 +384,7 @@ export default function DesktopItems({
         const nextNode = items[nextIdx];
         if (nextNode) {
           setSelectedId(nextNode.id);
+          onFocusDesktop?.();
           if (isQuickLookOpen) {
             onQuickLookChange?.(nextNode, items);
           }
@@ -385,7 +393,28 @@ export default function DesktopItems({
     };
     window.addEventListener('keydown', handleDesktopKey);
     return () => window.removeEventListener('keydown', handleDesktopKey);
-  }, [isDesktopActive, selectedId, renamingId, items, isQuickLookOpen, onToggleQuickLook, onQuickLookChange]);
+  }, [isDesktopActive, selectedId, renamingId, items, isQuickLookOpen, onToggleQuickLook, onQuickLookChange, onFocusDesktop]);
+
+  // Deselect desktop icons and focus desktop when clicking on empty background
+  useEffect(() => {
+    const handleGlobalPointerDown = (e) => {
+      if (
+        e.target.closest('.os-window') ||
+        e.target.closest('#mac-dock') ||
+        e.target.closest('nav') ||
+        e.target.closest('.mac-desktop-item') ||
+        e.target.closest('[role="dialog"]') ||
+        e.target.closest('.quick-look-modal')
+      ) {
+        return;
+      }
+      setSelectedId(null);
+      onFocusDesktop?.();
+      if (renamingId) commitRename(renamingId);
+    };
+    window.addEventListener('pointerdown', handleGlobalPointerDown);
+    return () => window.removeEventListener('pointerdown', handleGlobalPointerDown);
+  }, [renamingId, commitRename, onFocusDesktop]);
 
   // The Cmd+K hint is for first-time visitors; once dismissed it stays gone.
   useEffect(() => {
@@ -442,6 +471,7 @@ export default function DesktopItems({
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedId(node.id);
+                onFocusDesktop?.();
                 if (isQuickLookOpen && onQuickLookChange) {
                   onQuickLookChange(node, items);
                 }
@@ -504,7 +534,7 @@ export default function DesktopItems({
               }}
               title={node.description}
               tabIndex={0}
-              className={`absolute pointer-events-auto touch-none w-[100px] p-1.5 rounded-lg flex flex-col items-center text-center gap-1 focus:outline-none select-none transition-transform ${
+              className={`mac-desktop-item absolute pointer-events-auto touch-none w-[100px] p-1.5 rounded-lg flex flex-col items-center text-center gap-1 focus:outline-none select-none transition-transform ${
                 isDragging
                   ? 'cursor-grabbing z-30 scale-105 opacity-90'
                   : 'cursor-grab z-10 hover:scale-[1.02]'

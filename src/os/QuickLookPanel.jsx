@@ -85,6 +85,12 @@ export default function QuickLookPanel({
         setNaturalDimensions({ width: 800, height: 600 });
       };
       img.src = mediaUrl;
+      if (img.complete && img.naturalWidth) {
+        setNaturalDimensions({
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        });
+      }
     } else if (isPdf && node?.preview) {
       const img = new Image();
       img.onload = () => {
@@ -94,6 +100,12 @@ export default function QuickLookPanel({
         });
       };
       img.src = node.preview;
+      if (img.complete && img.naturalWidth) {
+        setNaturalDimensions({
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        });
+      }
     }
   }, [isImage, isPdf, mediaUrl, node?.preview]);
 
@@ -268,7 +280,8 @@ export default function QuickLookPanel({
 
   return (
     <div
-      className="fixed inset-0 z-[99990] flex items-center justify-center p-4 sm:p-6 bg-black/45 backdrop-blur-md select-none transition-opacity duration-150"
+      className="quick-look-modal fixed inset-0 z-[99990] flex items-center justify-center p-4 sm:p-6 bg-black/45 backdrop-blur-md select-none transition-opacity duration-150"
+      tabIndex={-1}
       onClick={onClose}
     >
       <motion.div
@@ -598,7 +611,7 @@ export default function QuickLookPanel({
                   Contents ({node.children?.length || 0})
                 </div>
                 {node.children && node.children.length > 0 ? (
-                  node.children.map((child) => (
+                  node.children.filter(Boolean).map((child) => (
                     <div
                       key={child.id}
                       onClick={() => onOpenNode(child)}

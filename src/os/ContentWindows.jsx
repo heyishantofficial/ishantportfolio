@@ -496,11 +496,10 @@ export function MediaWindow(props) {
   const node = findNode(props.win.nodeId);
   const [zoom, setZoom] = useState(1);
   const [mediaError, setMediaError] = useState(false);
-  if (!node) return null;
 
-  const thumbUrl = node.thumbnailUrl || node.preview;
+  const thumbUrl = node?.thumbnailUrl || node?.preview;
   const isBlobUrl = (url) => typeof url === 'string' && url.startsWith('blob:');
-  const rawFileUrl = node.dataUrl || node.fileUrl || node.file || node.videoUrl || node.href || thumbUrl;
+  const rawFileUrl = node?.dataUrl || node?.fileUrl || node?.file || node?.videoUrl || node?.href || thumbUrl;
   const resolvedUrl = (isBlobUrl(rawFileUrl) && thumbUrl) ? thumbUrl : rawFileUrl;
   const isDataUrl = typeof resolvedUrl === 'string' && resolvedUrl.startsWith('data:');
   const [activeFileUrl, setActiveFileUrl] = useState(resolvedUrl);
@@ -510,7 +509,9 @@ export function MediaWindow(props) {
     setActiveFileUrl(resolvedUrl);
     setMediaError(false);
     setIsMediaLoaded(typeof resolvedUrl === 'string' && resolvedUrl.startsWith('data:'));
-  }, [resolvedUrl, node.id]);
+  }, [resolvedUrl, node?.id]);
+
+  if (!node) return null;
 
   const handleImgError = () => {
     if (thumbUrl && activeFileUrl !== thumbUrl) {

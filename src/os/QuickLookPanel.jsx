@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion';
 import {
   X, ChevronLeft, ChevronRight, ExternalLink, Download, Copy, Check,
-  Maximize2, Music, FileType2, Globe, Film, ArrowUpRight, Play, Image as ImageIcon
+  Maximize2, Music, FileType2, Globe, Film, Image as ImageIcon
 } from 'lucide-react';
 import NodeIcon from './NodeIcon';
 import {
-  isYouTubeUrl, getYouTubeEmbedUrl, getYouTubeThumbnail,
+  isYouTubeUrl, getYouTubeEmbedUrl,
   isInstagramUrl, getInstagramEmbedUrl, isYouTubeShortsUrl, isReelMedia
 } from '../utils/mediaHelpers';
+import { itemCountLabel } from '../data/ishantOS';
 
 function getDomain(url) {
   if (!url) return '';
@@ -39,7 +40,7 @@ export default function QuickLookPanel({
   onNavigate,
   onClose,
   onOpenNode,
-  isMuted = false
+  _isMuted = false
 }) {
   const [naturalDimensions, setNaturalDimensions] = useState(null);
   const [isZoomedFull, setIsZoomedFull] = useState(false);
@@ -74,6 +75,23 @@ export default function QuickLookPanel({
     return file || node.videoUrl || node.href || thumb || null;
   }, [node]);
 
+  // Compute node kinds early so hooks and callbacks have them ready (no TDZ reference error!)
+  const isLink = node?.kind === 'link';
+  const rawUrl = node?.videoUrl || node?.href || (typeof node?.file === 'string' ? node.file : '') || mediaUrl || '';
+  const isYt = isYouTubeUrl(rawUrl);
+  const ytEmbed = isYt ? getYouTubeEmbedUrl(rawUrl) : null;
+  const isIg = isInstagramUrl(rawUrl) || node?.platform === 'instagram';
+  const igEmbed = isIg ? getInstagramEmbedUrl(rawUrl) : null;
+  const isYtShorts = isYouTubeShortsUrl(rawUrl);
+  const isReel = isIg || isYtShorts || isReelMedia(rawUrl, node);
+  const isVideo = node?.kind === 'video' || (isYt && !isLink) || (isIg && !isLink);
+  const isImage = (node?.kind === 'image' || ((node?.dataUrl || (typeof node?.file === 'string' && /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(node.file))) && !isLink && node?.kind !== 'pdf' && node?.kind !== 'text' && node?.kind !== 'project' && node?.kind !== 'folder' && node?.kind !== 'mail')) && !isLink;
+  const isAudio = node?.kind === 'audio';
+  const isText = node?.kind === 'text';
+  const isProject = node?.kind === 'project';
+  const isPdf = node?.kind === 'pdf';
+  const isFolder = node?.kind === 'folder';
+
   const [activeMediaSrc, setActiveMediaSrc] = useState(mediaUrl);
   const [mediaLoadError, setMediaLoadError] = useState(false);
 
@@ -94,22 +112,6 @@ export default function QuickLookPanel({
     }
     setMediaLoadError(true);
   }, [node, activeMediaSrc, isImage]);
-
-  const isLink = node?.kind === 'link';
-  const rawUrl = node?.videoUrl || node?.href || node?.file || activeMediaSrc || mediaUrl;
-  const isYt = isYouTubeUrl(rawUrl);
-  const ytEmbed = isYt ? getYouTubeEmbedUrl(rawUrl) : null;
-  const isIg = isInstagramUrl(rawUrl) || node?.platform === 'instagram';
-  const igEmbed = isIg ? getInstagramEmbedUrl(rawUrl) : null;
-  const isYtShorts = isYouTubeShortsUrl(rawUrl);
-  const isReel = isIg || isYtShorts || isReelMedia(rawUrl, node);
-  const isVideo = node?.kind === 'video' || (isYt && !isLink) || (isIg && !isLink);
-  const isImage = (node?.kind === 'image' || ((node?.dataUrl || (node?.file && /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(node.file))) && !isLink && node?.kind !== 'pdf' && node?.kind !== 'text' && node?.kind !== 'project' && node?.kind !== 'folder' && node?.kind !== 'mail')) && !isLink;
-  const isAudio = node?.kind === 'audio';
-  const isText = node?.kind === 'text';
-  const isProject = node?.kind === 'project';
-  const isPdf = node?.kind === 'pdf';
-  const isFolder = node?.kind === 'folder';
 
   // Measure natural dimensions for images
   useEffect(() => {
@@ -281,7 +283,8 @@ export default function QuickLookPanel({
       return `${node.project.category || 'Case Study'} · ${node.project.year || '2026'}`;
     }
     if (isFolder) {
-      return `${itemCountLabel(node)} · Folder`;
+      const count = typeof itemCountLabel === 'function' ? itemCountLabel(node) : 'Folder';
+      return `${count} · Folder`;
     }
     if (isIg) {
       return 'Instagram Reel · Video';
@@ -304,7 +307,7 @@ export default function QuickLookPanel({
       return `${domain}${tag} · Web Link`;
     }
     return node.description || 'Quick Look Preview';
-  }, [node, isImage, isText, isProject, isFolder, isVideo, isPdf, isAudio, isLink, windowDimensions]);
+  }, [node, isImage, isText, isProject, isFolder, isVideo, isPdf, isAudio, isLink, isIg, isYtShorts, isYt, windowDimensions]);
 
   // Copy text helper
   const handleCopyText = useCallback(() => {
@@ -721,7 +724,7 @@ export default function QuickLookPanel({
                   <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">{node.name}</h3>
                   <p className="text-[12px] text-slate-500 mt-0.5">{node.description || 'Folder'}</p>
                   <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 text-[10.5px] font-semibold">
-                    {itemCountLabel(node)}
+                    {typeof itemCountLabel === 'function' ? itemCountLabel(node) : 'Folder'}
                   </span>
                 </div>
               </div>

@@ -373,14 +373,15 @@ export default function FinderWindow({
     }
 
     // Spacebar toggles macOS Quick Look preview!
-    const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space';
+    const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32;
     if (isSpace) {
       e.preventDefault();
       e.stopPropagation();
-      const target = children[index] || children[0];
+      const validChildren = (children || []).filter(Boolean);
+      const target = (index >= 0 ? validChildren[index] : null) || validChildren[0];
       if (target) {
         if (!selectedId) setSelectedId(target.id);
-        onToggleQuickLook?.(target, children);
+        onToggleQuickLook?.(target, validChildren);
       }
       return;
     }
@@ -451,11 +452,12 @@ export default function FinderWindow({
       if (isSpace && !renamingId) {
         e.preventDefault();
         e.stopPropagation();
-        const index = children.findIndex((c) => c.id === selectedId);
-        const target = children[index] || children[0];
+        const validChildren = (children || []).filter(Boolean);
+        const index = validChildren.findIndex((c) => c.id === selectedId);
+        const target = (index >= 0 ? validChildren[index] : null) || validChildren[0];
         if (target) {
           if (!selectedId) setSelectedId(target.id);
-          onToggleQuickLook?.(target, children);
+          onToggleQuickLook?.(target, validChildren);
         }
         return;
       }

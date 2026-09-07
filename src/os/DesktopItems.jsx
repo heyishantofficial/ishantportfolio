@@ -366,11 +366,12 @@ export default function DesktopItems({
 
         e.preventDefault();
         e.stopPropagation();
-        const targetNode = selectedId ? findNode(selectedId) : items[0];
+        const validItems = (items || []).filter(Boolean);
+        const targetNode = selectedId ? findNode(selectedId) : validItems[0];
         if (targetNode) {
           if (!selectedId) setSelectedId(targetNode.id);
           onFocusDesktop?.();
-          onToggleQuickLook?.(targetNode, items);
+          onToggleQuickLook?.(targetNode, validItems);
         }
         return;
       }
@@ -478,10 +479,10 @@ export default function DesktopItems({
               }}
               onDoubleClick={(e) => { e.stopPropagation(); onOpenNode(node); }}
               onKeyDown={(e) => {
-                if (e.key === ' ') {
+                if (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32) {
                   e.preventDefault();
                   e.stopPropagation();
-                  onToggleQuickLook?.(node, items);
+                  onToggleQuickLook?.(node, (items || []).filter(Boolean));
                   return;
                 }
                 if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {

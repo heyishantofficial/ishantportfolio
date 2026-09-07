@@ -373,8 +373,10 @@ export default function FinderWindow({
     }
 
     // Spacebar toggles macOS Quick Look preview!
-    if (e.key === ' ') {
+    const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space';
+    if (isSpace) {
       e.preventDefault();
+      e.stopPropagation();
       const target = children[index] || children[0];
       if (target) {
         if (!selectedId) setSelectedId(target.id);
@@ -429,6 +431,73 @@ export default function FinderWindow({
       }
     }
   };
+
+  // Window-level keyboard navigation when this Finder window is active
+  useEffect(() => {
+    if (!isActive) return;
+
+    const onWindowKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        ['INPUT', 'TEXTAREA'].includes(activeEl.tagName) ||
+        activeEl.isContentEditable
+      );
+      if (isInput) return;
+
+      const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space';
+      if (isSpace && !renamingId) {
+        e.preventDefault();
+        e.stopPropagation();
+        const index = children.findIndex((c) => c.id === selectedId);
+        const target = children[index] || children[0];
+        if (target) {
+          if (!selectedId) setSelectedId(target.id);
+          onToggleQuickLook?.(target, children);
+        }
+        return;
+      }
+
+      if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key) && !renamingId) {
+        e.preventDefault();
+        if (!children.length) return;
+        const index = children.findIndex((c) => c.id === selectedId);
+        const perRow = view === 'grid' ? 4 : 1;
+        const delta = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: perRow, ArrowUp: -perRow }[e.key];
+        const nextIndex = index === -1 ? 0 : Math.min(children.length - 1, Math.max(0, index + delta));
+        const nextItem = children[nextIndex];
+        if (nextItem) {
+          setSelectedId(nextItem.id);
+          if (isQuickLookOpen) {
+            onQuickLookChange?.(nextItem, children);
+          }
+        }
+        return;
+      }
+
+      if (e.key === 'Enter' && !renamingId) {
+        e.preventDefault();
+        const index = children.findIndex((c) => c.id === selectedId);
+        const target = children[index] || children[0];
+        if (target) {
+          if (isAdmin && selectedId === target.id) {
+            startRenaming(target);
+          } else {
+            open(target);
+          }
+        }
+        return;
+      }
+
+      if ((e.key === 'Backspace' || (e.metaKey && e.key === '[')) && !renamingId) {
+        e.preventDefault();
+        if (cursor > 0) goBack(); else goUp();
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [isActive, children, selectedId, view, isQuickLookOpen, onToggleQuickLook, onQuickLookChange, renamingId, isAdmin, startRenaming, open, cursor]);
 
   const toolbar = (
     <>

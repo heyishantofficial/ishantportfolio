@@ -66,7 +66,9 @@ export default function DesktopItems({
   onToggleQuickLook,
   onQuickLookChange,
   isQuickLookOpen,
-  quickLookNodeId
+  quickLookNodeId,
+  isDesktopActive,
+  onFocusDesktop
 }) {
   const [selectedId, setSelectedId] = useState(null);
   const [menu, setMenu] = useState(null);
@@ -343,28 +345,47 @@ export default function DesktopItems({
     setActiveDragId(null);
   };
 
-  // Desktop Spacebar Quick Look shortcut when item is selected
+  // Desktop Spacebar & Arrow navigation shortcut
   useEffect(() => {
     const handleDesktopKey = (e) => {
+      if (isDesktopActive === false) return;
+
       const activeEl = document.activeElement;
       const isInput = activeEl && (
         ['INPUT', 'TEXTAREA'].includes(activeEl.tagName) ||
         activeEl.isContentEditable
       );
-      if (isInput) return;
+      if (isInput || renamingId) return;
 
-      if (e.key === ' ' && selectedId && !renamingId) {
+      const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space';
+      if (isSpace) {
         e.preventDefault();
         e.stopPropagation();
-        const targetNode = findNode(selectedId);
+        const targetNode = selectedId ? findNode(selectedId) : items[0];
         if (targetNode) {
+          if (!selectedId) setSelectedId(targetNode.id);
           onToggleQuickLook?.(targetNode, items);
+        }
+        return;
+      }
+
+      if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+        e.preventDefault();
+        const currIdx = items.findIndex((it) => it.id === selectedId);
+        const delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
+        const nextIdx = currIdx === -1 ? 0 : Math.min(items.length - 1, Math.max(0, currIdx + delta));
+        const nextNode = items[nextIdx];
+        if (nextNode) {
+          setSelectedId(nextNode.id);
+          if (isQuickLookOpen) {
+            onQuickLookChange?.(nextNode, items);
+          }
         }
       }
     };
     window.addEventListener('keydown', handleDesktopKey);
     return () => window.removeEventListener('keydown', handleDesktopKey);
-  }, [selectedId, renamingId, items, onToggleQuickLook]);
+  }, [isDesktopActive, selectedId, renamingId, items, isQuickLookOpen, onToggleQuickLook, onQuickLookChange]);
 
   // The Cmd+K hint is for first-time visitors; once dismissed it stays gone.
   useEffect(() => {
@@ -396,6 +417,7 @@ export default function DesktopItems({
         className="mac-desktop-icons absolute inset-0 z-[10] pointer-events-none select-none overflow-hidden"
         onClick={() => {
           setSelectedId(null);
+          onFocusDesktop?.();
           if (renamingId) commitRename(renamingId);
         }}
       >
@@ -417,6 +439,13 @@ export default function DesktopItems({
               onPointerDown={(e) => handlePointerDown(e, node.id)}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedId(node.id);
+                if (isQuickLookOpen && onQuickLookChange) {
+                  onQuickLookChange(node, items);
+                }
+              }}
               onDoubleClick={(e) => { e.stopPropagation(); onOpenNode(node); }}
               onKeyDown={(e) => {
                 if (e.key === ' ') {

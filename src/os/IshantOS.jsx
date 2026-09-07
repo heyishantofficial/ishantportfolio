@@ -125,9 +125,12 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
         activeEl.isContentEditable
       );
 
+      // Check if typing in an input or contentEditable
+      const isSpace = e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space';
+
       // Quick Look active controls
       if (quickLook) {
-        if (e.key === ' ' || e.key === 'Escape') {
+        if (isSpace || e.key === 'Escape') {
           e.preventDefault();
           e.stopPropagation();
           closeQuickLook();
@@ -240,6 +243,8 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
         onQuickLookChange={openQuickLook}
         isQuickLookOpen={Boolean(quickLook)}
         quickLookNodeId={quickLook?.node?.id}
+        isDesktopActive={!wm.activeId}
+        onFocusDesktop={() => wm.focusWindow(null)}
       />
 
       <AnimatePresence>

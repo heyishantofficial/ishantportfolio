@@ -971,6 +971,15 @@ function notifyFSChange() {
 
 function indexTree(nodes, parentId = null) {
   for (const node of nodes) {
+    const validThumb = (typeof node.dataUrl === 'string' && !node.dataUrl.startsWith('blob:') && node.dataUrl) ||
+                       (typeof node.preview === 'string' && !node.preview.startsWith('blob:') && node.preview) ||
+                       (typeof node.thumbnailUrl === 'string' && !node.thumbnailUrl.startsWith('blob:') && node.thumbnailUrl) || null;
+    if (typeof node.file === 'string' && node.file.startsWith('blob:')) {
+      node.file = validThumb;
+    }
+    if (typeof node.fileUrl === 'string' && node.fileUrl.startsWith('blob:')) {
+      node.fileUrl = validThumb;
+    }
     INDEX.set(node.id, node);
     PARENTS.set(node.id, parentId);
     if (node.children) indexTree(node.children, node.id);
@@ -1076,6 +1085,18 @@ export function rebuildFSTree(customNodes, renames, deleted, edits) {
     for (const item of pending) {
       if (!item || !item.node || !item.parentId) continue;
       if (deleted && deleted.includes(item.node.id)) continue;
+
+      // Auto-heal dead blob URLs from previous browser sessions
+      const node = item.node;
+      const validThumb = (typeof node.dataUrl === 'string' && !node.dataUrl.startsWith('blob:') && node.dataUrl) ||
+                         (typeof node.preview === 'string' && !node.preview.startsWith('blob:') && node.preview) ||
+                         (typeof node.thumbnailUrl === 'string' && !node.thumbnailUrl.startsWith('blob:') && node.thumbnailUrl) || null;
+      if (typeof node.file === 'string' && node.file.startsWith('blob:')) {
+        node.file = validThumb;
+      }
+      if (typeof node.fileUrl === 'string' && node.fileUrl.startsWith('blob:')) {
+        node.fileUrl = validThumb;
+      }
 
       const parent = INDEX.get(item.parentId);
       if (parent) {
@@ -1192,6 +1213,7 @@ export async function loadPersistedFS() {
       deletedCache = Array.isArray(savedDeleted) ? savedDeleted : [];
       editsCache = savedEdits && typeof savedEdits === 'object' ? savedEdits : {};
       rebuildFSTree(customNodesCache, renamesCache, deletedCache, editsCache);
+      setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache);
 
       // If admin password is in session, queue background sync
       if (getAdminPassword()) {

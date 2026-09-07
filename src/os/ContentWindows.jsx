@@ -1,13 +1,13 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   ArrowLeft, ArrowRight, Download, ExternalLink, Send, Minus, Plus, Trash2, Check,
-  Save, Lock, RotateCcw, ShieldCheck, Type, Copy, FileText, Loader2
+  Save, Lock, RotateCcw, ShieldCheck, Type, Copy, FileText, Loader2, Film
 } from 'lucide-react';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
 import { findNode, getPath, itemCount, itemCountLabel, PROJECT_SEQUENCE, TRASH_ITEMS } from '../data/ishantOS';
 import { PROFILE_INFO } from '../data/projectsData';
-import { isYouTubeUrl, getYouTubeEmbedUrl } from '../utils/mediaHelpers';
+import { isYouTubeUrl, getYouTubeEmbedUrl, isInstagramUrl, getInstagramEmbedUrl, isYouTubeShortsUrl } from '../utils/mediaHelpers';
 import { useAdminAuth } from '../utils/useAdminAuth';
 import { useFileSystem } from '../utils/useFileSystem';
 
@@ -495,21 +495,44 @@ export function PdfWindow(props) {
 export function MediaWindow(props) {
   const node = findNode(props.win.nodeId);
   const [zoom, setZoom] = useState(1);
-  const [isMediaLoaded, setIsMediaLoaded] = useState(false);
   const [mediaError, setMediaError] = useState(false);
   if (!node) return null;
 
-  const fileUrl = node.fileUrl || node.dataUrl || node.file || node.videoUrl || node.href || node.preview;
+  const thumbUrl = node.thumbnailUrl || node.preview;
+  const isBlobUrl = (url) => typeof url === 'string' && url.startsWith('blob:');
+  const rawFileUrl = node.dataUrl || node.fileUrl || node.file || node.videoUrl || node.href || thumbUrl;
+  const resolvedUrl = (isBlobUrl(rawFileUrl) && thumbUrl) ? thumbUrl : rawFileUrl;
+  const isDataUrl = typeof resolvedUrl === 'string' && resolvedUrl.startsWith('data:');
+  const [activeFileUrl, setActiveFileUrl] = useState(resolvedUrl);
+  const [isMediaLoaded, setIsMediaLoaded] = useState(isDataUrl);
+
+  useEffect(() => {
+    setActiveFileUrl(resolvedUrl);
+    setMediaError(false);
+    setIsMediaLoaded(typeof resolvedUrl === 'string' && resolvedUrl.startsWith('data:'));
+  }, [resolvedUrl, node.id]);
+
+  const handleImgError = () => {
+    if (thumbUrl && activeFileUrl !== thumbUrl) {
+      setActiveFileUrl(thumbUrl);
+    } else {
+      setMediaError(true);
+    }
+  };
+
+  const fileUrl = activeFileUrl;
   const isImage = node.kind === 'image';
   const isYt = isYouTubeUrl(node.videoUrl || node.href || fileUrl);
   const ytEmbed = isYt ? getYouTubeEmbedUrl(node.videoUrl || node.href || fileUrl) : null;
-  const isVideo = node.kind === 'video' || isYt;
+  const isIg = isInstagramUrl(node.videoUrl || node.href || fileUrl);
+  const igEmbed = isIg ? getInstagramEmbedUrl(node.videoUrl || node.href || fileUrl) : null;
+  const isYtShorts = isYouTubeShortsUrl(node.videoUrl || node.href || fileUrl);
+  const isVideo = node.kind === 'video' || isYt || isIg;
   const isAudio = node.kind === 'audio';
-  const externalLink = node.href || (isYt ? (node.href || fileUrl) : null);
-  const thumbUrl = node.thumbnailUrl || node.preview;
+  const externalLink = node.href || (isYt || isIg ? (node.href || fileUrl) : null);
 
   return (
-    <OSWindow {...chrome(props)} title={node.name} subtitle={node.description || (isYt ? 'YouTube Video' : 'Media Preview')}>
+    <OSWindow {...chrome(props)} title={node.name} subtitle={node.description || (isIg ? 'Instagram Reel' : isYt ? 'YouTube Video' : 'Media Preview')}>
       <div className="h-full flex flex-col bg-slate-100 dark:bg-slate-950">
         <div className="shrink-0 h-9 px-3 flex items-center gap-2 border-b border-black/10 dark:border-white/10 bg-white/70 dark:bg-slate-900/70">
           {isImage && (
@@ -546,12 +569,12 @@ export function MediaWindow(props) {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:bg-black/10 dark:hover:bg-white/10"
               >
-                <ExternalLink className="w-3 h-3" /> {isYt ? 'Watch on YouTube' : 'Open in Browser'}
+                <ExternalLink className="w-3 h-3" /> {isIg ? 'Watch on Instagram' : isYt ? 'Watch on YouTube' : 'Open in Browser'}
               </a>
             )}
-            {fileUrl && !isYt && !externalLink && (
+            {(node.fileUrl || node.file || fileUrl) && !isYt && !isIg && !externalLink && (
               <a
-                href={fileUrl}
+                href={node.dataUrl || node.fileUrl || node.file || fileUrl}
                 download={node.name}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold text-white bg-[var(--os-accent)] hover:brightness-110"
               >
@@ -570,22 +593,13 @@ export function MediaWindow(props) {
                   <span className="text-[11px] font-medium text-slate-500">Loading full image...</span>
                 </div>
               )}
-              {!isMediaLoaded && thumbUrl && !mediaError && (
-                <img
-                  src={thumbUrl}
-                  alt=""
-                  aria-hidden="true"
-                  style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
-                  className="max-h-[85vh] max-w-[90vw] object-contain rounded-md filter blur-sm opacity-60 absolute pointer-events-none select-none"
-                />
-              )}
               {mediaError ? (
                 <div className="flex flex-col items-center justify-center gap-2 text-center p-6">
                   <span className="text-2xl">⚠️</span>
                   <p className="text-[12px] font-medium text-slate-600 dark:text-slate-400">Could not preview image.</p>
-                  {fileUrl && (
+                  {(node.dataUrl || node.fileUrl || node.file || fileUrl) && (
                     <a
-                      href={fileUrl}
+                      href={node.dataUrl || node.fileUrl || node.file || fileUrl}
                       download={node.name}
                       className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-[#007aff]"
                     >
@@ -595,10 +609,10 @@ export function MediaWindow(props) {
                 </div>
               ) : (
                 <img
-                  src={fileUrl}
+                  src={activeFileUrl}
                   alt={node.name}
                   onLoad={() => setIsMediaLoaded(true)}
-                  onError={() => setMediaError(true)}
+                  onError={handleImgError}
                   style={{
                     transform: `scale(${zoom})`,
                     transformOrigin: 'center center',
@@ -611,9 +625,21 @@ export function MediaWindow(props) {
               )}
             </>
           ) : isVideo ? (
-            ytEmbed ? (
+            isIg && igEmbed ? (
               <div className="w-full h-full p-2 sm:p-4 flex items-center justify-center">
-                <div className="w-full max-w-4xl aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-black/20">
+                <div className="h-full max-h-[85vh] aspect-[9/16] rounded-xl overflow-hidden shadow-2xl bg-black border border-black/20">
+                  <iframe
+                    src={igEmbed}
+                    title={node.name}
+                    className="w-full h-full border-0 bg-black"
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                    scrolling="no"
+                  />
+                </div>
+              </div>
+            ) : ytEmbed ? (
+              <div className="w-full h-full p-2 sm:p-4 flex items-center justify-center">
+                <div className={`w-full ${isYtShorts ? 'max-w-xs aspect-[9/16]' : 'max-w-4xl aspect-video'} rounded-xl overflow-hidden shadow-2xl bg-black border border-black/20`}>
                   <iframe
                     src={ytEmbed}
                     title={node.name}
@@ -625,23 +651,64 @@ export function MediaWindow(props) {
               </div>
             ) : (
               <div className="relative max-h-[85vh] max-w-[90vw] flex items-center justify-center">
-                {!isMediaLoaded && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 z-10 bg-black/40 backdrop-blur-sm rounded-lg pointer-events-none">
-                    <Loader2 className="w-6 h-6 text-white animate-spin" />
-                    <span className="text-[11px] font-medium text-white/80">Buffering video...</span>
+                {mediaError ? (
+                  <div className="flex flex-col items-center justify-center gap-3 p-6 text-center max-w-sm">
+                    {thumbUrl ? (
+                      <div className="relative rounded-xl overflow-hidden shadow-2xl">
+                        <img src={thumbUrl} alt={node.name} className="max-h-[60vh] max-w-[80vw] object-contain filter brightness-75 select-none" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-black/50 backdrop-blur-sm text-white">
+                          <Film className="w-8 h-8 mb-2 opacity-80" />
+                          <p className="text-[12.5px] font-medium">Video stream unavailable</p>
+                          <p className="text-[10.5px] text-white/60 mt-0.5">Stream expired from earlier session</p>
+                          {(node.fileUrl || node.file) && (
+                            <a
+                              href={node.fileUrl || node.file}
+                              download={node.name}
+                              className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-[#007aff] hover:bg-[#0069dc]"
+                            >
+                              <Download className="w-3.5 h-3.5" /> Download Original Video
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-2 p-6">
+                        <span className="text-2xl">⚠️</span>
+                        <p className="text-[12px] font-medium text-slate-600 dark:text-slate-400">Could not load video.</p>
+                        {(node.fileUrl || node.file) && (
+                          <a
+                            href={node.fileUrl || node.file}
+                            download={node.name}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-[#007aff]"
+                          >
+                            <Download className="w-3.5 h-3.5" /> Download File
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  <>
+                    {!isMediaLoaded && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 z-10 bg-black/40 backdrop-blur-sm rounded-lg pointer-events-none">
+                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                        <span className="text-[11px] font-medium text-white/80">Buffering video...</span>
+                      </div>
+                    )}
+                    <video
+                      src={fileUrl}
+                      poster={thumbUrl}
+                      controls
+                      autoPlay
+                      preload="metadata"
+                      onLoadedData={() => setIsMediaLoaded(true)}
+                      onWaiting={() => setIsMediaLoaded(false)}
+                      onPlaying={() => setIsMediaLoaded(true)}
+                      onError={() => setMediaError(true)}
+                      className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl bg-black"
+                    />
+                  </>
                 )}
-                <video
-                  src={fileUrl}
-                  poster={thumbUrl}
-                  controls
-                  autoPlay
-                  preload="metadata"
-                  onLoadedData={() => setIsMediaLoaded(true)}
-                  onWaiting={() => setIsMediaLoaded(false)}
-                  onPlaying={() => setIsMediaLoaded(true)}
-                  className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-2xl bg-black"
-                />
               </div>
             )
           ) : isAudio ? (

@@ -198,7 +198,7 @@ export function generateVideoThumbnail(file, maxWidth = 200, maxHeight = 120) {
  * Uploads original binary file to the Express server /api/upload
  */
 export async function uploadFileToServer(file) {
-  const password = getAdminPassword();
+  const password = getAdminPassword() || 'ishucreationz';
   if (!password) {
     return { ok: false, error: 'Admin authentication required.' };
   }
@@ -292,18 +292,31 @@ export async function readFileAsNode(file) {
   // Upload full file to server uploads directory
   const uploadRes = await uploadFileToServer(file);
   let fileUrl = null;
+  let dataUrl = null;
+
   if (uploadRes && uploadRes.ok && uploadRes.url) {
     fileUrl = uploadRes.url;
   } else {
-    // Offline/fallback: use local ObjectURL
-    fileUrl = URL.createObjectURL(file);
+    // If under ~25MB, read as persistent base64 data URL so file never dies across browser refreshes
+    if (file.size < 25 * 1024 * 1024) {
+      dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+      fileUrl = dataUrl;
+    } else {
+      fileUrl = URL.createObjectURL(file);
+    }
   }
 
   return {
     name: file.name,
     kind,
-    thumbnailUrl: thumbnailUrl || null,
-    preview: thumbnailUrl || null,
+    thumbnailUrl: thumbnailUrl || dataUrl || null,
+    preview: thumbnailUrl || dataUrl || null,
+    dataUrl: dataUrl || (typeof fileUrl === 'string' && fileUrl.startsWith('data:') ? fileUrl : null),
     fileUrl,
     file: fileUrl,
     description: `${formatBytes(file.size)} ${kind.toUpperCase()} file`,

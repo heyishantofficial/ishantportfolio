@@ -24,7 +24,35 @@ export function isYouTubeUrl(url) {
 
 export function isInstagramUrl(url) {
   if (!url || typeof url !== 'string') return false;
-  return /instagram\.com\/(p|reel|tv|[\w.-]+)/i.test(url);
+  return /instagram\.com\/(?:p|reel|reels|tv|[\w.-]+)/i.test(url);
+}
+
+export function getInstagramId(url) {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/instagram\.com\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/i);
+  return match ? match[1] : null;
+}
+
+export function getInstagramEmbedUrl(url) {
+  const id = getInstagramId(url);
+  if (!id) return null;
+  return `https://www.instagram.com/reel/${id}/embed/`;
+}
+
+export function isInstagramReelUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  return /instagram\.com\/(?:reel|reels)\/([A-Za-z0-9_-]+)/i.test(url);
+}
+
+export function isYouTubeShortsUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  return /youtube\.com\/shorts\/([A-Za-z0-9_-]+)/i.test(url);
+}
+
+export function isReelMedia(url, node = null) {
+  if (node?.isReel || node?.aspectRatio === '9:16' || node?.platform === 'instagram') return true;
+  if (!url || typeof url !== 'string') return false;
+  return isInstagramUrl(url) || isYouTubeShortsUrl(url);
 }
 
 export function detectMediaType(url) {

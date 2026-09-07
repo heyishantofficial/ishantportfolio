@@ -39,7 +39,7 @@ export default function AddWorkLinkModal({ isOpen, onClose, folderNode, onAddLin
     const detected = detectMediaType(newUrl);
     setPlatform(detected);
 
-    if (detected === 'youtube' || detected === 'video') {
+    if (detected === 'youtube' || detected === 'video' || detected === 'instagram') {
       setOpenMode('embed');
     } else {
       setOpenMode('tab');
@@ -183,7 +183,7 @@ export default function AddWorkLinkModal({ isOpen, onClose, folderNode, onAddLin
 
                 <button
                   type="button"
-                  onClick={() => setPlatform('instagram')}
+                  onClick={() => { setPlatform('instagram'); setOpenMode('embed'); }}
                   className={`py-2 px-2 rounded-xl border flex flex-col items-center gap-1 transition-all ${
                     platform === 'instagram'
                       ? 'border-pink-500 bg-pink-500/10 text-pink-600 dark:text-pink-400 font-bold shadow-sm'

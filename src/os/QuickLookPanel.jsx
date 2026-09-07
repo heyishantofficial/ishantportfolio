@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion';
 import {
   X, ChevronLeft, ChevronRight, ExternalLink, Download, Copy, Check,
-  Maximize2, Music, FileType2, Globe, Film, ArrowUpRight, Play
+  Maximize2, Music, FileType2, Globe, Film, ArrowUpRight, Play, Image as ImageIcon
 } from 'lucide-react';
 import NodeIcon from './NodeIcon';
-import { itemCountLabel } from '../data/ishantOS';
-import { isYouTubeUrl, getYouTubeEmbedUrl, getYouTubeThumbnail } from '../utils/mediaHelpers';
+import {
+  isYouTubeUrl, getYouTubeEmbedUrl, getYouTubeThumbnail,
+  isInstagramUrl, getInstagramEmbedUrl, isYouTubeShortsUrl, isReelMedia
+} from '../utils/mediaHelpers';
 
 function getDomain(url) {
   if (!url) return '';
@@ -54,16 +56,54 @@ export default function QuickLookPanel({
     setIsPlayingAudio(false);
   }, [node?.id]);
 
-  // Determine media URL if applicable
+  const isBlobUrl = (url) => typeof url === 'string' && url.startsWith('blob:');
+
+  // Determine media URL if applicable with smart dead-blob fallback
   const mediaUrl = useMemo(() => {
     if (!node) return null;
-    return node.dataUrl || node.file || node.videoUrl || node.href || node.preview || null;
+    if (node.dataUrl) return node.dataUrl;
+
+    const file = node.fileUrl || node.file;
+    const thumb = node.preview || node.thumbnailUrl;
+
+    // If file is a dead blob URL from another session, prefer persistent preview/thumbnail!
+    if (isBlobUrl(file) && thumb) {
+      return thumb;
+    }
+
+    return file || node.videoUrl || node.href || thumb || null;
   }, [node]);
 
+  const [activeMediaSrc, setActiveMediaSrc] = useState(mediaUrl);
+  const [mediaLoadError, setMediaLoadError] = useState(false);
+
+  useEffect(() => {
+    setActiveMediaSrc(mediaUrl);
+    setMediaLoadError(false);
+  }, [mediaUrl, node?.id]);
+
+  const handleMediaError = useCallback(() => {
+    if (isImage) {
+      const fallback = (typeof node?.preview === 'string' && !node.preview.startsWith('blob:') && node.preview) ||
+                       (typeof node?.thumbnailUrl === 'string' && !node.thumbnailUrl.startsWith('blob:') && node.thumbnailUrl) ||
+                       (typeof node?.dataUrl === 'string' && !node.dataUrl.startsWith('blob:') && node.dataUrl);
+      if (fallback && activeMediaSrc !== fallback) {
+        setActiveMediaSrc(fallback);
+        return;
+      }
+    }
+    setMediaLoadError(true);
+  }, [node, activeMediaSrc, isImage]);
+
   const isLink = node?.kind === 'link';
-  const isYt = isYouTubeUrl(node?.videoUrl || node?.href || mediaUrl);
-  const ytEmbed = isYt ? getYouTubeEmbedUrl(node?.videoUrl || node?.href || mediaUrl) : null;
-  const isVideo = node?.kind === 'video' || (isYt && !isLink);
+  const rawUrl = node?.videoUrl || node?.href || node?.file || activeMediaSrc || mediaUrl;
+  const isYt = isYouTubeUrl(rawUrl);
+  const ytEmbed = isYt ? getYouTubeEmbedUrl(rawUrl) : null;
+  const isIg = isInstagramUrl(rawUrl) || node?.platform === 'instagram';
+  const igEmbed = isIg ? getInstagramEmbedUrl(rawUrl) : null;
+  const isYtShorts = isYouTubeShortsUrl(rawUrl);
+  const isReel = isIg || isYtShorts || isReelMedia(rawUrl, node);
+  const isVideo = node?.kind === 'video' || (isYt && !isLink) || (isIg && !isLink);
   const isImage = (node?.kind === 'image' || ((node?.dataUrl || (node?.file && /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(node.file))) && !isLink && node?.kind !== 'pdf' && node?.kind !== 'text' && node?.kind !== 'project' && node?.kind !== 'folder' && node?.kind !== 'mail')) && !isLink;
   const isAudio = node?.kind === 'audio';
   const isText = node?.kind === 'text';
@@ -73,7 +113,8 @@ export default function QuickLookPanel({
 
   // Measure natural dimensions for images
   useEffect(() => {
-    if (isImage && mediaUrl) {
+    const srcToMeasure = activeMediaSrc || mediaUrl;
+    if (isImage && srcToMeasure) {
       const img = new Image();
       img.onload = () => {
         setNaturalDimensions({
@@ -82,16 +123,17 @@ export default function QuickLookPanel({
         });
       };
       img.onerror = () => {
+        handleMediaError();
         setNaturalDimensions({ width: 800, height: 600 });
       };
-      img.src = mediaUrl;
+      img.src = srcToMeasure;
       if (img.complete && img.naturalWidth) {
         setNaturalDimensions({
           width: img.naturalWidth,
           height: img.naturalHeight
         });
       }
-    } else if (isPdf && node?.preview) {
+    } else if (isPdf && (node?.preview || srcToMeasure)) {
       const img = new Image();
       img.onload = () => {
         setNaturalDimensions({
@@ -99,7 +141,7 @@ export default function QuickLookPanel({
           height: img.naturalHeight || 820
         });
       };
-      img.src = node.preview;
+      img.src = node?.preview || srcToMeasure;
       if (img.complete && img.naturalWidth) {
         setNaturalDimensions({
           width: img.naturalWidth,
@@ -107,7 +149,7 @@ export default function QuickLookPanel({
         });
       }
     }
-  }, [isImage, isPdf, mediaUrl, node?.preview]);
+  }, [isImage, isPdf, activeMediaSrc, mediaUrl, node?.preview, handleMediaError]);
 
   // Calculate dynamic target window dimensions based on actual media size
   const windowDimensions = useMemo(() => {
@@ -180,7 +222,14 @@ export default function QuickLookPanel({
       return { width: Math.min(480, maxW), height: 320 + HEADER_HEIGHT };
     }
 
-    // 8. Link
+    // 8. Vertical Reels (Instagram Reel / YouTube Shorts / 9:16 Video)
+    if (isReel) {
+      const targetH = Math.min(680, maxH + HEADER_HEIGHT);
+      const targetW = Math.max(340, Math.min(410, Math.round((targetH - HEADER_HEIGHT) * (9 / 16))));
+      return { width: targetW, height: targetH };
+    }
+
+    // 9. Link
     if (isLink) {
       if (isYt) {
         const natW = 960;
@@ -197,7 +246,7 @@ export default function QuickLookPanel({
 
     // Default / Generic
     return { width: Math.min(540, maxW), height: 380 + HEADER_HEIGHT };
-  }, [isImage, isVideo, isPdf, isProject, isText, isFolder, isAudio, isLink, isYt, naturalDimensions, isZoomedFull]);
+  }, [isImage, isVideo, isPdf, isProject, isText, isFolder, isAudio, isLink, isYt, isReel, isIg, naturalDimensions, isZoomedFull]);
 
   // App name to display in the "Open with..." pill button
   const openAppLabel = useMemo(() => {
@@ -208,13 +257,13 @@ export default function QuickLookPanel({
       case 'pdf': return 'Open with Preview';
       case 'folder': return 'Open in Finder';
       case 'image': return 'Open with Preview';
-      case 'video': return isYt ? 'Watch on YouTube' : 'Open with QuickTime';
+      case 'video': return isYt ? 'Watch on YouTube' : isIg ? 'Watch on Instagram' : 'Open with QuickTime';
       case 'audio': return 'Play in Music';
       case 'mail': return 'Open in Mail';
-      case 'link': return isYt ? 'Watch on YouTube' : 'Open in Safari';
+      case 'link': return isIg ? 'Watch on Instagram' : isYt ? 'Watch on YouTube' : 'Open in Safari';
       default: return 'Open';
     }
-  }, [node, isYt]);
+  }, [node, isYt, isIg]);
 
   // Subtitle / metadata badge in header
   const metadataLabel = useMemo(() => {
@@ -233,6 +282,12 @@ export default function QuickLookPanel({
     }
     if (isFolder) {
       return `${itemCountLabel(node)} · Folder`;
+    }
+    if (isIg) {
+      return 'Instagram Reel · Video';
+    }
+    if (isYtShorts) {
+      return 'YouTube Shorts · 9:16 Reel';
     }
     if (isVideo) {
       return isYt ? 'YouTube Video · HD' : 'Video Clip · H.264';
@@ -416,23 +471,49 @@ export default function QuickLookPanel({
         <div className="flex-1 min-h-0 relative overflow-auto flex items-center justify-center bg-black/20">
           
           {/* 1. IMAGE: Natural Real Size */}
-          {isImage && mediaUrl && (
+          {isImage && (
             <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
-              <img
-                src={mediaUrl}
-                alt={node.name}
-                className="max-w-full max-h-full object-contain drop-shadow-2xl select-none"
-                style={{
-                  width: isZoomedFull ? '100%' : 'auto',
-                  height: isZoomedFull ? '100%' : 'auto'
-                }}
-              />
+              {mediaLoadError || !activeMediaSrc ? (
+                <div className="flex flex-col items-center justify-center gap-3 p-8 text-center max-w-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg">
+                    <ImageIcon className="w-8 h-8 text-white/70" />
+                  </div>
+                  <div>
+                    <h4 className="text-[14px] font-semibold text-white truncate max-w-xs">{node.name}</h4>
+                    <p className="text-[12px] text-white/60 mt-1">Image preview unavailable</p>
+                    {node.description && (
+                      <p className="text-[11px] text-white/40 mt-0.5">{node.description}</p>
+                    )}
+                  </div>
+                  {(node.fileUrl || node.file || activeMediaSrc) && (
+                    <a
+                      href={node.fileUrl || node.file || activeMediaSrc}
+                      download={node.name}
+                      className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#007aff] hover:bg-[#0069dc] text-white text-[12px] font-medium transition-all shadow-md active:scale-95"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download File</span>
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <img
+                  src={activeMediaSrc}
+                  alt={node.name}
+                  onError={handleMediaError}
+                  className="max-w-full max-h-full object-contain drop-shadow-2xl select-none"
+                  style={{
+                    width: isZoomedFull ? '100%' : 'auto',
+                    height: isZoomedFull ? '100%' : 'auto'
+                  }}
+                />
+              )}
             </div>
           )}
 
           {/* 2. VIDEO / YOUTUBE */}
           {isVideo && (
-            <div className="w-full h-full flex items-center justify-center bg-black p-2">
+            <div className="w-full h-full flex items-center justify-center bg-black p-2 relative overflow-hidden">
               {isYt && ytEmbed ? (
                 <iframe
                   src={ytEmbed}
@@ -441,12 +522,52 @@ export default function QuickLookPanel({
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
+              ) : mediaLoadError ? (
+                <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                  {(node.thumbnailUrl || node.preview) ? (
+                    <img
+                      src={node.thumbnailUrl || node.preview}
+                      alt={node.name}
+                      className="max-w-full max-h-full object-contain filter brightness-75 select-none"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg">
+                      <Film className="w-8 h-8 text-white/70" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-sm text-center">
+                    <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center mb-3">
+                      <Film className="w-6 h-6 text-white" />
+                    </div>
+                    <h4 className="text-[14px] font-semibold text-white truncate max-w-sm">{node.name}</h4>
+                    <p className="text-[12px] text-white/70 mt-1 max-w-xs">
+                      Video stream expired from earlier session.
+                    </p>
+                    {node.description && (
+                      <p className="text-[11px] text-white/50 mt-0.5">{node.description}</p>
+                    )}
+                    {(node.fileUrl || node.file) && (
+                      <a
+                        href={node.fileUrl || node.file}
+                        download={node.name}
+                        className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#007aff] hover:bg-[#0069dc] text-white text-[12px] font-medium transition-all shadow-md active:scale-95"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Original</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
               ) : (
                 <video
-                  src={mediaUrl}
+                  src={activeMediaSrc || mediaUrl}
+                  poster={node.thumbnailUrl || node.preview}
                   controls
                   autoPlay
-                  className="max-w-full max-h-full rounded-xl shadow-2xl"
+                  preload="metadata"
+                  onError={handleMediaError}
+                  className="w-full h-full object-contain rounded-xl shadow-2xl max-h-[82vh]"
+                  style={{ minWidth: 320, minHeight: 200 }}
                 />
               )}
             </div>
@@ -682,8 +803,69 @@ export default function QuickLookPanel({
           {/* 8. WEB LINK & VIDEO LINK PREVIEW */}
           {isLink && (
             <div className="w-full h-full flex flex-col bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 overflow-hidden select-none">
-              {/* Case A: YouTube / Video Embed */}
-              {isYt && ytEmbed ? (
+              {/* Case A: Instagram Reel Embed */}
+              {isIg && igEmbed ? (
+                <div className="w-full h-full flex flex-col bg-black text-white overflow-hidden">
+                  <div className="flex-1 w-full relative bg-slate-950 flex items-center justify-center overflow-hidden">
+                    <iframe
+                      src={igEmbed}
+                      title={node.name}
+                      className="w-full h-full border-0 bg-black"
+                      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                      scrolling="no"
+                    />
+                  </div>
+                  <div className="shrink-0 p-3 bg-slate-900/95 backdrop-blur-md border-t border-white/10 flex items-center justify-between gap-3 text-white">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 flex items-center justify-center shrink-0 shadow-sm text-white">
+                        <Film className="w-3.5 h-3.5" />
+                      </span>
+                      <div className="min-w-0">
+                        <h4 className="text-[12.5px] font-bold text-white truncate leading-tight">{node.name}</h4>
+                        <p className="text-[10.5px] text-white/60 truncate">{node.description || 'Instagram Reel'}</p>
+                      </div>
+                    </div>
+                    <a
+                      href={node.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white text-[11px] font-bold hover:brightness-110 active:scale-95 transition-all shadow-md"
+                    >
+                      <span>Watch on IG</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              ) : isYtShorts && ytEmbed ? (
+                /* Case B: YouTube Shorts Embed (Vertical 9:16) */
+                <div className="w-full h-full flex flex-col p-3 bg-black">
+                  <div className="flex-1 w-full rounded-xl overflow-hidden bg-black shadow-2xl flex items-center justify-center border border-white/10">
+                    <iframe
+                      src={ytEmbed}
+                      title={node.name}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                  <div className="shrink-0 mt-2.5 flex items-center justify-between gap-3 text-white px-1">
+                    <div className="min-w-0">
+                      <h4 className="text-[13px] font-bold truncate">{node.name}</h4>
+                      <p className="text-[11px] text-white/60 truncate">{node.description || 'YouTube Shorts'}</p>
+                    </div>
+                    <a
+                      href={node.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[11px] font-semibold transition-colors shadow-sm"
+                    >
+                      <span>Open Shorts</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              ) : isYt && ytEmbed ? (
+                /* Case C: YouTube Landscape Video Embed */
                 <div className="w-full h-full flex flex-col p-4 sm:p-5 bg-black">
                   <div className="flex-1 w-full aspect-video rounded-xl overflow-hidden bg-black shadow-2xl flex items-center justify-center border border-white/10">
                     <iframe

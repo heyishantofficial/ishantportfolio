@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "masterVersionId": "test_master_1",
+  "updatedAt": "2026-09-07T08:46:11.021Z",
+  "filesystem": {
+    "customNodes": [
+      {
+        "parentId": "experience",
+        "node": {
+          "id": "ep01",
+          "name": "Ep01 : where i started",
+          "kind": "folder",
+          "children": []
+        }
+      }
+    ],
+    "renames": {
+      "experience": "the Journey"
+    },
+    "deleted": [],
+    "edits": {},
+    "updatedAt": "2026-09-07T08:46:11.021Z"
+  },
+  "settings": {
+    "wallpaper": "video",
+    "lockWallpaper": "custom",
+    "socialLinks": {
+      "youtube": "https://youtube.com/@heyishant",
+      "linkedin": "https://linkedin.com",
+      "instagram": "https://instagram.com/heyishant",
+      "twitter": "https://twitter.com",
+      "github": "https://github.com/heyishantofficial"
+    },
+    "dashboardConfig": {
+      "openLinksInNewTab": true,
+      "dockMagnification": true,
+      "soundEffects": true,
+      "statusMessage": "",
+      "contactEmail": "ishant.vibecode@gmail.com"
+    },
+    "folderIcons": {},
+    "updatedAt": "2026-09-07T08:46:11.021Z"
+  },
+  "meta": {
+    "syncedAt": "2026-09-07T08:46:11.021Z",
+    "masterVersionId": "test_master_1",
+    "customNodeCount": 1,
+    "renameCount": 1
+  }
+}

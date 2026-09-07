@@ -1052,111 +1052,74 @@ export function queueFSSync(delay = 600) {
  * Loads persisted custom folders, uploaded files, body edits and renamed nodes
  * from Express backend with seamless fallback to IndexedDB.
  */
-export async function loadPersistedFS() {
-  try {
-    const [serverFS, savedCustom, savedRenames, savedDeleted, savedEdits] = await Promise.all([
-      fetchServerFilesystem(),
-      getStorageItem(STORAGE_KEY_CUSTOM, []),
-      getStorageItem(STORAGE_KEY_RENAMES, {}),
-      getStorageItem(STORAGE_KEY_DELETED, []),
-      getStorageItem(STORAGE_KEY_EDITS, {})
-    ]);
+export function getFSCacheState() {
+  return {
+    customNodes: Array.isArray(customNodesCache) ? [...customNodesCache] : [],
+    renames: { ...renamesCache },
+    deleted: Array.isArray(deletedCache) ? [...deletedCache] : [],
+    edits: { ...editsCache },
+    updatedAt: currentSyncStatus.lastSynced || null
+  };
+}
 
-    const hasServerData = serverFS && (
-      (Array.isArray(serverFS.customNodes) && serverFS.customNodes.length > 0) ||
-      (serverFS.renames && Object.keys(serverFS.renames).length > 0) ||
-      (Array.isArray(serverFS.deleted) && serverFS.deleted.length > 0) ||
-      (serverFS.edits && Object.keys(serverFS.edits).length > 0) ||
-      serverFS.updatedAt
-    );
+export function rebuildFSTree(customNodes, renames, deleted, edits) {
+  INDEX.clear();
+  PARENTS.clear();
+  indexTree([HOME]);
 
-    const hasLocalData = Array.isArray(savedCustom) && savedCustom.length > 0;
+  // Apply custom nodes with multi-pass resolution for nested folders
+  let pending = [...(customNodes || [])];
+  let prevLength = -1;
+  while (pending.length > 0 && pending.length !== prevLength) {
+    prevLength = pending.length;
+    const nextPending = [];
+    for (const item of pending) {
+      if (!item || !item.node || !item.parentId) continue;
+      if (deleted && deleted.includes(item.node.id)) continue;
 
-    if (hasServerData) {
-      customNodesCache = Array.isArray(serverFS.customNodes) ? serverFS.customNodes : [];
-      renamesCache = serverFS.renames && typeof serverFS.renames === 'object' ? serverFS.renames : {};
-      deletedCache = Array.isArray(serverFS.deleted) ? serverFS.deleted : [];
-      editsCache = serverFS.edits && typeof serverFS.edits === 'object' ? serverFS.edits : {};
-
-      // Sync down to local IndexedDB for fast offline/subsequent boots
-      await Promise.all([
-        setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache),
-        setStorageItem(STORAGE_KEY_RENAMES, renamesCache),
-        setStorageItem(STORAGE_KEY_DELETED, deletedCache),
-        setStorageItem(STORAGE_KEY_EDITS, editsCache)
-      ]);
-
-      notifySyncStatus({
-        status: 'synced',
-        message: 'Loaded from cloud',
-        lastSynced: serverFS.updatedAt
-      });
-    } else if (hasLocalData) {
-      // Server has no data yet, but local browser has existing custom nodes (e.g. Ishant's E01-E05)
-      customNodesCache = savedCustom;
-      renamesCache = savedRenames && typeof savedRenames === 'object' ? savedRenames : {};
-      deletedCache = Array.isArray(savedDeleted) ? savedDeleted : [];
-      editsCache = savedEdits && typeof savedEdits === 'object' ? savedEdits : {};
-
-      // If admin password is already in session, auto-upload local nodes to server
-      if (getAdminPassword()) {
-        queueFSSync(200);
-      }
-    } else {
-      customNodesCache = [];
-      renamesCache = {};
-      deletedCache = [];
-      editsCache = {};
-    }
-
-    // Apply custom nodes with multi-pass resolution for nested folders
-    let pending = [...customNodesCache];
-    let prevLength = -1;
-    while (pending.length > 0 && pending.length !== prevLength) {
-      prevLength = pending.length;
-      const nextPending = [];
-      for (const item of pending) {
-        if (!item || !item.node || !item.parentId) continue;
-        if (deletedCache.includes(item.node.id)) continue;
-
-        const parent = INDEX.get(item.parentId);
-        if (parent) {
-          if (!parent.children) parent.children = [];
-          const existingIdx = parent.children.findIndex((c) => c.id === item.node.id);
-          if (existingIdx >= 0) {
-            parent.children[existingIdx] = item.node;
-          } else {
-            parent.children.push(item.node);
-          }
-          INDEX.set(item.node.id, item.node);
-          PARENTS.set(item.node.id, item.parentId);
-          if (item.node.children) indexTree(item.node.children, item.node.id);
+      const parent = INDEX.get(item.parentId);
+      if (parent) {
+        if (!parent.children) parent.children = [];
+        const existingIdx = parent.children.findIndex((c) => c.id === item.node.id);
+        if (existingIdx >= 0) {
+          parent.children[existingIdx] = item.node;
         } else {
-          nextPending.push(item);
+          parent.children.push(item.node);
         }
+        INDEX.set(item.node.id, item.node);
+        PARENTS.set(item.node.id, item.parentId);
+        if (item.node.children) indexTree(item.node.children, item.node.id);
+      } else {
+        nextPending.push(item);
       }
-      pending = nextPending;
     }
+    pending = nextPending;
+  }
 
-    // Apply renames
-    for (const [id, newName] of Object.entries(renamesCache)) {
+  // Apply renames
+  if (renames) {
+    for (const [id, newName] of Object.entries(renames)) {
       const target = INDEX.get(id);
       if (target && newName) {
         target.name = newName;
       }
     }
+  }
 
-    // Apply body edits
-    for (const [id, edit] of Object.entries(editsCache)) {
+  // Apply body edits
+  if (edits) {
+    for (const [id, edit] of Object.entries(edits)) {
       const target = INDEX.get(id);
       if (target && edit && typeof edit.body === 'string') {
         target.body = edit.body;
         if (edit.modifiedAt) target.modifiedAt = edit.modifiedAt;
       }
     }
+  }
 
-    // Apply deletions
-    for (const id of deletedCache) {
+  // Apply deletions
+  if (deleted) {
+    for (const id of deleted) {
       const parentId = PARENTS.get(id);
       if (parentId) {
         const parent = INDEX.get(parentId);
@@ -1167,11 +1130,95 @@ export async function loadPersistedFS() {
       INDEX.delete(id);
       PARENTS.delete(id);
     }
+  }
 
-    notifyFSChange();
+  notifyFSChange();
+}
+
+export async function applyFSSnapshot(fsSnapshot, persistLocally = true) {
+  if (!fsSnapshot) return;
+  customNodesCache = Array.isArray(fsSnapshot.customNodes) ? fsSnapshot.customNodes : [];
+  renamesCache = fsSnapshot.renames && typeof fsSnapshot.renames === 'object' ? fsSnapshot.renames : {};
+  deletedCache = Array.isArray(fsSnapshot.deleted) ? fsSnapshot.deleted : [];
+  editsCache = fsSnapshot.edits && typeof fsSnapshot.edits === 'object' ? fsSnapshot.edits : {};
+
+  rebuildFSTree(customNodesCache, renamesCache, deletedCache, editsCache);
+
+  if (persistLocally) {
+    await Promise.all([
+      setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache),
+      setStorageItem(STORAGE_KEY_RENAMES, renamesCache),
+      setStorageItem(STORAGE_KEY_DELETED, deletedCache),
+      setStorageItem(STORAGE_KEY_EDITS, editsCache)
+    ]);
+  }
+
+  notifySyncStatus({
+    status: 'synced',
+    message: 'Master filesystem active',
+    lastSynced: fsSnapshot.updatedAt || new Date().toISOString()
+  });
+}
+
+/**
+ * Loads persisted custom folders, uploaded files, body edits and renamed nodes
+ * from Express backend with seamless fallback to IndexedDB.
+ */
+export async function loadPersistedFS() {
+  try {
+    const [serverFS, savedCustom, savedRenames, savedDeleted, savedEdits] = await Promise.all([
+      fetchServerFilesystem(),
+      getStorageItem(STORAGE_KEY_CUSTOM, []),
+      getStorageItem(STORAGE_KEY_RENAMES, {}),
+      getStorageItem(STORAGE_KEY_DELETED, []),
+      getStorageItem(STORAGE_KEY_EDITS, {})
+    ]);
+
+    const hasRealServerData = serverFS && (
+      (Array.isArray(serverFS.customNodes) && serverFS.customNodes.length > 0) ||
+      (serverFS.renames && Object.keys(serverFS.renames).length > 0) ||
+      (Array.isArray(serverFS.deleted) && serverFS.deleted.length > 0) ||
+      (serverFS.edits && Object.keys(serverFS.edits).length > 0)
+    );
+
+    const hasLocalData = Array.isArray(savedCustom) && savedCustom.length > 0;
+
+    if (hasRealServerData) {
+      await applyFSSnapshot(serverFS, true);
+    } else if (hasLocalData) {
+      // Server has no custom nodes yet, but local browser has existing custom nodes (e.g. Ishant's Ep01-Ep05)
+      customNodesCache = savedCustom;
+      renamesCache = savedRenames && typeof savedRenames === 'object' ? savedRenames : {};
+      deletedCache = Array.isArray(savedDeleted) ? savedDeleted : [];
+      editsCache = savedEdits && typeof savedEdits === 'object' ? savedEdits : {};
+      rebuildFSTree(customNodesCache, renamesCache, deletedCache, editsCache);
+
+      // If admin password is in session, queue background sync
+      if (getAdminPassword()) {
+        queueFSSync(400);
+      }
+    } else {
+      customNodesCache = [];
+      renamesCache = {};
+      deletedCache = [];
+      editsCache = {};
+      rebuildFSTree([], {}, [], {});
+    }
   } catch (err) {
     console.warn('Failed to load persisted filesystem:', err);
   }
+}
+
+// BroadcastChannel for instant cross-tab sync when master snapshot is applied
+if (typeof window !== 'undefined' && window.BroadcastChannel) {
+  try {
+    const channel = new BroadcastChannel('ishant_master_sync');
+    channel.onmessage = (event) => {
+      if (event?.data?.type === 'MASTER_SYNC_UPDATED' && event.data.snapshot?.filesystem) {
+        applyFSSnapshot(event.data.snapshot.filesystem, true);
+      }
+    };
+  } catch {}
 }
 
 // Initial hydration in browser

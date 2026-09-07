@@ -14,7 +14,8 @@ export default defineConfig({
   server: {
     // In dev, forward the settings API to the Express server (npm start).
     proxy: {
-      '/api': 'http://localhost:3000'
+      '/api': 'http://localhost:3000',
+      '/uploads': 'http://localhost:3000'
     }
   }
 })

@@ -4,7 +4,12 @@ const ADMIN_PASSWORD = 'ishucreationz';
 const AUTH_KEY = 'ishant_admin_auth';
 const PWD_KEY = 'ishant_admin_pwd';
 
+let inMemoryPassword = '';
 let globalIsAdmin = typeof window !== 'undefined' ? sessionStorage.getItem(AUTH_KEY) === 'true' : false;
+if (typeof window !== 'undefined') {
+  inMemoryPassword = sessionStorage.getItem(PWD_KEY) || '';
+}
+
 const listeners = new Set();
 
 function notifyListeners() {
@@ -16,12 +21,23 @@ export function checkIsAdmin() {
 }
 
 export function getAdminPassword() {
+  if (inMemoryPassword) return inMemoryPassword;
   if (typeof window === 'undefined') return '';
-  return sessionStorage.getItem(PWD_KEY) || '';
+  const pwd = sessionStorage.getItem(PWD_KEY);
+  if (pwd) {
+    inMemoryPassword = pwd;
+    return pwd;
+  }
+  return '';
 }
 
 export function setAdminStatus(status, pwd = null) {
   globalIsAdmin = !!status;
+  if (pwd) {
+    inMemoryPassword = pwd;
+  } else if (!status) {
+    inMemoryPassword = '';
+  }
   if (typeof window !== 'undefined') {
     if (globalIsAdmin) {
       sessionStorage.setItem(AUTH_KEY, 'true');

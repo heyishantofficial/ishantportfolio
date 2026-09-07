@@ -12,6 +12,7 @@ import { useAdminAuth } from '../utils/useAdminAuth';
 import { useFileSystem } from '../utils/useFileSystem';
 import { readFileAsNode } from '../utils/fsStorage';
 import { playTrashSound } from '../utils/macAudioEngine';
+import { runMasterSync } from '../lib/masterSync';
 import AdminAuthModal from '../components/AdminAuthModal';
 import AddWorkLinkModal from '../components/AddWorkLinkModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
@@ -83,6 +84,7 @@ export default function FinderWindow({
 
   // Drag-and-drop state
   const [isDragging, setIsDragging] = useState(false);
+  const [syncNotice, setSyncNotice] = useState(null);
 
   const currentId = history[cursor];
   const node = findNode(currentId);
@@ -620,17 +622,25 @@ export default function FinderWindow({
               </button>
               <button
                 onClick={async () => {
-                  await syncFSToServer();
                   setShowAdminDropdown(false);
+                  setSyncNotice({ type: 'syncing', text: 'Saving master website to cloud...' });
+                  try {
+                    await runMasterSync();
+                    setSyncNotice({ type: 'success', text: '🎉 Master website synced globally!' });
+                    setTimeout(() => setSyncNotice(null), 3500);
+                  } catch (err) {
+                    setSyncNotice({ type: 'error', text: err.message || 'Sync failed' });
+                    setTimeout(() => setSyncNotice(null), 5000);
+                  }
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 transition-colors text-slate-700 dark:text-slate-200"
+                className="w-full text-left px-3 py-1.5 hover:bg-[#007aff] hover:text-white flex items-center gap-2 transition-colors text-slate-700 dark:text-slate-200 cursor-pointer"
               >
-                <Cloud className="w-3.5 h-3.5 text-blue-500" /> Force Sync to Cloud
+                <Cloud className="w-3.5 h-3.5 text-blue-500" /> Force Sync to Cloud (Master)
               </button>
               <div className="my-1 border-t border-black/5 dark:border-white/5" />
               <button
                 onClick={() => { lock(); setShowAdminDropdown(false); }}
-                className="w-full text-left px-3 py-1.5 hover:bg-red-500 hover:text-white flex items-center gap-2 text-red-600 dark:text-red-400 transition-colors"
+                className="w-full text-left px-3 py-1.5 hover:bg-red-500 hover:text-white flex items-center gap-2 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
               >
                 <Lock className="w-3.5 h-3.5" /> Lock Admin Mode
               </button>
@@ -659,6 +669,20 @@ export default function FinderWindow({
         className="h-full flex relative"
         onClick={() => { setMenu(null); setShowAdminDropdown(false); }}
       >
+        {/* Floating Sync Notice Toast */}
+        {syncNotice && (
+          <div 
+            className="absolute top-2 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-full shadow-xl backdrop-blur-xl text-xs font-semibold flex items-center gap-2 border animate-fadeIn transition-all select-none pointer-events-none"
+            style={{
+              backgroundColor: syncNotice.type === 'error' ? 'rgba(239, 68, 68, 0.95)' : syncNotice.type === 'success' ? 'rgba(16, 185, 129, 0.95)' : 'rgba(37, 99, 235, 0.95)',
+              borderColor: 'rgba(255, 255, 255, 0.4)',
+              color: '#ffffff'
+            }}
+          >
+            {syncNotice.type === 'syncing' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Cloud className="w-3.5 h-3.5" />}
+            <span>{syncNotice.text}</span>
+          </div>
+        )}
         {/* Sidebar */}
         <nav
           aria-label="Favourites"

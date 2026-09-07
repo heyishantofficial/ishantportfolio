@@ -1,15 +1,21 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { 
-  Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2, Share2, Link, ExternalLink, LayoutGrid, User, RotateCcw, CheckCircle2, Folder, FolderCog, Search, AlertCircle
+  Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2, Share2, ExternalLink, LayoutGrid, User, RotateCcw, CheckCircle2, Folder, Search, AlertCircle,
+  RefreshCw, Cloud, Download, UploadCloud, Database, CheckCheck, Server
 } from "lucide-react";
+import confetti from "canvas-confetti";
 import { MacWindow } from "./macDockModals";
 import { playMacClick } from "../utils/macAudioEngine";
 import { verifyAdminPassword, saveSiteSettings, saveFolderIcons, changeAdminPassword, isPublishable, checkServerHealth, getAllFolderIcons, setLocalFolderIcons } from "../lib/siteSettings";
 import { 
-  FOLDER_COLOR_PRESETS, FOLDER_BADGE_PRESETS, FOLDER_SYSTEM_APP_PRESETS, FolderArtwork, findPresetById 
+  runMasterSync, fetchMasterSnapshot, applyMasterSnapshotToWindow, exportMasterSnapshotJson, importMasterSnapshotJson, getCurrentWebsiteSnapshot 
+} from "../lib/masterSync";
+import { 
+  FOLDER_COLOR_PRESETS, FOLDER_BADGE_PRESETS, FOLDER_SYSTEM_APP_PRESETS, FolderArtwork 
 } from "../data/folderIconsCatalog";
 import { processIconFile, fileToBase64 } from "../utils/icnsParser";
 import { allNodes } from "../data/ishantOS";
+import { getAdminPassword, setAdminStatus } from "../utils/useAdminAuth";
 
 export default function SystemSettingsModal({ 
   onClose,
@@ -213,6 +219,7 @@ export default function SystemSettingsModal({
     try {
       await verifyAdminPassword(attempt);
       adminPassword.current = attempt;
+      setAdminStatus(true, attempt);
       setIsSettingsUnlocked(true);
       setSettingsPasswordInput("");
     } catch (err) {
@@ -221,6 +228,141 @@ export default function SystemSettingsModal({
       setTimeout(() => setIsShaking(false), 500);
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  // Master Sync State
+  const [masterSyncState, setMasterSyncState] = useState("idle"); // idle | syncing | synced | error
+  const [masterSyncMsg, setMasterSyncMsg] = useState("");
+  const [masterSyncError, setMasterSyncError] = useState("");
+  const [liveMasterSnapshot, setLiveMasterSnapshot] = useState(null);
+  const [isPullingMaster, setIsPullingMaster] = useState(false);
+  const [isRestoringSnapshot, setIsRestoringSnapshot] = useState(false);
+  const snapshotFileInputRef = useRef(null);
+
+  // Auto-sync admin password if already unlocked in another component
+  useEffect(() => {
+    const existingPwd = getAdminPassword();
+    if (existingPwd && !isSettingsUnlocked) {
+      adminPassword.current = existingPwd;
+      setIsSettingsUnlocked(true);
+    }
+  }, [isSettingsUnlocked]);
+
+  // Load live master snapshot from server
+  useEffect(() => {
+    if (isSettingsUnlocked) {
+      fetchMasterSnapshot().then((snapshot) => {
+        if (snapshot) setLiveMasterSnapshot(snapshot);
+      });
+    }
+  }, [isSettingsUnlocked, activeTab]);
+
+  // Read current window snapshot
+  const windowSnapshot = useMemo(() => {
+    return getCurrentWebsiteSnapshot({
+      wallpaper,
+      lockWallpaper,
+      socialLinks: localSocials,
+      dashboardConfig: localDashboard,
+      folderIcons: localFolderIcons
+    });
+  }, [wallpaper, lockWallpaper, localSocials, localDashboard, localFolderIcons]);
+
+  const handleExecuteMasterSync = async () => {
+    setMasterSyncState("syncing");
+    setMasterSyncError("");
+    setMasterSyncMsg("Packaging window snapshot and syncing to cloud...");
+
+    try {
+      const pwd = adminPassword.current || getAdminPassword();
+      if (!pwd) {
+        throw new Error("Admin password required. Please unlock with your password first.");
+      }
+
+      const res = await runMasterSync(pwd, {
+        wallpaper,
+        lockWallpaper,
+        socialLinks: localSocials,
+        dashboardConfig: localDashboard,
+        folderIcons: localFolderIcons
+      });
+
+      setLiveMasterSnapshot(res.snapshot);
+      setMasterSyncState("synced");
+      setMasterSyncMsg("🎉 Master website updated! All visitors and browsers will now see this final version.");
+      playMacClick(isMuted);
+      try {
+        confetti({ particleCount: 80, spread: 75, origin: { y: 0.55 } });
+      } catch {}
+
+      setTimeout(() => {
+        setMasterSyncState("idle");
+      }, 4500);
+    } catch (err) {
+      console.error("[MasterSync Error]:", err);
+      setMasterSyncState("error");
+      setMasterSyncError(err.message || "Failed to publish master website.");
+    }
+  };
+
+  const handlePullMasterSnapshot = async () => {
+    setIsPullingMaster(true);
+    setMasterSyncError("");
+    try {
+      const snapshot = await fetchMasterSnapshot();
+      if (!snapshot) {
+        throw new Error("No master snapshot found on the server.");
+      }
+      await applyMasterSnapshotToWindow(snapshot, {
+        onChangeWallpaper,
+        onChangeLockWallpaper,
+        onUpdateSocialLinks,
+        onUpdateDashboardConfig,
+        onUpdateFolderIcons
+      });
+      setLiveMasterSnapshot(snapshot);
+      playMacClick(isMuted);
+      setMasterSyncState("synced");
+      setMasterSyncMsg("Pulled and applied the live master version successfully!");
+      setTimeout(() => setMasterSyncState("idle"), 3500);
+    } catch (err) {
+      setMasterSyncState("error");
+      setMasterSyncError(err.message);
+    } finally {
+      setIsPullingMaster(false);
+    }
+  };
+
+  const handleExportSnapshot = () => {
+    exportMasterSnapshotJson(windowSnapshot);
+    playMacClick(isMuted);
+  };
+
+  const handleImportSnapshotFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setIsRestoringSnapshot(true);
+    setMasterSyncError("");
+    try {
+      const imported = await importMasterSnapshotJson(file);
+      await applyMasterSnapshotToWindow(imported, {
+        onChangeWallpaper,
+        onChangeLockWallpaper,
+        onUpdateSocialLinks,
+        onUpdateDashboardConfig,
+        onUpdateFolderIcons
+      });
+      playMacClick(isMuted);
+      setMasterSyncState("synced");
+      setMasterSyncMsg("Imported backup snapshot applied to this window! Run Master Sync to publish it globally.");
+      setTimeout(() => setMasterSyncState("idle"), 4500);
+    } catch (err) {
+      setMasterSyncState("error");
+      setMasterSyncError(err.message);
+    } finally {
+      setIsRestoringSnapshot(false);
+      if (snapshotFileInputRef.current) snapshotFileInputRef.current.value = "";
     }
   };
 
@@ -336,8 +478,9 @@ export default function SystemSettingsModal({
     setPublishState("saving");
     setPublishError("");
     try {
+      const pwd = adminPassword.current || getAdminPassword();
       const res = await saveSiteSettings({
-        password: adminPassword.current,
+        password: pwd,
         wallpaper,
         lockWallpaper,
         socialLinks: localSocials,
@@ -347,6 +490,20 @@ export default function SystemSettingsModal({
       if (onUpdateSocialLinks) onUpdateSocialLinks(localSocials);
       if (onUpdateDashboardConfig) onUpdateDashboardConfig(localDashboard);
       if (onUpdateFolderIcons) onUpdateFolderIcons(localFolderIcons);
+
+      // Also trigger master sync to save full folders and filesystem globally
+      try {
+        await runMasterSync(pwd, {
+          wallpaper,
+          lockWallpaper,
+          socialLinks: localSocials,
+          dashboardConfig: localDashboard,
+          folderIcons: localFolderIcons
+        });
+      } catch (masterErr) {
+        console.warn('Master sync background update note:', masterErr.message);
+      }
+
       if (res?.fallback) {
         setPublishError("⚠️ Saved in this browser only: Backend /api/settings is unreachable. Ensure Dokploy Publish Directory is empty and Port is 3000.");
         setPublishState("error");
@@ -497,6 +654,7 @@ export default function SystemSettingsModal({
 
                 <div className="space-y-1">
                   {[
+                    { id: "master-sync", label: "Master Sync", icon: RefreshCw, badge: "Master" },
                     { id: "socials", label: "Social & Links Hub", icon: Share2, badge: "Live" },
                     { id: "folder-icons", label: "Folder Icons", icon: Folder, badge: "Custom" },
                     { id: "dock", label: "Dock & Desktop", icon: LayoutGrid },
@@ -568,6 +726,237 @@ export default function SystemSettingsModal({
             {/* Settings Right Main Content Area */}
             <div className="flex-1 bg-white/15 dark:bg-slate-950/30 backdrop-blur-2xl overflow-y-auto p-5 space-y-6">
               
+              {/* TAB: Master Sync */}
+              {activeTab === "master-sync" && (
+                <div className="space-y-6 animate-fadeIn">
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-4">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-500 flex items-center justify-center">
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" />
+                        </div>
+                        <span>Master Sync & Global Website Publisher</span>
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Save and lock the final state of this window as the permanent version for every visitor, browser, and device.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={handleExportSnapshot}
+                        className="px-2.5 py-1.5 rounded-xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 border border-black/10 dark:border-white/10 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        title="Download JSON Snapshot Backup"
+                      >
+                        <Download className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Backup (.json)</span>
+                      </button>
+
+                      <input
+                        type="file"
+                        ref={snapshotFileInputRef}
+                        onChange={handleImportSnapshotFile}
+                        accept=".json,application/json"
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => snapshotFileInputRef.current?.click()}
+                        disabled={isRestoringSnapshot}
+                        className="px-2.5 py-1.5 rounded-xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 border border-black/10 dark:border-white/10 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                        title="Import Snapshot JSON"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Restore (.json)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Status Banner */}
+                  {masterSyncMsg && (
+                    <div className="p-3.5 rounded-2xl bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs flex items-center gap-2.5 shadow-sm">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span className="font-medium">{masterSyncMsg}</span>
+                    </div>
+                  )}
+
+                  {masterSyncError && (
+                    <div className="p-3.5 rounded-2xl bg-rose-500/15 dark:bg-rose-500/20 border border-rose-500/30 text-rose-800 dark:text-rose-200 text-xs flex items-center gap-2.5 shadow-sm">
+                      <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                      <span className="font-medium">{masterSyncError}</span>
+                    </div>
+                  )}
+
+                  {/* Master Sync Action Hero Card */}
+                  <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-purple-500/10 dark:from-blue-500/20 dark:via-indigo-500/15 dark:to-purple-500/20 border border-blue-500/30 dark:border-blue-500/40 shadow-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1 max-w-md">
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-300 text-[10px] font-bold tracking-wide uppercase">
+                          <Sparkles className="w-3 h-3" /> One-Click Final Sync
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                          Publish This Window as Global Master
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          Synchronizes all folders (including custom episodes), renames, deleted items, notes, icons, and wallpapers to the server backend. Any browser visiting <strong>heyishant.com</strong> will immediately load this version.
+                        </p>
+                      </div>
+
+                      <div className="shrink-0 flex flex-col sm:items-end gap-2">
+                        <button
+                          onClick={handleExecuteMasterSync}
+                          disabled={masterSyncState === "syncing"}
+                          className={`px-5 py-3 rounded-2xl font-bold text-xs shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                            masterSyncState === "synced"
+                              ? "bg-emerald-600 text-white"
+                              : masterSyncState === "error"
+                              ? "bg-rose-600 hover:bg-rose-500 text-white"
+                              : "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white hover:shadow-blue-500/25 active:scale-95"
+                          }`}
+                        >
+                          {masterSyncState === "syncing" && <Loader2 className="w-4 h-4 animate-spin" />}
+                          {masterSyncState === "synced" && <CheckCheck className="w-4 h-4 stroke-[2.5]" />}
+                          {masterSyncState === "idle" && <Cloud className="w-4 h-4" />}
+                          <span className="tracking-tight text-sm">
+                            {masterSyncState === "syncing"
+                              ? "Saving Final Master..."
+                              : masterSyncState === "synced"
+                              ? "Published to Cloud!"
+                              : masterSyncState === "error"
+                              ? "Retry Master Sync"
+                              : "🚀 Set as Final Master Website"}
+                          </span>
+                        </button>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                          Requires Admin Authorization
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Two Cards: Live Cloud Version vs Current Window */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Live Server State */}
+                    <div className="p-4 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 space-y-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Server className="w-4 h-4 text-emerald-500" />
+                          <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            Live Master in Cloud
+                          </h4>
+                        </div>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          serverHealth.online
+                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300"
+                            : "bg-amber-500/20 text-amber-600 dark:text-amber-300"
+                        }`}>
+                          {serverHealth.online ? "🟢 Connected" : "🟡 Local Mode"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                        <div className="flex justify-between py-1 border-b border-black/5 dark:border-white/5">
+                          <span className="text-slate-400">Master Version ID</span>
+                          <span className="font-mono text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate max-w-[150px]">
+                            {liveMasterSnapshot?.masterVersionId || "Base Default"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-black/5 dark:border-white/5">
+                          <span className="text-slate-400">Last Synced</span>
+                          <span className="font-medium">
+                            {liveMasterSnapshot?.updatedAt
+                              ? new Date(liveMasterSnapshot.updatedAt).toLocaleString()
+                              : "Not yet synchronized"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-black/5 dark:border-white/5">
+                          <span className="text-slate-400">Custom Items</span>
+                          <span className="font-semibold">
+                            {(liveMasterSnapshot?.filesystem?.customNodes || []).length} folders/files
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="text-slate-400">Renamed Items</span>
+                          <span className="font-semibold">
+                            {Object.keys(liveMasterSnapshot?.filesystem?.renames || {}).length} names
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handlePullMasterSnapshot}
+                        disabled={isPullingMaster}
+                        className="w-full mt-2 py-2 px-3 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        {isPullingMaster ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-blue-500" />}
+                        <span>Pull Cloud Master into this Window</span>
+                      </button>
+                    </div>
+
+                    {/* Current Window State */}
+                    <div className="p-4 rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-blue-500/20 dark:border-blue-500/30 space-y-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Monitor className="w-4 h-4 text-blue-500" />
+                          <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            This Window (Ready to Save)
+                          </h4>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-500/20 text-blue-600 dark:text-blue-300">
+                          Active State
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                        <div className="flex justify-between py-1 border-b border-black/5 dark:border-white/5">
+                          <span className="text-slate-400">Custom Folders/Files</span>
+                          <span className="font-bold text-blue-600 dark:text-blue-400">
+                            {windowSnapshot.meta.customNodesCount} item{windowSnapshot.meta.customNodesCount === 1 ? '' : 's'} staged
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-black/5 dark:border-white/5">
+                          <span className="text-slate-400">Folder Renames</span>
+                          <span className="font-bold text-purple-600 dark:text-purple-400">
+                            {windowSnapshot.meta.renamesCount} renamed
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-black/5 dark:border-white/5">
+                          <span className="text-slate-400">Custom Folder Icons</span>
+                          <span className="font-semibold">
+                            {windowSnapshot.meta.folderIconsCount} custom icons
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span className="text-slate-400">Active Wallpapers</span>
+                          <span className="font-medium truncate max-w-[140px]">
+                            {wallpaper} / {lockWallpaper}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 p-2.5 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+                        {windowSnapshot.meta.customNodesCount > 0 || windowSnapshot.meta.renamesCount > 0 ? (
+                          <span>✨ Contains modifications ready to be saved as the permanent final website.</span>
+                        ) : (
+                          <span>Standard layout active. Click Master Sync to ensure server matches this window.</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dokploy & Volume Persistence Tips */}
+                  <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 text-xs text-slate-700 dark:text-slate-200 space-y-2">
+                    <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
+                      <Database className="w-4 h-4 text-amber-500" />
+                      <span>Production Deployment Advice (Dokploy / Docker)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Whenever you run <strong>Master Sync</strong>, the server writes directly to <code>/app/data/master-snapshot.json</code> and <code>filesystem.json</code>. To ensure your custom folders survive container rebuilds on Dokploy, mount a persistent volume at <code>/app/data</code>, or click <strong>Backup (.json)</strong> above to save a copy directly to your Mac.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* TAB: Social & Links Hub */}
               {activeTab === "socials" && (
                 <div className="space-y-5">

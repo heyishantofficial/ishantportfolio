@@ -15,6 +15,11 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ishucreationz';
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
 const SETTINGS_FILE = path.join(DATA_DIR, 'site-settings.json');
 const FS_FILE = path.join(DATA_DIR, 'filesystem.json');
+const MASTER_FILE = path.join(DATA_DIR, 'master-snapshot.json');
+const SNAPSHOTS_DIR = path.join(DATA_DIR, 'snapshots');
+const SRC_DATA_DIR = path.join(ROOT, 'src', 'data');
+const LOCAL_SRC_SNAPSHOT = path.join(SRC_DATA_DIR, 'masterSnapshot.json');
+const PUBLIC_SNAPSHOT = path.join(ROOT, 'public', 'master-snapshot.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
 // Wallpapers that every visitor can load. Uploaded wallpapers are deliberately
@@ -93,7 +98,96 @@ async function requireAdmin(req, res) {
   return true;
 }
 
-async function readFilesystemState() {
+async function readMasterSnapshot() {
+  // 1. Try primary storage master snapshot file
+  try {
+    const raw = await fs.readFile(MASTER_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && (parsed.filesystem || parsed.settings)) {
+      return parsed;
+    }
+  } catch {}
+
+  // 2. Try committed local source snapshot in src/data/masterSnapshot.json
+  try {
+    const raw = await fs.readFile(LOCAL_SRC_SNAPSHOT, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && (parsed.filesystem || parsed.settings)) {
+      return parsed;
+    }
+  } catch {}
+
+  // 3. Try public master-snapshot.json
+  try {
+    const raw = await fs.readFile(PUBLIC_SNAPSHOT, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && (parsed.filesystem || parsed.settings)) {
+      return parsed;
+    }
+  } catch {}
+
+  // 4. Fallback: synthesize from individual filesystem and settings files
+  const [fsState, settingsState] = await Promise.all([
+    readFilesystemState(true),
+    readState()
+  ]);
+
+  return {
+    version: 1,
+    masterVersionId: 'default_initial',
+    updatedAt: fsState.updatedAt || settingsState.updatedAt || null,
+    filesystem: fsState,
+    settings: settingsState,
+    meta: {
+      isInitialDefault: true
+    }
+  };
+}
+
+async function writeMasterSnapshot(snapshot) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(SNAPSHOTS_DIR, { recursive: true });
+
+  // 1. Write atomic master snapshot to persistent DATA_DIR
+  const tmp = `${MASTER_FILE}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(snapshot, null, 2), 'utf8');
+  await fs.rename(tmp, MASTER_FILE);
+
+  // 2. Also write filesystem state and settings state for individual route compatibility
+  if (snapshot.filesystem) {
+    await writeFilesystemState(snapshot.filesystem);
+  }
+  if (snapshot.settings) {
+    const currentState = await readState();
+    await writeState({ ...currentState, ...snapshot.settings, updatedAt: snapshot.updatedAt });
+  }
+
+  // 3. Save historical rollback point
+  try {
+    const timestampStr = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFile = path.join(SNAPSHOTS_DIR, `snapshot_${timestampStr}.json`);
+    await fs.writeFile(backupFile, JSON.stringify(snapshot, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('[master-sync] could not write backup snapshot:', err.message);
+  }
+
+  // 4. Also mirror to src/data/masterSnapshot.json and public/master-snapshot.json if directories exist
+  try {
+    const srcExists = await fs.stat(SRC_DATA_DIR).then(() => true).catch(() => false);
+    if (srcExists) {
+      await fs.writeFile(LOCAL_SRC_SNAPSHOT, JSON.stringify(snapshot, null, 2), 'utf8');
+    }
+    const publicDir = path.join(ROOT, 'public');
+    const publicExists = await fs.stat(publicDir).then(() => true).catch(() => false);
+    if (publicExists) {
+      await fs.writeFile(PUBLIC_SNAPSHOT, JSON.stringify(snapshot, null, 2), 'utf8');
+    }
+  } catch (err) {
+    console.warn('[master-sync] could not mirror to repo files:', err.message);
+  }
+}
+
+async function readFilesystemState(skipMasterLookup = false) {
   try {
     const parsed = JSON.parse(await fs.readFile(FS_FILE, 'utf8'));
     return {
@@ -104,6 +198,24 @@ async function readFilesystemState() {
       updatedAt: parsed.updatedAt || null
     };
   } catch {
+    if (!skipMasterLookup) {
+      try {
+        const raw = await fs.readFile(MASTER_FILE, 'utf8')
+          .catch(() => fs.readFile(LOCAL_SRC_SNAPSHOT, 'utf8'))
+          .catch(() => fs.readFile(PUBLIC_SNAPSHOT, 'utf8'));
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.filesystem) {
+          return {
+            customNodes: Array.isArray(parsed.filesystem.customNodes) ? parsed.filesystem.customNodes : [],
+            renames: parsed.filesystem.renames && typeof parsed.filesystem.renames === 'object' ? parsed.filesystem.renames : {},
+            deleted: Array.isArray(parsed.filesystem.deleted) ? parsed.filesystem.deleted : [],
+            edits: parsed.filesystem.edits && typeof parsed.filesystem.edits === 'object' ? parsed.filesystem.edits : {},
+            updatedAt: parsed.filesystem.updatedAt || parsed.updatedAt || null
+          };
+        }
+      } catch {}
+    }
+
     return {
       customNodes: [],
       renames: {},
@@ -320,9 +432,94 @@ app.get('/api/youtube-stats', async (req, res) => {
 
 app.get('/api/version', (_req, res) => {
   res.json({
-    version: 'latest-admin-notes',
+    version: 'latest-master-sync-v1',
     timestamp: new Date().toISOString()
   });
+});
+
+// Public: Get active master website snapshot
+app.get('/api/master-sync', async (_req, res) => {
+  try {
+    const master = await readMasterSnapshot();
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.json({
+      ok: true,
+      masterSnapshot: master,
+      masterVersionId: master?.masterVersionId || null,
+      updatedAt: master?.updatedAt || null
+    });
+  } catch (err) {
+    console.error('[master-sync] read error:', err);
+    res.status(500).json({ ok: false, error: 'Failed to read master snapshot' });
+  }
+});
+
+// Download standalone master snapshot JSON
+app.get('/api/master-sync/download', async (_req, res) => {
+  try {
+    const master = await readMasterSnapshot();
+    const filename = `ishant-portfolio-master-snapshot-${new Date().toISOString().slice(0, 10)}.json`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(master, null, 2));
+  } catch (err) {
+    res.status(500).send('Error generating snapshot download');
+  }
+});
+
+// Admin: Publish the complete website state as the authoritative Master Version
+app.post('/api/master-sync', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const { snapshot } = req.body || {};
+  if (!snapshot || typeof snapshot !== 'object') {
+    return res.status(400).json({ error: 'Missing master snapshot payload.' });
+  }
+
+  const masterVersionId = snapshot.masterVersionId || `master_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const updatedAt = new Date().toISOString();
+
+  const validatedMaster = {
+    version: 1,
+    masterVersionId,
+    updatedAt,
+    filesystem: {
+      customNodes: Array.isArray(snapshot.filesystem?.customNodes) ? snapshot.filesystem.customNodes : [],
+      renames: snapshot.filesystem?.renames && typeof snapshot.filesystem.renames === 'object' ? snapshot.filesystem.renames : {},
+      deleted: Array.isArray(snapshot.filesystem?.deleted) ? snapshot.filesystem.deleted : [],
+      edits: snapshot.filesystem?.edits && typeof snapshot.filesystem.edits === 'object' ? snapshot.filesystem.edits : {},
+      updatedAt
+    },
+    settings: {
+      wallpaper: VALID_WALLPAPERS.includes(snapshot.settings?.wallpaper) ? snapshot.settings.wallpaper : FALLBACK.wallpaper,
+      lockWallpaper: VALID_WALLPAPERS.includes(snapshot.settings?.lockWallpaper) ? snapshot.settings.lockWallpaper : FALLBACK.lockWallpaper,
+      socialLinks: { ...FALLBACK.socialLinks, ...(snapshot.settings?.socialLinks || {}) },
+      dashboardConfig: { ...FALLBACK.dashboardConfig, ...(snapshot.settings?.dashboardConfig || {}) },
+      folderIcons: snapshot.settings?.folderIcons && typeof snapshot.settings.folderIcons === 'object' ? snapshot.settings.folderIcons : (FALLBACK.folderIcons || {}),
+      updatedAt
+    },
+    meta: {
+      ...(snapshot.meta || {}),
+      syncedAt: updatedAt,
+      masterVersionId,
+      customNodeCount: (snapshot.filesystem?.customNodes || []).length,
+      renameCount: Object.keys(snapshot.filesystem?.renames || {}).length
+    }
+  };
+
+  try {
+    await writeMasterSnapshot(validatedMaster);
+    res.json({
+      ok: true,
+      masterVersionId,
+      updatedAt,
+      snapshot: validatedMaster,
+      message: 'Master snapshot saved successfully. Website is now synchronized globally.'
+    });
+  } catch (err) {
+    console.error('[master-sync] write failed:', err);
+    res.status(500).json({ error: 'Could not save master snapshot.' });
+  }
 });
 
 // Public: Every visitor reads the persisted filesystem on boot.

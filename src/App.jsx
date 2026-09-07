@@ -187,6 +187,25 @@ export default function App() {
     };
   }, []);
 
+  // Real-time tab sync for Master Sync updates across all open windows
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.BroadcastChannel) return;
+    try {
+      const channel = new BroadcastChannel('ishant_master_sync');
+      channel.onmessage = (event) => {
+        if (event?.data?.type === 'MASTER_SYNC_UPDATED' && event.data.snapshot?.settings) {
+          const s = event.data.snapshot.settings;
+          if (s.wallpaper) setWallpaper(s.wallpaper);
+          if (s.lockWallpaper) setLockWallpaper(s.lockWallpaper);
+          if (s.socialLinks) setSocialLinks(s.socialLinks);
+          if (s.folderIcons) setFolderIcons(s.folderIcons);
+          if (s.dashboardConfig) setDashboardConfig(s.dashboardConfig);
+        }
+      };
+      return () => channel.close();
+    } catch {}
+  }, []);
+
   // LOGIN UNLOCK FUNCTION (NAME LOGIN)
   const handleBootSystem = (e) => {
     if (e && e.preventDefault) e.preventDefault();

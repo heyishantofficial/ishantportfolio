@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Wifi, Battery, Sliders, Volume2, VolumeX, Moon, Sun, 
@@ -64,25 +64,37 @@ export default function IOSMobileOS({
 
   const isDraggingRef = useRef(false);
   const nameInputRef = useRef(null);
+  const videoRef = useRef(null);
 
-  // Live iOS Clock & Date update
+  // Pause heavy background video when a sheet is open to prevent GPU/CPU contention on mobile
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (activeSheet) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play().catch(() => {});
+    }
+  }, [activeSheet]);
+
+  // Live iOS Clock & Date update (throttled to avoid redundant re-renders)
   useEffect(() => {
     const updateTime = () => {
       const d = new Date();
       const hours = d.getHours();
       const minutes = d.getMinutes();
       const timeStr = `${hours % 12 || 12}:${minutes < 10 ? '0' : ''}${minutes}`;
-      setCurrentTimeStr(timeStr);
+      setCurrentTimeStr((prev) => (prev === timeStr ? prev : timeStr));
 
       const options = { weekday: 'long', month: 'long', day: 'numeric' };
-      setCurrentDateStr(d.toLocaleDateString('en-US', options));
+      const dateStr = d.toLocaleDateString('en-US', options);
+      setCurrentDateStr((prev) => (prev === dateStr ? prev : dateStr));
     };
     updateTime();
-    const interval = setInterval(updateTime, 1000);
+    const interval = setInterval(updateTime, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleOpenFolder = (nodeId) => {
+  const handleOpenFolder = useCallback((nodeId) => {
     playMacClick(isMuted);
     const node = findNode(nodeId);
     if (!node) return;
@@ -95,7 +107,7 @@ export default function IOSMobileOS({
     setActiveFolderStack([node]);
     setActiveTextFile(null);
     setActiveSheet('folder');
-  };
+  }, [isMuted]);
 
   const handleFolderDrillDown = (childNode) => {
     playMacClick(isMuted);
@@ -147,7 +159,7 @@ export default function IOSMobileOS({
     }
   };
 
-  const handleAppLaunch = (appKey) => {
+  const handleAppLaunch = useCallback((appKey) => {
     playMacClick(isMuted);
     if (appKey === 'youtube') {
       window.open(socialLinks?.youtube || 'https://youtube.com/@heyishant', '_blank', 'noopener,noreferrer');
@@ -162,7 +174,7 @@ export default function IOSMobileOS({
       return;
     }
     setActiveSheet(appKey);
-  };
+  }, [isMuted, socialLinks]);
 
   const handleCloseSheet = () => {
     playMacClick(isMuted);
@@ -197,7 +209,7 @@ export default function IOSMobileOS({
   const resumeNode = findNode('resume');
 
   // Page 1: Primary Authentic Portfolio Folders & Files (8 items)
-  const page1Items = [
+  const page1Items = useMemo(() => [
     // Row 1: Primary Folders
     {
       id: 'about-me',
@@ -292,10 +304,10 @@ export default function IOSMobileOS({
       icon: '/icons/Finder.png',
       action: () => handleAppLaunch('finder')
     }
-  ];
+  ], [aboutNode, resumeNode, experienceNode, workNode, aiLabNode, randomNode, contactNode, handleOpenFolder, handleAppLaunch]);
 
   // Page 2: System Apps, Media, Arcade & Socials (10 items)
-  const page2Items = [
+  const page2Items = useMemo(() => [
     {
       id: 'safari',
       name: 'Safari',
@@ -374,15 +386,15 @@ export default function IOSMobileOS({
       icon: '/icons/Mail.png',
       action: () => handleAppLaunch('mail')
     }
-  ];
+  ], [handleAppLaunch]);
 
   // 4 Bottom Dock Apps
-  const dockApps = [
+  const dockApps = useMemo(() => [
     { id: 'mail', name: 'Mail', icon: '/icons/Mail.png', action: () => handleAppLaunch('mail') },
     { id: 'safari', name: 'Safari', icon: '/icons/Chrome.png', action: () => handleAppLaunch('safari') },
     { id: 'notes', name: 'Notes', icon: '/icons/Notes.png', action: () => handleAppLaunch('notes') },
     { id: 'finder', name: 'Files', icon: '/icons/Finder.png', action: () => handleAppLaunch('finder') }
-  ];
+  ], [handleAppLaunch]);
 
   const currentFolder = activeFolderStack[activeFolderStack.length - 1];
 
@@ -398,6 +410,7 @@ export default function IOSMobileOS({
       >
         {wallpaper === 'video' && (
           <video
+            ref={videoRef}
             src="/bg-video.mp4"
             autoPlay
             loop
@@ -731,17 +744,18 @@ export default function IOSMobileOS({
       {/* ========================================================================= */}
       <AnimatePresence>
         {activeSheet && (
-          <div className="fixed inset-0 z-[9990] bg-black/55 backdrop-blur-md flex flex-col justify-end animate-fadeIn">
+          <div className="fixed inset-0 z-[9990] bg-black/60 flex flex-col justify-end animate-fadeIn">
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              transition={{ type: 'spring', damping: 38, stiffness: 380, mass: 0.8 }}
+              style={{ willChange: 'transform', transform: 'translateZ(0)' }}
               drag="y"
               dragConstraints={{ top: 0 }}
-              dragElastic={0.2}
+              dragElastic={0.15}
               onDragEnd={(_, info) => {
-                if (info.offset.y > 100 || info.velocity.y > 400) {
+                if (info.offset.y > 80 || info.velocity.y > 350) {
                   handleCloseSheet();
                 }
               }}

@@ -14,7 +14,8 @@ function IOSBlueFolder({ title, itemCount, badge, onClick }) {
   return (
     <div 
       onClick={onClick}
-      className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-all select-none"
+      style={{ transform: 'translateZ(0)', willChange: 'transform' }}
+      className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-transform select-none"
     >
       {/* iOS Blue Folder Silhouette */}
       <div className="relative w-20 h-16 flex items-center justify-center drop-shadow-md">
@@ -28,16 +29,12 @@ function IOSBlueFolder({ title, itemCount, badge, onClick }) {
               <stop offset="0%" stopColor="#4ea3f7" />
               <stop offset="100%" stopColor="#257cd4" />
             </linearGradient>
-            <filter id="folderShadow" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.25" />
-            </filter>
           </defs>
           
           {/* Back Tab + Folder Body */}
           <path
             d="M 6 13 C 6 8.5, 9.5 5, 14 5 L 32 5 C 35.5 5, 38.5 7.5, 40.5 11 L 43 15 L 70 15 C 74.5 15, 78 18.5, 78 23 L 78 55 C 78 59.5, 74.5 63, 70 63 L 14 63 C 9.5 63, 6 59.5, 6 55 Z"
             fill="url(#iosFolderBack)"
-            filter="url(#folderShadow)"
           />
           
           {/* Front Pocket Flap */}

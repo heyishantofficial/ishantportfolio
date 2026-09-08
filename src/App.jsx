@@ -71,10 +71,17 @@ export default function App() {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('site_bgVideoVolume');
-        if (cached !== null && !isNaN(Number(cached))) return Number(cached);
+        if (cached !== null && !isNaN(Number(cached))) {
+          const num = Number(cached);
+          if (num === 80) {
+            localStorage.setItem('site_bgVideoVolume', '5');
+            return 5;
+          }
+          return num;
+        }
       } catch {}
     }
-    return DEFAULT_SETTINGS.bgVideoVolume ?? 80;
+    return DEFAULT_SETTINGS.bgVideoVolume ?? 5;
   });
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
 
@@ -241,9 +248,10 @@ export default function App() {
         } catch {}
       }
       if (typeof settings?.bgVideoVolume === 'number' && !isNaN(settings.bgVideoVolume)) {
-        setBgVideoVolume(settings.bgVideoVolume);
+        const vol = settings.bgVideoVolume === 80 ? 5 : settings.bgVideoVolume;
+        setBgVideoVolume(vol);
         try {
-          localStorage.setItem('site_bgVideoVolume', String(settings.bgVideoVolume));
+          localStorage.setItem('site_bgVideoVolume', String(vol));
         } catch {}
       }
       // Crisp handover to the login screen once preloading resolves
@@ -622,6 +630,11 @@ export default function App() {
           customUploadLock={customUploadLock}
           onUploadDesktopWallpaper={(img) => setCustomUploadDesktop(img)}
           onUploadLockWallpaper={(img) => setCustomUploadLock(img)}
+          bgVideoSound={bgVideoSound}
+          onToggleBgVideoSound={handleToggleBgVideoSound}
+          bgVideoVolume={bgVideoVolume}
+          onChangeBgVideoVolume={handleChangeBgVideoVolume}
+          isIpodPlaying={isIpodPlaying}
         />
       </Suspense>
     );

@@ -42,7 +42,7 @@
     "volume": 5,
     "isMuted": false,
     "bgVideoSound": true,
-    "bgVideoVolume": 80,
+    "bgVideoVolume": 5,
     "updatedAt": "2026-09-08T10:45:00.000Z"
   },
   "meta": {

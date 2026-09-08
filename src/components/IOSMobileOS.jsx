@@ -212,7 +212,12 @@ export default function IOSMobileOS({
   customUploadDesktop,
   customUploadLock,
   onUploadDesktopWallpaper,
-  onUploadLockWallpaper
+  onUploadLockWallpaper,
+  bgVideoSound = true,
+  onToggleBgVideoSound,
+  bgVideoVolume = 5,
+  onChangeBgVideoVolume,
+  isIpodPlaying = false
 }) {
   const { version } = useFileSystem();
 
@@ -292,10 +297,54 @@ export default function IOSMobileOS({
     handleTouchEnd();
   };
 
-  // Pause heavy background video when a sheet is open to prevent GPU/CPU contention on mobile
+  // Target volume calculation for the ambient background video on mobile
+  const getTargetVideoVolume = useCallback(() => {
+    if (isMuted || !bgVideoSound || isIpodPlaying || volume === 0 || bgVideoVolume === 0 || activeSheet === 'music') {
+      return 0;
+    }
+    const masterFactor = Math.pow(Math.max(0, Math.min(100, volume)) / 100, 0.55);
+    const videoFactor = Math.pow(Math.max(0, Math.min(100, bgVideoVolume)) / 100, 0.75);
+    return Math.max(0, Math.min(1, masterFactor * videoFactor));
+  }, [isMuted, bgVideoSound, isIpodPlaying, volume, bgVideoVolume, activeSheet]);
+
+  // Safe audio unlock on user gestures (touch / click / pointer)
+  useEffect(() => {
+    const handleUserGesture = () => {
+      if (videoRef.current) {
+        const targetVol = getTargetVideoVolume();
+        videoRef.current.muted = targetVol === 0;
+        videoRef.current.volume = targetVol;
+        if (videoRef.current.paused && (!activeSheet || activeSheet === 'settings')) {
+          videoRef.current.play().catch(() => {});
+        }
+      }
+    };
+    window.addEventListener('click', handleUserGesture, { passive: true });
+    window.addEventListener('touchstart', handleUserGesture, { passive: true });
+    window.addEventListener('pointerdown', handleUserGesture, { passive: true });
+    return () => {
+      window.removeEventListener('click', handleUserGesture);
+      window.removeEventListener('touchstart', handleUserGesture);
+      window.removeEventListener('pointerdown', handleUserGesture);
+    };
+  }, [getTargetVideoVolume, activeSheet]);
+
+  // Sync background video volume in real-time when volume / bgVideoVolume / mute changes
   useEffect(() => {
     if (!videoRef.current) return;
-    if (activeSheet) {
+    const targetVol = getTargetVideoVolume();
+    videoRef.current.muted = targetVol === 0;
+    videoRef.current.volume = targetVol;
+    if (targetVol > 0 && videoRef.current.paused && (!activeSheet || activeSheet === 'settings')) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, [getTargetVideoVolume, activeSheet, wallpaper]);
+
+  // Pause heavy background video only when a heavy non-settings sheet is open
+  // (Keep running during settings so user hears volume changes live!)
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (activeSheet && activeSheet !== 'settings') {
       videoRef.current.pause();
     } else {
       videoRef.current.play().catch(() => {});
@@ -581,7 +630,7 @@ export default function IOSMobileOS({
             autoPlay
             loop
             playsInline
-            muted={isMuted}
+            muted={isMuted || !bgVideoSound || bgVideoVolume === 0}
             className="w-full h-full object-cover pointer-events-none opacity-80"
           />
         )}
@@ -1099,6 +1148,10 @@ export default function IOSMobileOS({
                       onUploadDesktopWallpaper={onUploadDesktopWallpaper}
                       customUploadLock={customUploadLock}
                       onUploadLockWallpaper={onUploadLockWallpaper}
+                      bgVideoSound={bgVideoSound}
+                      onToggleBgVideoSound={onToggleBgVideoSound}
+                      bgVideoVolume={bgVideoVolume}
+                      onChangeBgVideoVolume={onChangeBgVideoVolume}
                       isEmbedded={true}
                     />
                   </Suspense>

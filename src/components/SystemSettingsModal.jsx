@@ -102,7 +102,7 @@ export default function SystemSettingsModal({
   const [localVolume, setLocalVolume] = useState(() => (typeof volume === 'number' && !isNaN(volume) ? volume : 20));
   const [localIsMuted, setLocalIsMuted] = useState(() => (typeof isMuted === 'boolean' ? isMuted : false));
   const [localBgVideoSound, setLocalBgVideoSound] = useState(() => (typeof bgVideoSound === 'boolean' ? bgVideoSound : true));
-  const [localBgVideoVolume, setLocalBgVideoVolume] = useState(() => (typeof bgVideoVolume === 'number' && !isNaN(bgVideoVolume) ? bgVideoVolume : 80));
+  const [localBgVideoVolume, setLocalBgVideoVolume] = useState(() => (typeof bgVideoVolume === 'number' && !isNaN(bgVideoVolume) ? bgVideoVolume : 5));
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const previewAudioRef = useRef(null);
   const [soundSavedNotice, setSoundSavedNotice] = useState(false);
@@ -2285,7 +2285,7 @@ export default function SystemSettingsModal({
                       {/* Quick Video Presets */}
                       <div className="flex items-center gap-1.5 pt-1">
                         <span className="text-[10px] text-slate-500 font-semibold mr-1">Level:</span>
-                        {[30, 60, 80, 100].map((preset) => (
+                        {[5, 20, 50, 80, 100].map((preset) => (
                           <button
                             key={preset}
                             type="button"
@@ -2302,7 +2302,7 @@ export default function SystemSettingsModal({
                                 : "bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-300"
                             }`}
                           >
-                            {preset}%{preset === 80 ? " (Default)" : ""}
+                            {preset}%{preset === 5 ? " (Default)" : ""}
                           </button>
                         ))}
                       </div>

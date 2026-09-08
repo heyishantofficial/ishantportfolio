@@ -8,7 +8,7 @@ export const DEFAULT_SETTINGS = {
   volume: 20,
   isMuted: false,
   bgVideoSound: true,
-  bgVideoVolume: 80,
+  bgVideoVolume: 5,
   socialLinks: {
     youtube: 'https://youtube.com/@heyishant',
     linkedin: 'https://linkedin.com',

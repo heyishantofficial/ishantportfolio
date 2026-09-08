@@ -953,9 +953,43 @@ export const TRASH_ITEMS = [
 // Lookup helpers
 // ---------------------------------------------------------------------------
 
-const INDEX = new Map();
-const PARENTS = new Map();
-const fsListeners = new Set();
+const isClient = typeof window !== 'undefined';
+
+const INDEX = isClient ? (window.__ISHANT_FS_INDEX__ = window.__ISHANT_FS_INDEX__ || new Map()) : new Map();
+const PARENTS = isClient ? (window.__ISHANT_FS_PARENTS__ = window.__ISHANT_FS_PARENTS__ || new Map()) : new Map();
+const fsListeners = isClient ? (window.__ISHANT_FS_LISTENERS__ = window.__ISHANT_FS_LISTENERS__ || new Set()) : new Set();
+
+// Persisted mutations tracking
+const STORAGE_KEY_CUSTOM = 'custom_nodes';
+const STORAGE_KEY_RENAMES = 'renamed_nodes';
+const STORAGE_KEY_DELETED = 'deleted_nodes';
+const STORAGE_KEY_EDITS = 'edited_nodes_body';
+
+let customNodesCache = isClient ? (window.__ISHANT_FS_CUSTOM__ = window.__ISHANT_FS_CUSTOM__ || []) : [];
+let renamesCache = isClient ? (window.__ISHANT_FS_RENAMES__ = window.__ISHANT_FS_RENAMES__ || {}) : {};
+let deletedCache = isClient ? (window.__ISHANT_FS_DELETED__ = window.__ISHANT_FS_DELETED__ || []) : [];
+let editsCache = isClient ? (window.__ISHANT_FS_EDITS__ = window.__ISHANT_FS_EDITS__ || {}) : {};
+
+function syncWindowCaches() {
+  if (isClient) {
+    window.__ISHANT_FS_CUSTOM__ = customNodesCache;
+    window.__ISHANT_FS_RENAMES__ = renamesCache;
+    window.__ISHANT_FS_DELETED__ = deletedCache;
+    window.__ISHANT_FS_EDITS__ = editsCache;
+  }
+}
+
+// Setup global event listener for cross-bundle/cross-chunk FS updates
+if (isClient && !window.__ISHANT_FS_DISPATCH_SETUP__) {
+  window.__ISHANT_FS_DISPATCH_SETUP__ = true;
+  window.addEventListener('ishant_fs_changed', (evt) => {
+    if (evt?.detail?.sender !== fsListeners) {
+      fsListeners.forEach((fn) => {
+        try { fn(); } catch (err) { console.error('FS listener error:', err); }
+      });
+    }
+  });
+}
 
 export function subscribeFSEvents(listener) {
   fsListeners.add(listener);
@@ -963,9 +997,15 @@ export function subscribeFSEvents(listener) {
 }
 
 function notifyFSChange() {
+  syncWindowCaches();
   fsListeners.forEach((fn) => {
     try { fn(); } catch (err) { console.error('FS listener error:', err); }
   });
+  if (isClient) {
+    try {
+      window.dispatchEvent(new CustomEvent('ishant_fs_changed', { detail: { sender: fsListeners } }));
+    } catch {}
+  }
 }
 
 function indexTree(nodes, parentId = null) {
@@ -985,18 +1025,9 @@ function indexTree(nodes, parentId = null) {
   }
 }
 
-indexTree([HOME]);
-
-// Persisted mutations tracking
-const STORAGE_KEY_CUSTOM = 'custom_nodes';
-const STORAGE_KEY_RENAMES = 'renamed_nodes';
-const STORAGE_KEY_DELETED = 'deleted_nodes';
-const STORAGE_KEY_EDITS = 'edited_nodes_body';
-
-let customNodesCache = [];
-let renamesCache = {};
-let deletedCache = [];
-let editsCache = {};
+if (INDEX.size === 0) {
+  indexTree([HOME]);
+}
 
 let syncTimeout = null;
 const fsSyncListeners = new Set();
@@ -1061,6 +1092,12 @@ export function queueFSSync(delay = 600) {
  * from Express backend with seamless fallback to IndexedDB.
  */
 export function getFSCacheState() {
+  if (isClient && window.__ISHANT_FS_CUSTOM__) {
+    customNodesCache = window.__ISHANT_FS_CUSTOM__;
+    renamesCache = window.__ISHANT_FS_RENAMES__ || {};
+    deletedCache = window.__ISHANT_FS_DELETED__ || [];
+    editsCache = window.__ISHANT_FS_EDITS__ || {};
+  }
   return {
     customNodes: Array.isArray(customNodesCache) ? [...customNodesCache] : [],
     renames: { ...renamesCache },

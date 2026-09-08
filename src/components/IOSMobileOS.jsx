@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Wifi, Battery, Sliders, Volume2, VolumeX, Moon, Sun, 
-  Lock, ChevronRight, Play, Pause,
-  ExternalLink, ArrowRight, Flashlight, Download, Radio,
+  Lock, ChevronRight,
+  ExternalLink, ArrowRight, Flashlight, Download,
   Folder, FileText, ArrowLeft
 } from 'lucide-react';
 import { PROJECTS_DATA } from '../data/projectsData';
@@ -60,7 +60,6 @@ export default function IOSMobileOS({
   const [isTorchOn, setIsTorchOn] = useState(false);
   const [currentTimeStr, setCurrentTimeStr] = useState('9:41');
   const [currentDateStr, setCurrentDateStr] = useState('');
-  const [isPlayingMiniAudio, setIsPlayingMiniAudio] = useState(false);
 
   const nameInputRef = useRef(null);
 
@@ -562,27 +561,11 @@ export default function IOSMobileOS({
       {/* ========================================================================= */}
       <div className="w-full h-full flex flex-col justify-between pt-safe pb-safe px-4 overflow-y-auto">
 
-        {/* Top iOS Status Bar + Dynamic Island */}
+        {/* Top iOS Status Bar */}
         <div className="w-full pt-1 pb-2 flex items-center justify-between text-white drop-shadow-md select-none">
           <span className="font-semibold text-xs font-mono tracking-tight pl-2">
             {currentTimeStr}
           </span>
-
-          {/* Interactive Dynamic Island Pill */}
-          <div 
-            onClick={() => handleAppLaunch('cyberdeck')}
-            className="h-7 px-3.5 rounded-full bg-black/90 border border-white/15 backdrop-blur-2xl flex items-center gap-2 cursor-pointer shadow-xl active:scale-95 transition-all"
-          >
-            <div className={`w-2 h-2 rounded-full ${isPlayingMiniAudio ? 'bg-emerald-400 animate-pulse' : 'bg-indigo-500'}`} />
-            <span className="text-[11px] font-mono font-bold tracking-tight text-white">IshantOS</span>
-            {isPlayingMiniAudio && (
-              <div className="flex items-center gap-0.5">
-                <span className="w-0.5 h-2.5 bg-emerald-400 animate-pulse" />
-                <span className="w-0.5 h-3.5 bg-emerald-400 animate-pulse" style={{ animationDelay: '150ms' }} />
-                <span className="w-0.5 h-2 bg-emerald-400 animate-pulse" style={{ animationDelay: '300ms' }} />
-              </div>
-            )}
-          </div>
 
           <div 
             onClick={() => setShowControlCenter(true)}
@@ -597,72 +580,8 @@ export default function IOSMobileOS({
           </div>
         </div>
 
-        {/* Smart Widgets Section (2 Columns) */}
-        <div className="grid grid-cols-2 gap-3 my-2">
-          
-          {/* Widget 1: Bio & Role Card */}
-          <div 
-            onClick={() => handleOpenFolder('about-me')}
-            className="p-3.5 rounded-2xl ios-glass-card flex flex-col justify-between h-36 cursor-pointer active:scale-98 transition-all"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-700 flex items-center justify-center font-bold text-white text-xs shadow-md shrink-0">
-                IC
-              </div>
-              <div className="min-w-0">
-                <h2 className="font-bold text-xs text-white truncate">Ishant Chauhan</h2>
-                <p className="text-[10px] text-white/70 truncate">Content &amp; Vibecoder</p>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/40 text-[9px] font-bold text-emerald-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Available for Projects
-              </span>
-              <p className="text-[10px] text-white/80 line-clamp-2 leading-tight">
-                Personal branding, viral distribution engines &amp; AI tools.
-              </p>
-            </div>
-          </div>
-
-          {/* Widget 2: Cyberdeck Mini Music Player */}
-          <div 
-            onClick={() => handleAppLaunch('cyberdeck')}
-            className="p-3.5 rounded-2xl ios-glass-card flex flex-col justify-between h-36 cursor-pointer active:scale-98 transition-all relative overflow-hidden"
-          >
-            <div className="flex items-center justify-between text-white/80">
-              <span className="text-[9px] font-mono uppercase tracking-wider font-bold text-amber-300 flex items-center gap-1">
-                <Radio className="w-3 h-3" /> Cyberdeck
-              </span>
-              <ExternalLink className="w-3 h-3" />
-            </div>
-
-            <div className="space-y-0.5">
-              <span className="text-xs font-bold text-white block truncate">Retro Synth Tape #01</span>
-              <span className="text-[10px] text-white/60 block truncate">Lofi Beats &amp; Synthwave</span>
-            </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsPlayingMiniAudio(!isPlayingMiniAudio);
-                }}
-                className="w-7 h-7 rounded-full bg-white text-slate-900 flex items-center justify-center shadow active:scale-90 transition-all"
-              >
-                {isPlayingMiniAudio ? <Pause className="w-3 h-3 fill-slate-900" /> : <Play className="w-3 h-3 fill-slate-900 ml-0.5" />}
-              </button>
-              <span className="text-[10px] font-mono text-white/80 bg-white/10 px-2 py-1 rounded-lg">
-                Open Deck
-              </span>
-            </div>
-          </div>
-
-        </div>
-
         {/* 4-Column iOS App & Folder Grid */}
-        <div className="grid grid-cols-4 gap-y-4 gap-x-2 my-auto px-1 py-2">
+        <div className="grid grid-cols-4 gap-y-5 gap-x-2 my-auto px-1 py-4">
           {homeGridItems.map((app) => (
             <div 
               key={app.id}
@@ -905,7 +824,6 @@ export default function IOSMobileOS({
                       onClose={handleCloseSheet}
                       masterVolume={volume}
                       isMuted={isMuted}
-                      onIsPlayingChange={(playing) => setIsPlayingMiniAudio(playing)}
                     />
                   </div>
                 )}

@@ -559,13 +559,6 @@ export default function IOSMobileOS({
       action: () => handleAppLaunch('arcade')
     },
     {
-      id: 'notes',
-      name: 'Notes',
-      type: 'app',
-      icon: '/icons/Notes.png',
-      action: () => handleAppLaunch('notes')
-    },
-    {
       id: 'settings',
       name: 'Settings',
       type: 'app',

@@ -559,7 +559,7 @@ export default function App() {
       linkedin: "LinkedIn Profile",
       instagram: "Instagram Profile",
       safari: "Chrome Browser",
-      photos: "Photos Library",
+      photos: "Photos",
       mail: "Mail",
       arcade: "Games",
       games: "Games"

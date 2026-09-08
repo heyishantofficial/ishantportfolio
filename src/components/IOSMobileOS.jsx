@@ -20,7 +20,7 @@ import {
 import IOSFilesApp from './IOSFilesApp';
 import IOSNotesApp from './IOSNotesApp';
 import IOSMediaViewer from './IOSMediaViewer';
-import { getYouTubeEmbedUrl } from '../utils/mediaHelpers';
+import { getYouTubeEmbedUrl, isYouTubeUrl, isInstagramUrl } from '../utils/mediaHelpers';
 import { findPresetById, BADGE_ICONS } from '../data/folderIconsCatalog';
 import { getFolderIcon } from '../lib/siteSettings';
 
@@ -420,7 +420,15 @@ export default function IOSMobileOS({
       return;
     }
 
-    // For any media (video, image, audio, text, pdf, uploaded file, link):
+    if (childNode.kind === 'link') {
+      const isEmbed = childNode.openMode === 'embed' || isYouTubeUrl(childNode.href) || isInstagramUrl(childNode.href) || childNode.videoUrl;
+      if (!isEmbed && childNode.href) {
+        window.open(childNode.href, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    }
+
+    // For any media (video, image, audio, text, pdf, uploaded file, embed link):
     setActiveFilePreview(childNode);
   };
 
@@ -1004,7 +1012,7 @@ export default function IOSMobileOS({
                       {activeSheet === 'folder' ? (activeFilePreview?.name || currentFolder?.name || 'Folder') :
                        activeSheet === 'work' ? 'Featured Work' :
                        activeSheet === 'arcade' ? 'Retro Arcade' :
-                       activeSheet === 'photos' ? 'Photos Library' :
+                       activeSheet === 'photos' ? 'Photos' :
                        activeSheet === 'settings' ? 'System Settings' :
                        activeSheet === 'music' ? 'Music' :
                        activeSheet === 'mail' ? 'Contact Ishant' :

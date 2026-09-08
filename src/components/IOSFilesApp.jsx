@@ -4,12 +4,126 @@ import {
   ChevronLeft, MoreHorizontal, Search, Mic, Clock, 
   Folder as FolderIcon, Users, FileText, Download, 
   Briefcase, Rocket, Sparkles, Code, 
-  Coffee, Mail, X, Check, Film, Music, Image as ImageIcon
+  Coffee, Mail, X, Check, Film, Music, Image as ImageIcon,
+  Globe, Play, Compass, Link2
 } from 'lucide-react';
-import { findNode, DESKTOP_ORDER, itemCountLabel } from '../data/ishantOS';
+import { findNode, DESKTOP_ORDER, itemCountLabel, allNodes } from '../data/ishantOS';
 import { useFileSystem } from '../utils/useFileSystem';
 import { PROJECTS_DATA } from '../data/projectsData';
 import IOSMediaViewer from './IOSMediaViewer';
+import { getFolderIcon } from '../lib/siteSettings';
+import { FolderArtwork } from '../data/folderIconsCatalog';
+import { isYouTubeUrl, isInstagramUrl } from '../utils/mediaHelpers';
+
+// Universal iOS folder badge helper
+function getFolderBadge(node) {
+  if (!node) return <FolderIcon className="w-4 h-4 text-white/80" />;
+
+  // 1. Check custom icon set via Settings
+  const customIconKey = getFolderIcon(node.id) || node.icon;
+  if (customIconKey && customIconKey !== 'default') {
+    return <FolderArtwork iconKey={customIconKey} size={28} />;
+  }
+
+  // 2. Curated native-styled emblems
+  switch (node.id) {
+    case 'about-me':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-[11px] shadow-sm">
+          IC
+        </div>
+      );
+    case 'work':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-[#007aff] flex items-center justify-center text-white shadow-sm">
+          <Briefcase className="w-4 h-4" />
+        </div>
+      );
+    case 'ai-lab':
+    case 'work-ai-creative':
+    case 'lab-ai-workflows':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-[#7c1cf0] flex items-center justify-center text-white shadow-sm">
+          <Code className="w-4 h-4" />
+        </div>
+      );
+    case 'experience':
+    case 'burner-media':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-[#ff9500] flex items-center justify-center text-white shadow-sm">
+          <Rocket className="w-4 h-4" />
+        </div>
+      );
+    case 'random':
+    case 'lab-vibecoded':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-[#ff2d55] flex items-center justify-center text-white shadow-sm">
+          <Sparkles className="w-4 h-4" />
+        </div>
+      );
+    case 'contact':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-[#34c759] flex items-center justify-center text-white shadow-sm">
+          <Coffee className="w-4 h-4" />
+        </div>
+      );
+    case 'work-campaigns':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-sm">
+          <Sparkles className="w-4 h-4" />
+        </div>
+      );
+    case 'work-brand-films':
+    case 'work-editing':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-rose-600 flex items-center justify-center text-white shadow-sm">
+          <Film className="w-4 h-4" />
+        </div>
+      );
+    case 'work-social':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-pink-600 flex items-center justify-center text-white shadow-sm">
+          <Globe className="w-4 h-4" />
+        </div>
+      );
+    case 'work-strategy':
+      return (
+        <div className="w-8 h-8 rounded-xl bg-amber-600 flex items-center justify-center text-white shadow-sm">
+          <Compass className="w-4 h-4" />
+        </div>
+      );
+    default:
+      return (
+        <div className="w-8 h-8 rounded-xl bg-slate-700 flex items-center justify-center text-white shadow-sm">
+          <FolderIcon className="w-4 h-4 text-white/90" />
+        </div>
+      );
+  }
+}
+
+// Universal node subtext helper
+function getNodeSubtext(child) {
+  if (child.subtext) return child.subtext;
+  if (child.kind === 'folder' || child.children) {
+    return itemCountLabel(child);
+  }
+  if (child.kind === 'project' || child.project) {
+    const p = child.project || child;
+    const parts = [p.category || p.client, p.year].filter(Boolean);
+    return parts.length > 0 ? parts.join(' · ') : 'Case Study';
+  }
+  if (child.kind === 'video' || child.platform === 'youtube') {
+    return child.platform === 'youtube' ? 'YouTube Video' : 'Video';
+  }
+  if (child.kind === 'link') {
+    return 'Web Link';
+  }
+  if (child.kind === 'image') return 'Image';
+  if (child.kind === 'audio') return 'Audio';
+  if (child.kind === 'pdf') return 'PDF Document';
+  if (child.kind === 'text') return 'Text Document';
+  return child.description || 'Document';
+}
 
 // Authentic Apple iOS Files Folder Component
 function IOSBlueFolder({ title, itemCount, badge, onClick }) {
@@ -72,25 +186,44 @@ function IOSBlueFolder({ title, itemCount, badge, onClick }) {
   );
 }
 
-// File Document Icon (for PDF / TXT / Project / Video / Image / Audio)
+// File Document Icon (for PDF / TXT / Project / Video / Image / Audio / Link)
 function IOSDocumentItem({ title, subtext, kind, node, onClick }) {
   const isVideo = kind === 'video' || (node && (node.videoUrl || node.platform === 'youtube'));
   const isImage = kind === 'image';
   const isAudio = kind === 'audio';
+  const isLink = kind === 'link';
+  const isProject = kind === 'project' || node?.project;
+  const thumbUrl = node?.thumbnailUrl || node?.preview || null;
 
   return (
     <div 
       onClick={onClick}
       className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-95 transition-all select-none"
     >
-      <div className="relative w-16 h-16 rounded-xl bg-neutral-800/90 border border-white/15 flex flex-col items-center justify-center shadow-lg p-2">
-        {kind === 'pdf' ? (
+      <div className="relative w-16 h-16 rounded-xl bg-neutral-800/90 border border-white/15 flex flex-col items-center justify-center shadow-lg p-2 overflow-hidden">
+        {thumbUrl ? (
+          <div className="relative w-full h-full rounded-lg overflow-hidden">
+            <img src={thumbUrl} alt={title} className="w-full h-full object-cover" />
+            {isVideo && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <Play className="w-4 h-4 text-white fill-white" />
+              </div>
+            )}
+          </div>
+        ) : kind === 'pdf' ? (
           <div className="w-9 h-9 rounded-lg bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 font-black text-xs">
             PDF
           </div>
-        ) : kind === 'project' ? (
-          <div className="w-9 h-9 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
-            <Sparkles className="w-5 h-5" />
+        ) : isProject ? (
+          <div 
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-white"
+            style={{ 
+              backgroundColor: node?.project?.accent ? `${node.project.accent}33` : 'rgba(59, 130, 246, 0.2)', 
+              borderColor: node?.project?.accent ? `${node.project.accent}66` : 'rgba(59, 130, 246, 0.3)', 
+              borderWidth: 1 
+            }}
+          >
+            <Sparkles className="w-5 h-5" style={{ color: node?.project?.accent || '#60a5fa' }} />
           </div>
         ) : isVideo ? (
           <div className="w-9 h-9 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
@@ -104,6 +237,10 @@ function IOSDocumentItem({ title, subtext, kind, node, onClick }) {
           <div className="w-9 h-9 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
             <Music className="w-5 h-5" />
           </div>
+        ) : isLink ? (
+          <div className="w-9 h-9 rounded-lg bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+            <Globe className="w-5 h-5" />
+          </div>
         ) : (
           <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-white/80">
             <FileText className="w-5 h-5" />
@@ -114,7 +251,7 @@ function IOSDocumentItem({ title, subtext, kind, node, onClick }) {
         <span className="text-xs font-medium text-white tracking-tight line-clamp-1 block drop-shadow-sm">
           {title}
         </span>
-        <span className="text-[11px] text-[#8e8e93] block mt-0.5 font-normal">
+        <span className="text-[11px] text-[#8e8e93] block mt-0.5 font-normal truncate">
           {subtext}
         </span>
       </div>
@@ -157,80 +294,54 @@ export default function IOSFilesApp({
         };
       }
 
-      let badge = null;
-      if (node.id === 'about-me') {
-        badge = (
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-[11px] shadow-sm">
-            IC
-          </div>
-        );
-      } else if (node.id === 'work') {
-        badge = (
-          <div className="w-8 h-8 rounded-xl bg-[#007aff] flex items-center justify-center text-white shadow-sm">
-            <Briefcase className="w-4 h-4" />
-          </div>
-        );
-      } else if (node.id === 'ai-lab') {
-        badge = (
-          <div className="w-8 h-8 rounded-xl bg-[#7c1cf0] flex items-center justify-center text-white shadow-sm">
-            <Code className="w-4 h-4" />
-          </div>
-        );
-      } else if (node.id === 'experience') {
-        badge = (
-          <div className="w-8 h-8 rounded-xl bg-[#ff9500] flex items-center justify-center text-white shadow-sm">
-            <Rocket className="w-4 h-4" />
-          </div>
-        );
-      } else if (node.id === 'random') {
-        badge = (
-          <div className="w-8 h-8 rounded-xl bg-[#ff2d55] flex items-center justify-center text-white shadow-sm">
-            <Sparkles className="w-4 h-4" />
-          </div>
-        );
-      } else if (node.id === 'contact') {
-        badge = (
-          <div className="w-8 h-8 rounded-xl bg-[#34c759] flex items-center justify-center text-white shadow-sm">
-            <Coffee className="w-4 h-4" />
-          </div>
-        );
-      } else {
-        badge = (
-          <div className="w-8 h-8 rounded-xl bg-slate-700 flex items-center justify-center text-white shadow-sm">
-            <FolderIcon className="w-4 h-4" />
-          </div>
-        );
-      }
-
-      const count = node.id === 'work' ? PROJECTS_DATA.length : (node.children?.length || 0);
-
       return {
         id: node.id,
         name: node.name,
-        itemsText: `${count} item${count === 1 ? '' : 's'}`,
+        itemsText: itemCountLabel(node),
         node,
-        badge
+        badge: getFolderBadge(node)
       };
     });
   }, [version]);
 
-  // Recents items list
-  const recentItems = useMemo(() => [
-    {
-      id: 'r-resume',
-      title: 'Resume.pdf',
-      subtext: 'Opened today',
-      kind: 'pdf',
-      action: () => window.open('/resume.pdf', '_blank')
-    },
-    ...PROJECTS_DATA.slice(0, 5).map(p => ({
-      id: `r-${p.id}`,
-      title: p.title,
-      subtext: `${p.category} · ${p.year}`,
-      kind: 'project',
-      action: () => onSelectProject && onSelectProject(p)
-    }))
-  ], [onSelectProject]);
+  // Recents items list - dynamically synced with projects from IshantOS tree
+  const recentItems = useMemo(() => {
+    void version;
+    const projNodes = allNodes().filter((n) => n.kind === 'project');
+    return [
+      {
+        id: 'r-resume',
+        title: 'Resume.pdf',
+        subtext: 'Opened today',
+        kind: 'pdf',
+        action: () => window.open('/resume.pdf', '_blank')
+      },
+      ...projNodes.slice(0, 6).map((node) => {
+        const p = node.project || {};
+        const sub = [p.category || p.client, p.year].filter(Boolean).join(' · ') || 'Case Study';
+        return {
+          id: `r-${node.id}`,
+          title: node.name || p.title,
+          subtext: sub,
+          kind: 'project',
+          node,
+          action: () => {
+            if (onSelectProject) {
+              const rawId = node.id ? node.id.replace(/^lab-app-|^proj-|^lab-/, '') : '';
+              const pMatch = PROJECTS_DATA.find(item => item.id === node.id || item.id === rawId);
+              onSelectProject({
+                ...(pMatch || {}),
+                ...(node.project || {}),
+                ...node,
+                title: node.project?.title || node.title || node.name,
+                videoUrl: node.project?.videoUrl || pMatch?.videoUrl || node.videoUrl || ''
+              });
+            }
+          }
+        };
+      })
+    ];
+  }, [version, onSelectProject]);
 
   // Shared items list
   const sharedItems = useMemo(() => [
@@ -312,10 +423,31 @@ export default function IOSFilesApp({
         children: child.children || []
       }]);
     } else if (child.kind === 'project' || child.project) {
-      const p = PROJECTS_DATA.find(item => item.id === child.id) || child.project;
-      if (onSelectProject && p) {
-        onSelectProject(p);
+      const rawId = child.id ? child.id.replace(/^lab-app-|^proj-|^lab-/, '') : '';
+      const pMatch = PROJECTS_DATA.find(item => item.id === child.id || item.id === rawId);
+      const proj = {
+        ...(pMatch || {}),
+        ...(child.project || {}),
+        ...child,
+        title: child.project?.title || child.title || child.name,
+        videoUrl: child.project?.videoUrl || pMatch?.videoUrl || child.videoUrl || ''
+      };
+      if (onSelectProject) {
+        onSelectProject(proj);
+      } else {
+        setActiveReaderDoc(child);
       }
+    } else if (child.kind === 'link') {
+      const isEmbed = child.openMode === 'embed' || isYouTubeUrl(child.href) || isInstagramUrl(child.href) || child.videoUrl;
+      if (isEmbed) {
+        setActiveReaderDoc(child);
+      } else if (child.href) {
+        window.open(child.href, '_blank', 'noopener,noreferrer');
+      } else {
+        setActiveReaderDoc(child);
+      }
+    } else if (child.id === 'resume' || (child.kind === 'pdf' && child.href)) {
+      window.open(child.href || '/resume.pdf', '_blank');
     } else {
       setActiveReaderDoc(child);
     }
@@ -334,7 +466,7 @@ export default function IOSFilesApp({
     }
   };
 
-  // Filtered items based on query
+  // Filtered items based on query (fully synchronized with live filesystem)
   const displayedItems = useMemo(() => {
     if (activeTab === 'recents') {
       if (!searchQuery.trim()) return recentItems;
@@ -353,21 +485,13 @@ export default function IOSFilesApp({
     // In Browse mode:
     if (currentFolder) {
       let list = currentFolder.children || [];
-      if (currentFolder.id === 'work') {
-        // Show rich project data
-        return PROJECTS_DATA.map(p => ({
-          id: p.id,
-          name: p.title,
-          kind: 'project',
-          subtext: `${p.category} · ${p.year}`,
-          project: p
-        })).filter(item => 
-          !searchQuery.trim() || item.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
       if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
         list = list.filter(item => 
-          item.name.toLowerCase().includes(searchQuery.toLowerCase())
+          (item.name && item.name.toLowerCase().includes(q)) ||
+          (item.title && item.title.toLowerCase().includes(q)) ||
+          (item.project?.title && item.project.title.toLowerCase().includes(q)) ||
+          (item.description && item.description.toLowerCase().includes(q))
         );
       }
       return list;
@@ -541,18 +665,14 @@ export default function IOSFilesApp({
                       key={child.id}
                       title={child.name}
                       itemCount={itemCountLabel(child)}
-                      badge={
-                        <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white">
-                          <FolderIcon className="w-4 h-4" />
-                        </div>
-                      }
+                      badge={getFolderBadge(child)}
                       onClick={() => handleChildClick(child)}
                     />
                   ) : (
                     <IOSDocumentItem
                       key={child.id}
-                      title={child.name || child.title}
-                      subtext={child.subtext || (child.kind === 'text' ? 'Text File' : child.kind === 'pdf' ? 'PDF File' : child.kind === 'video' ? 'Video' : child.kind === 'image' ? 'Image' : child.kind === 'audio' ? 'Audio' : child.kind || 'File')}
+                      title={child.name || child.project?.title || child.title}
+                      subtext={getNodeSubtext(child)}
                       kind={child.kind}
                       node={child}
                       onClick={() => handleChildClick(child)}

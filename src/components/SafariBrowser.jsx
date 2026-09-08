@@ -107,41 +107,6 @@ const DEFAULT_PORTFOLIO_LINKS = [
     iconEmoji: '✉️',
     description: 'Get in touch directly for collaborations, content consulting, vibecoded software, or custom builds.',
     featured: true
-  },
-
-  // Case Studies & Editorial Systems
-  {
-    id: 'link-pipeline',
-    title: 'Multi-Channel Media Pipeline',
-    category: 'systems',
-    url: 'https://heyishant.me',
-    tag: 'CASE STUDY',
-    badgeColor: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20',
-    iconBg: 'bg-gradient-to-tr from-violet-600 to-indigo-700 text-white',
-    iconEmoji: '⚡',
-    description: 'Automated 1-to-10 media engine converting 1 weekly long-form video into 10 high-performing posts across platforms.'
-  },
-  {
-    id: 'link-kanban',
-    title: 'Creator Kanban & Research Engine',
-    category: 'systems',
-    url: 'https://heyishant.me',
-    tag: 'WORKFLOW',
-    badgeColor: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    iconBg: 'bg-gradient-to-tr from-amber-600 to-yellow-500 text-white',
-    iconEmoji: '📋',
-    description: 'Structured Notion workspace aggregating trending industry topics, auto-generating hooks, and tracking assets.'
-  },
-  {
-    id: 'link-resume',
-    title: 'Official Resume PDF',
-    category: 'systems',
-    url: '/resume.pdf',
-    tag: 'DOCUMENT',
-    badgeColor: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20',
-    iconBg: 'bg-rose-600 text-white',
-    iconEmoji: '📄',
-    description: 'Download and inspect comprehensive resume highlighting full-stack engineering and creator credentials.'
   }
 ];
 
@@ -172,12 +137,6 @@ const SECTIONS = [
     title: 'Connect & Social',
     icon: '🌐',
     subtitle: 'Profiles, channels & professional network'
-  },
-  {
-    id: 'systems',
-    title: 'Case Studies & Systems',
-    icon: '⚡',
-    subtitle: 'Media engines, workflows & credentials'
   },
   {
     id: 'custom',
@@ -775,7 +734,6 @@ export default function SafariBrowser({ onClose, onMinimize, socialLinks, dashbo
                   >
                     <option value="apps" className="bg-white dark:bg-zinc-900">Things I Built for Fun</option>
                     <option value="social" className="bg-white dark:bg-zinc-900">Connect & Social</option>
-                    <option value="systems" className="bg-white dark:bg-zinc-900">Case Studies</option>
                     <option value="custom" className="bg-white dark:bg-zinc-900">Other Links</option>
                   </select>
                 </div>

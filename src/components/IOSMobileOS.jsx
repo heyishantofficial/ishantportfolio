@@ -4,7 +4,8 @@ import {
   Wifi, Battery, Sliders, Volume2, VolumeX, Moon, Sun, 
   Lock, ChevronRight,
   ExternalLink, ArrowRight, Flashlight, Download, Radio,
-  ArrowLeft
+  ArrowLeft,
+  User, Rocket, Briefcase, Code, Heart, Coffee, FileText, Folder as FolderIcon, Sparkles
 } from 'lucide-react';
 import { PROJECTS_DATA } from '../data/projectsData';
 import { findNode } from '../data/ishantOS';
@@ -18,11 +19,171 @@ import {
 } from './macDockModals';
 import IOSFilesApp from './IOSFilesApp';
 import IOSNotesApp from './IOSNotesApp';
+import { findPresetById, BADGE_ICONS } from '../data/folderIconsCatalog';
+import { getFolderIcon } from '../lib/siteSettings';
 
 const SafariBrowser = React.lazy(() => import('./SafariBrowser'));
 const SystemSettingsModal = React.lazy(() => import('./SystemSettingsModal'));
 const RetroArcadeApp = React.lazy(() => import('./RetroArcade/RetroArcadeApp'));
 const NexusCyberdeckPlayer = React.lazy(() => import('./NexusCyberdeckPlayer'));
+
+/**
+ * Authentic iOS Squircle Smartphone Icon
+ * Renders continuous curvature (rounded-[22.5%]), Apple gloss specular sheen,
+ * dynamic sizing clamp(54px, 14.8vw, 64px), and native category identities.
+ */
+function SmartphoneAppSquircle({ item }) {
+  // 1. Explicit customRender (e.g. Cyberdeck, Settings on Page 2)
+  if (item.customRender) {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/20 select-none">
+        {item.customRender()}
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/30 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  // 2. Direct icon image (e.g. Files/Finder, Safari, Notes, Arcade, Photos, YouTube, etc.)
+  if (item.icon) {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/20 select-none bg-black/20">
+        <img 
+          src={item.icon} 
+          alt={item.name} 
+          className="w-full h-full object-cover select-none pointer-events-none rounded-[22.5%]" 
+        />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/30 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  // 3. Filesystem node or custom folder
+  const nodeId = item.id;
+  const customKey = getFolderIcon(nodeId);
+  const preset = customKey ? findPresetById(customKey) : null;
+
+  // If user selected an app icon preset (like app-safari)
+  if (preset && preset.src) {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/20 select-none bg-black/20">
+        <img src={preset.src} alt={item.name} className="w-full h-full object-cover select-none pointer-events-none rounded-[22.5%]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/30 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  // If user uploaded a custom image URL
+  if (typeof customKey === 'string' && (customKey.startsWith('/') || customKey.startsWith('http') || customKey.startsWith('data:'))) {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/20 select-none bg-black/20">
+        <img src={customKey} alt={item.name} className="w-full h-full object-cover select-none pointer-events-none rounded-[22.5%]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/30 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  // If user picked a custom badge preset in System Settings
+  if (preset && preset.iconName) {
+    const Glyph = BADGE_ICONS[preset.iconName] || Sparkles;
+    return (
+      <div 
+        className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none bg-gradient-to-tr from-[#0284C7] via-[#0EA5E9] to-[#38BDF8] flex items-center justify-center text-white"
+        style={preset.filter ? { filter: preset.filter } : undefined}
+      >
+        <Glyph className="w-[50%] h-[50%] drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] stroke-[2.2]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  // If user picked a custom color preset in System Settings
+  if (preset && preset.swatch) {
+    return (
+      <div 
+        className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none flex items-center justify-center text-white"
+        style={{ backgroundColor: preset.swatch }}
+      >
+        <FolderIcon className="w-[50%] h-[50%] drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] stroke-[2.2]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  // Default authentic portfolio folder identities matching real smartphone aesthetics
+  if (nodeId === 'about-me') {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none bg-gradient-to-tr from-[#0055D4] via-[#007AFF] to-[#40A9FF] flex items-center justify-center text-white">
+        <User className="w-[52%] h-[52%] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] stroke-[2.2]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  if (nodeId === 'resume' || item.type === 'pdf') {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/40 select-none bg-gradient-to-b from-white via-slate-50 to-slate-200 flex flex-col items-center justify-center">
+        <FileText className="w-[44%] h-[44%] text-[#E11D48] drop-shadow-sm stroke-[2.2]" />
+        <span className="text-[9px] font-black tracking-wider text-white bg-[#E11D48] px-1 py-0.2 rounded-[3px] mt-0.5 shadow-sm">
+          PDF
+        </span>
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/40 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  if (nodeId === 'experience') {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none bg-gradient-to-tr from-[#C026D3] via-[#E11D48] to-[#F43F5E] flex items-center justify-center text-white">
+        <Rocket className="w-[52%] h-[52%] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] stroke-[2.2]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  if (nodeId === 'work') {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none bg-gradient-to-tr from-[#0284C7] via-[#0EA5E9] to-[#38BDF8] flex items-center justify-center text-white">
+        <Briefcase className="w-[52%] h-[52%] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] stroke-[2.2]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  if (nodeId === 'ai-lab') {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none bg-gradient-to-tr from-[#4F46E5] via-[#7C3AED] to-[#A855F7] flex items-center justify-center text-white">
+        <Code className="w-[52%] h-[52%] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] stroke-[2.4]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  if (nodeId === 'random') {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none bg-gradient-to-tr from-[#BE123C] via-[#E11D48] to-[#FB7185] flex items-center justify-center text-white">
+        <Heart className="w-[52%] h-[52%] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] stroke-[2.2] fill-white/20" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  if (nodeId === 'contact') {
+    return (
+      <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none bg-gradient-to-tr from-[#C2410C] via-[#EA580C] to-[#FB923C] flex items-center justify-center text-white">
+        <Coffee className="w-[52%] h-[52%] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] stroke-[2.2]" />
+        <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+      </div>
+    );
+  }
+
+  // Fallback for custom nodes or other items
+  return (
+    <div className="w-[clamp(54px,14.8vw,64px)] h-[clamp(54px,14.8vw,64px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_16px_rgba(0,0,0,0.32)] border border-white/25 select-none bg-gradient-to-b from-white/35 to-white/15 backdrop-blur-xl flex items-center justify-center text-white">
+      <FolderIcon className="w-[52%] h-[52%] text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] stroke-[2.2]" />
+      <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/35 to-transparent pointer-events-none rounded-t-[22.5%]" />
+    </div>
+  );
+}
 
 export default function IOSMobileOS({
   isAppReady,
@@ -65,10 +226,71 @@ export default function IOSMobileOS({
   const [currentTimeStr, setCurrentTimeStr] = useState('9:41');
   const [currentDateStr, setCurrentDateStr] = useState('');
   const [homeScreenPage, setHomeScreenPage] = useState(0);
-
   const isDraggingRef = useRef(false);
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+  const touchDeltaRef = useRef({ x: 0, y: 0 });
+  const isPointerDownRef = useRef(false);
   const nameInputRef = useRef(null);
   const videoRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+    touchDeltaRef.current = { x: 0, y: 0 };
+    isDraggingRef.current = false;
+  };
+
+  const handleTouchMove = (e) => {
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    touchDeltaRef.current = { x: dx, y: dy };
+    if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+      isDraggingRef.current = true;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const dx = touchDeltaRef.current.x;
+    const dt = Math.max(1, Date.now() - touchStartRef.current.time);
+    const velocity = dx / dt; // px per ms
+
+    // Left swipe -> Next page (Page 1)
+    if (dx < -30 || velocity < -0.22) {
+      setHomeScreenPage(1);
+    } 
+    // Right swipe -> Prev page (Page 0)
+    else if (dx > 30 || velocity > 0.22) {
+      setHomeScreenPage(0);
+    }
+
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 120);
+  };
+
+  const handleMouseDown = (e) => {
+    isPointerDownRef.current = true;
+    touchStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+    touchDeltaRef.current = { x: 0, y: 0 };
+    isDraggingRef.current = false;
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isPointerDownRef.current) return;
+    const dx = e.clientX - touchStartRef.current.x;
+    const dy = e.clientY - touchStartRef.current.y;
+    touchDeltaRef.current = { x: dx, y: dy };
+    if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+      isDraggingRef.current = true;
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (!isPointerDownRef.current) return;
+    isPointerDownRef.current = false;
+    handleTouchEnd();
+  };
 
   // Pause heavy background video when a sheet is open to prevent GPU/CPU contention on mobile
   useEffect(() => {
@@ -236,12 +458,7 @@ export default function IOSMobileOS({
         } else {
           handleOpenFolder(node.id);
         }
-      },
-      customRender: () => (
-        <div className="w-full h-full flex items-center justify-center p-1.5">
-          <NodeIcon node={node} size={46} />
-        </div>
-      )
+      }
     }));
 
     // Files (Finder) system app
@@ -555,7 +772,7 @@ export default function IOSMobileOS({
       <div className="w-full h-full flex flex-col justify-between pt-safe pb-safe px-3 sm:px-4 overflow-x-hidden select-none">
 
         {/* Top iOS Status Bar */}
-        <div className="w-full pt-1 pb-2 flex items-center justify-between text-white drop-shadow-md select-none">
+        <div className="w-full pt-1 pb-1 flex items-center justify-between text-white drop-shadow-md select-none shrink-0">
           <span className="font-semibold text-xs font-mono tracking-tight pl-2">
             {currentTimeStr}
           </span>
@@ -573,34 +790,28 @@ export default function IOSMobileOS({
           </div>
         </div>
 
-        {/* Horizontal Swipeable 2-Page iOS Home Screens (Adaptive to all screen widths) */}
-        <div className="w-full overflow-hidden my-auto select-none">
+        {/* Top Flexible Spacer: Anchors the folder grid to the bottom like a real iPhone */}
+        <div className="flex-1 min-h-[16px] pointer-events-none" />
+
+        {/* Horizontal Swipeable 2-Page iOS Home Screens */}
+        <div 
+          className="w-full overflow-hidden mb-1 shrink-0 select-none touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
           <motion.div
-            className="flex w-full touch-pan-y"
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.25}
-            onDragStart={() => {
-              isDraggingRef.current = true;
-            }}
-            onDragEnd={(_, info) => {
-              const swipeThreshold = 30;
-              const velocityThreshold = 200;
-              if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
-                setHomeScreenPage(1);
-              } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
-                setHomeScreenPage(0);
-              }
-              setTimeout(() => {
-                isDraggingRef.current = false;
-              }, 60);
-            }}
+            className="flex w-full select-none cursor-grab active:cursor-grabbing"
             animate={{ x: homeScreenPage === 0 ? '0%' : '-100%' }}
-            transition={{ type: 'spring', stiffness: 360, damping: 34 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.8 }}
           >
-            {/* Screen 1: Primary Authentic Folders & Files (Strictly 100% viewport width) */}
-            <div className="w-full min-w-full shrink-0 flex-shrink-0 px-1 py-3 box-border">
-              <div className="grid grid-cols-4 gap-y-5 sm:gap-y-7 gap-x-2 sm:gap-x-4 justify-items-center w-full max-w-sm mx-auto">
+            {/* Screen 1: Primary Authentic Smartphone Squircles (Strictly 100% viewport width) */}
+            <div className="w-full min-w-full shrink-0 flex-shrink-0 px-2 py-2 box-border">
+              <div className="grid grid-cols-4 gap-y-[clamp(14px,2.8vh,24px)] gap-x-[clamp(8px,3vw,20px)] justify-items-center w-full max-w-[390px] sm:max-w-[420px] mx-auto">
                 {page1Items.map((app) => (
                   <div 
                     key={app.id}
@@ -608,17 +819,10 @@ export default function IOSMobileOS({
                       if (isDraggingRef.current) return;
                       app.action();
                     }}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
+                    className="flex flex-col items-center cursor-pointer group active:scale-90 transition-transform select-none"
                   >
-                    {/* iOS Squircle Icon */}
-                    <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
-                      {app.customRender ? (
-                        app.customRender()
-                      ) : (
-                        <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
-                      )}
-                    </div>
-                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[70px] text-center">
+                    <SmartphoneAppSquircle item={app} />
+                    <span className="text-[clamp(10.5px,2.8vw,12px)] font-medium text-white tracking-tight drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] truncate max-w-[clamp(64px,18vw,78px)] text-center mt-1.5">
                       {app.name}
                     </span>
                   </div>
@@ -627,8 +831,8 @@ export default function IOSMobileOS({
             </div>
 
             {/* Screen 2: System Apps, Entertainment & Socials (Strictly 100% viewport width) */}
-            <div className="w-full min-w-full shrink-0 flex-shrink-0 px-1 py-3 box-border">
-              <div className="grid grid-cols-4 gap-y-5 sm:gap-y-7 gap-x-2 sm:gap-x-4 justify-items-center w-full max-w-sm mx-auto">
+            <div className="w-full min-w-full shrink-0 flex-shrink-0 px-2 py-2 box-border">
+              <div className="grid grid-cols-4 gap-y-[clamp(14px,2.8vh,24px)] gap-x-[clamp(8px,3vw,20px)] justify-items-center w-full max-w-[390px] sm:max-w-[420px] mx-auto">
                 {page2Items.slice(0, 8).map((app) => (
                   <div 
                     key={app.id}
@@ -636,17 +840,10 @@ export default function IOSMobileOS({
                       if (isDraggingRef.current) return;
                       app.action();
                     }}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
+                    className="flex flex-col items-center cursor-pointer group active:scale-90 transition-transform select-none"
                   >
-                    {/* iOS Squircle Icon */}
-                    <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
-                      {app.customRender ? (
-                        app.customRender()
-                      ) : (
-                        <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
-                      )}
-                    </div>
-                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[70px] text-center">
+                    <SmartphoneAppSquircle item={app} />
+                    <span className="text-[clamp(10.5px,2.8vw,12px)] font-medium text-white tracking-tight drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] truncate max-w-[clamp(64px,18vw,78px)] text-center mt-1.5">
                       {app.name}
                     </span>
                   </div>
@@ -654,7 +851,7 @@ export default function IOSMobileOS({
 
                 {/* Row 3: Neatly Centered 2 Extra Apps (Instagram & Mail) */}
                 {page2Items.length > 8 && (
-                  <div className="col-span-4 flex items-center justify-center gap-6 sm:gap-8 pt-1">
+                  <div className="col-span-4 flex items-center justify-center gap-[clamp(24px,7vw,40px)] pt-1">
                     {page2Items.slice(8).map((app) => (
                       <div 
                         key={app.id}
@@ -662,16 +859,10 @@ export default function IOSMobileOS({
                           if (isDraggingRef.current) return;
                           app.action();
                         }}
-                        className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
+                        className="flex flex-col items-center cursor-pointer group active:scale-90 transition-transform select-none"
                       >
-                        <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
-                          {app.customRender ? (
-                            app.customRender()
-                          ) : (
-                            <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
-                          )}
-                        </div>
-                        <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[70px] text-center">
+                        <SmartphoneAppSquircle item={app} />
+                        <span className="text-[clamp(10.5px,2.8vw,12px)] font-medium text-white tracking-tight drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] truncate max-w-[clamp(64px,18vw,78px)] text-center mt-1.5">
                           {app.name}
                         </span>
                       </div>
@@ -684,13 +875,13 @@ export default function IOSMobileOS({
         </div>
 
         {/* Interactive Pagination Indicator Dots */}
-        <div className="flex items-center justify-center gap-2 py-2 select-none z-10">
+        <div className="flex items-center justify-center gap-2.5 py-2 pb-2.5 select-none z-10 shrink-0">
           <button
             type="button"
             onClick={() => setHomeScreenPage(0)}
             className={`rounded-full transition-all duration-300 cursor-pointer ${
               homeScreenPage === 0 
-                ? 'w-2 h-2 bg-white shadow scale-110' 
+                ? 'w-2.5 h-2.5 bg-white shadow scale-110' 
                 : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
             }`}
             aria-label="Home Screen 1"
@@ -700,7 +891,7 @@ export default function IOSMobileOS({
             onClick={() => setHomeScreenPage(1)}
             className={`rounded-full transition-all duration-300 cursor-pointer ${
               homeScreenPage === 1 
-                ? 'w-2 h-2 bg-white shadow scale-110' 
+                ? 'w-2.5 h-2.5 bg-white shadow scale-110' 
                 : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
             }`}
             aria-label="Home Screen 2"
@@ -708,15 +899,20 @@ export default function IOSMobileOS({
         </div>
 
         {/* Bottom Floating iOS Frosted Dock (4 Apps) */}
-        <div className="w-full mb-1">
-          <div className="p-2.5 rounded-3xl ios-glass-dock flex items-center justify-around max-w-sm mx-auto shadow-2xl">
+        <div className="w-full mb-1 shrink-0">
+          <div className="p-[clamp(8px,2.2vw,12px)] rounded-[28px] ios-glass-dock flex items-center justify-around w-full max-w-[clamp(290px,88vw,360px)] mx-auto shadow-2xl">
             {dockApps.map((dock) => (
               <div 
                 key={`dock-${dock.id}`}
                 onClick={dock.action}
-                className="w-12 h-12 rounded-2xl ios-squircle overflow-hidden shadow flex items-center justify-center cursor-pointer active:scale-90 transition-transform border border-white/20 bg-white/20 backdrop-blur-md"
+                className="w-[clamp(48px,13.2vw,58px)] h-[clamp(48px,13.2vw,58px)] rounded-[22.5%] overflow-hidden relative shadow-[0_4px_12px_rgba(0,0,0,0.3)] border border-white/20 select-none active:scale-90 transition-transform cursor-pointer bg-black/20"
               >
-                <img src={dock.icon} alt={dock.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
+                <img 
+                  src={dock.icon} 
+                  alt={dock.name} 
+                  className="w-full h-full object-cover select-none pointer-events-none rounded-[22.5%]" 
+                />
+                <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-white/30 to-transparent pointer-events-none rounded-t-[22.5%]" />
               </div>
             ))}
           </div>

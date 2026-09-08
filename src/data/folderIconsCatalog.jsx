@@ -18,7 +18,7 @@ export const FOLDER_COLOR_PRESETS = [
   { id: 'color-midnight', name: 'Dark Obsidian', type: 'color', filter: 'grayscale(1) brightness(0.65) contrast(1.2)', swatch: '#1e293b' },
 ];
 
-const BADGE_ICONS = {
+export const BADGE_ICONS = {
   Code,
   Briefcase,
   Sparkles,

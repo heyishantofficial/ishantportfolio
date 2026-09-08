@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const ADMIN_PASSWORD = 'ishucreationz';
 const AUTH_KEY = 'ishant_admin_auth';
 const PWD_KEY = 'ishant_admin_pwd';
 
@@ -55,7 +54,7 @@ export async function verifyAdminPassword(pwd) {
   const clean = pwd.trim();
   if (!clean) return false;
 
-  // Try server verification first
+  // Try server verification first (authoritative)
   try {
     const res = await fetch('/api/settings/verify', {
       method: 'POST',
@@ -66,22 +65,22 @@ export async function verifyAdminPassword(pwd) {
       setAdminStatus(true, clean);
       return true;
     }
+    // Server explicitly denied access
+    return false;
   } catch {
-    // Server unreachable — continue to local check
+    // Server unreachable (e.g. offline dev mode without backend)
   }
 
-  // Fallback: check against stored password or default
-  let fallbackPass = ADMIN_PASSWORD;
+  // Offline fallback only if a custom password was previously saved in this browser
   try {
     const custom = localStorage.getItem('admin_password');
-    if (custom) fallbackPass = custom;
+    if (custom && clean === custom) {
+      setAdminStatus(true, clean);
+      return true;
+    }
   } catch {}
 
-  const match = clean === fallbackPass;
-  if (match) {
-    setAdminStatus(true, clean);
-  }
-  return match;
+  return false;
 }
 
 export function lockAdminMode() {

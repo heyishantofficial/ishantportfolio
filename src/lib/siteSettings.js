@@ -65,13 +65,11 @@ export function isPublishable(id) {
   return PUBLISHABLE_WALLPAPERS.includes(id);
 }
 
-const DEFAULT_ADMIN_PASSWORD = 'ishucreationz';
-
 function getStoredPassword() {
   try {
-    return localStorage.getItem('admin_password') || DEFAULT_ADMIN_PASSWORD;
+    return sessionStorage.getItem('ishant_admin_pwd') || localStorage.getItem('admin_password') || '';
   } catch {
-    return DEFAULT_ADMIN_PASSWORD;
+    return '';
   }
 }
 

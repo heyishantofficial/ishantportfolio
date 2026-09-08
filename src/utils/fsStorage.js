@@ -198,7 +198,7 @@ export function generateVideoThumbnail(file, maxWidth = 200, maxHeight = 120) {
  * Uploads original binary file to the Express server /api/upload
  */
 export async function uploadFileToServer(file) {
-  const password = getAdminPassword() || 'ishucreationz';
+  const password = getAdminPassword();
   if (!password) {
     return { ok: false, error: 'Admin authentication required.' };
   }

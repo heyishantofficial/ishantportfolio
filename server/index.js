@@ -140,12 +140,15 @@ async function readMasterSnapshot() {
     readState()
   ]);
 
+  const sanitizedSettings = { ...settingsState };
+  delete sanitizedSettings.password;
+
   return {
     version: 1,
     masterVersionId: 'default_initial',
-    updatedAt: fsState.updatedAt || settingsState.updatedAt || null,
+    updatedAt: fsState.updatedAt || sanitizedSettings.updatedAt || null,
     filesystem: fsState,
-    settings: settingsState,
+    settings: sanitizedSettings,
     meta: {
       isInitialDefault: true
     }
@@ -242,8 +245,73 @@ async function writeFilesystemState(state) {
 }
 
 const app = express();
+
+// Defensive HTTP security headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 app.use(express.json({ limit: '50mb' }));
-app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d' }));
+
+// Serve static uploads with nosniff and restrictive CSP to prevent script execution (Stored XSS mitigation)
+app.use('/uploads', express.static(UPLOADS_DIR, {
+  maxAge: '7d',
+  setHeaders: (res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; media-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'");
+  }
+}));
+
+// In-memory sliding-window rate limiter (zero dependencies)
+function createRateLimiter({ windowMs, max, message }) {
+  const hits = new Map();
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, record] of hits.entries()) {
+      if (now > record.resetTime) hits.delete(key);
+    }
+  }, 5 * 60 * 1000).unref();
+
+  return (req, res, next) => {
+    const ip = req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    let record = hits.get(ip);
+    if (!record || now > record.resetTime) {
+      record = { count: 1, resetTime: now + windowMs };
+      hits.set(ip, record);
+      return next();
+    }
+    if (record.count >= max) {
+      const retrySecs = Math.ceil((record.resetTime - now) / 1000);
+      res.setHeader('Retry-After', String(retrySecs));
+      return res.status(429).json({ error: message || 'Too many requests. Please try again later.' });
+    }
+    record.count++;
+    next();
+  };
+}
+
+const authLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: 'Too many authentication attempts. Please wait 15 minutes and try again.'
+});
+
+const passwordChangeLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many password change attempts. Please wait 15 minutes.'
+});
+
+const scrapeLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: 'Too many YouTube statistics requests. Please try again in a moment.'
+});
 
 // Health check endpoint for control panel connectivity diagnosis
 app.get('/health', (_req, res) => {
@@ -269,22 +337,53 @@ app.get('/api/health', (_req, res) => {
 const ytCache = new Map();
 const YT_CACHE_TTL = 15 * 60 * 1000;
 
+// Strict domain validation to prevent Server-Side Request Forgery (SSRF)
+const ALLOWED_YOUTUBE_HOSTS = new Set([
+  'youtube.com',
+  'www.youtube.com',
+  'm.youtube.com',
+  'youtu.be'
+]);
+
+function isValidYouTubeHost(urlString) {
+  try {
+    const parsed = new URL(urlString);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    const host = parsed.hostname.toLowerCase();
+    return ALLOWED_YOUTUBE_HOSTS.has(host) || host.endsWith('.youtube.com');
+  } catch {
+    return false;
+  }
+}
+
 async function scrapeYouTubeChannel(input) {
   if (!input || typeof input !== 'string') return null;
   let target = input.trim();
   if (!target) return null;
 
   // Clean and normalize target URL
-  let fetchUrl = target;
+  let fetchUrl = '';
   if (target.startsWith('@')) {
-    fetchUrl = `https://www.youtube.com/${target}`;
+    const cleanHandle = target.replace(/[^a-zA-Z0-9_.-]/g, '');
+    fetchUrl = `https://www.youtube.com/@${cleanHandle}`;
   } else if (!target.startsWith('http://') && !target.startsWith('https://')) {
     if (target.includes('youtube.com')) {
       fetchUrl = `https://${target}`;
     } else {
-      fetchUrl = `https://www.youtube.com/@${target}`;
+      const cleanHandle = target.replace(/[^a-zA-Z0-9_.-]/g, '');
+      fetchUrl = `https://www.youtube.com/@${cleanHandle}`;
     }
+  } else {
+    fetchUrl = target;
   }
+
+  // SSRF Defense: strictly verify the destination host is an authorized YouTube domain
+  if (!isValidYouTubeHost(fetchUrl)) {
+    throw new Error('Invalid YouTube target. Only official YouTube URLs or @handles are allowed.');
+  }
+
+  // Force HTTPS for all outbound requests
+  fetchUrl = fetchUrl.replace(/^http:\/\//i, 'https://');
 
   // If it's just plain youtube.com without channel or handle, don't scrape
   try {
@@ -304,7 +403,7 @@ async function scrapeYouTubeChannel(input) {
       };
     }
   } catch {
-    // If URL parsing fails, proceed with fetchUrl
+    throw new Error('Failed to parse YouTube URL.');
   }
 
   // Check cache
@@ -412,8 +511,8 @@ async function scrapeYouTubeChannel(input) {
   return result;
 }
 
-// Public endpoint: Fetch live YouTube channel metrics without API key
-app.get('/api/youtube-stats', async (req, res) => {
+// Public endpoint: Fetch live YouTube channel metrics without API key (rate limited)
+app.get('/api/youtube-stats', scrapeLimiter, async (req, res) => {
   const target = req.query.url || req.query.handle;
   if (!target) {
     return res.status(400).json({ error: 'Missing url or handle parameter' });
@@ -445,10 +544,20 @@ app.get('/api/version', (_req, res) => {
   });
 });
 
+function sanitizeSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return snapshot;
+  const clone = JSON.parse(JSON.stringify(snapshot));
+  if (clone.settings && typeof clone.settings === 'object') {
+    delete clone.settings.password;
+  }
+  return clone;
+}
+
 // Public: Get active master website snapshot
 app.get('/api/master-sync', async (_req, res) => {
   try {
-    const master = await readMasterSnapshot();
+    const rawMaster = await readMasterSnapshot();
+    const master = sanitizeSnapshot(rawMaster);
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json({
       ok: true,
@@ -465,7 +574,8 @@ app.get('/api/master-sync', async (_req, res) => {
 // Download standalone master snapshot JSON
 app.get('/api/master-sync/download', async (_req, res) => {
   try {
-    const master = await readMasterSnapshot();
+    const rawMaster = await readMasterSnapshot();
+    const master = sanitizeSnapshot(rawMaster);
     const filename = `ishant-portfolio-master-snapshot-${new Date().toISOString().slice(0, 10)}.json`;
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', 'application/json');
@@ -572,6 +682,13 @@ app.post('/api/filesystem', async (req, res) => {
   }
 });
 
+const ALLOWED_UPLOAD_EXTS = new Set([
+  '.png', '.jpg', '.jpeg', '.webp', '.gif', '.ico',
+  '.mp4', '.webm', '.mov', '.m4v',
+  '.mp3', '.wav', '.ogg', '.m4a', '.aac',
+  '.pdf', '.txt', '.md', '.json', '.csv'
+]);
+
 // Admin: Upload media/file to static uploads directory
 app.post('/api/upload', async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
@@ -582,9 +699,15 @@ app.post('/api/upload', async (req, res) => {
       return res.status(400).json({ error: 'Missing filename or data' });
     }
 
+    const ext = (path.extname(filename) || '').toLowerCase();
+    if (!ALLOWED_UPLOAD_EXTS.has(ext)) {
+      return res.status(400).json({ 
+        error: 'File type not permitted for upload. Allowed formats: images, videos, audio, PDF, and text documents.' 
+      });
+    }
+
     await fs.mkdir(UPLOADS_DIR, { recursive: true });
 
-    const ext = path.extname(filename) || '';
     const base = path.basename(filename, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
     const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${base}${ext}`;
     const filePath = path.join(UPLOADS_DIR, safeName);
@@ -628,8 +751,8 @@ app.get('/api/settings', async (_req, res) => {
   });
 });
 
-// Admin: unlock the System Settings panel.
-app.post('/api/settings/verify', async (req, res) => {
+// Admin: unlock the System Settings panel (rate limited)
+app.post('/api/settings/verify', authLimiter, async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
   res.json({ ok: true });
 });
@@ -712,8 +835,8 @@ app.post('/api/settings/folder-icons', async (req, res) => {
   }
 });
 
-// Admin: change the password. Persists, so it survives a reload and a redeploy.
-app.post('/api/settings/password', async (req, res) => {
+// Admin: change the password. Persists, so it survives a reload and a redeploy (rate limited)
+app.post('/api/settings/password', passwordChangeLimiter, async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
 
   const { newPassword } = req.body || {};

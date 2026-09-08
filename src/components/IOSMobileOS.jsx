@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Wifi, Battery, Sliders, Volume2, VolumeX, Moon, Sun, 
   Lock, ChevronRight,
-  ExternalLink, ArrowRight, Flashlight, Download, Radio,
+  ExternalLink, ArrowRight, Flashlight, Download,
   ArrowLeft,
   User, Rocket, Briefcase, Code, Heart, Coffee, FileText, Folder as FolderIcon, Sparkles
 } from 'lucide-react';
@@ -25,7 +25,6 @@ import { getFolderIcon } from '../lib/siteSettings';
 const SafariBrowser = React.lazy(() => import('./SafariBrowser'));
 const SystemSettingsModal = React.lazy(() => import('./SystemSettingsModal'));
 const RetroArcadeApp = React.lazy(() => import('./RetroArcade/RetroArcadeApp'));
-const NexusCyberdeckPlayer = React.lazy(() => import('./NexusCyberdeckPlayer'));
 
 /**
  * Authentic iOS Squircle Smartphone Icon
@@ -477,7 +476,7 @@ export default function IOSMobileOS({
     return [...mapped, filesAppItem];
   }, [version, handleOpenFolder, handleOpenProjectModal, handleAppLaunch]);
 
-  // Page 2: System Apps, Media, Arcade & Socials (10 items)
+  // Page 2: System Apps, Media, Arcade & Socials (8 items in a clean 4x2 grid)
   const page2Items = useMemo(() => [
     {
       id: 'safari',
@@ -499,17 +498,6 @@ export default function IOSMobileOS({
       type: 'app',
       icon: '/icons/Games.png',
       action: () => handleAppLaunch('arcade')
-    },
-    {
-      id: 'cyberdeck',
-      name: 'Cyberdeck',
-      type: 'app',
-      action: () => handleAppLaunch('cyberdeck'),
-      customRender: () => (
-        <div className="w-full h-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-600 flex items-center justify-center p-2.5 text-white shadow-inner">
-          <Radio className="w-7 h-7" />
-        </div>
-      )
     },
     {
       id: 'photos',
@@ -549,13 +537,6 @@ export default function IOSMobileOS({
       type: 'app',
       icon: '/icons/Instagram.png',
       action: () => handleAppLaunch('instagram')
-    },
-    {
-      id: 'mail',
-      name: 'Mail',
-      type: 'app',
-      icon: '/icons/Mail.png',
-      action: () => handleAppLaunch('mail')
     }
   ], [handleAppLaunch]);
 
@@ -963,7 +944,6 @@ export default function IOSMobileOS({
                        activeSheet === 'photos' ? 'Photos Library' :
                        activeSheet === 'settings' ? 'System Settings' :
                        activeSheet === 'mail' ? 'Contact Ishant' :
-                       activeSheet === 'cyberdeck' ? 'Nexus Cyberdeck' :
                        activeSheet === 'project-detail' ? selectedProject?.title || 'Case Study' :
                        activeSheet}
                     </span>
@@ -1121,25 +1101,6 @@ export default function IOSMobileOS({
                     onClose={handleCloseSheet}
                     contactEmail={dashboardConfig?.contactEmail}
                   />
-                )}
-
-                {/* 9. iOS Floating Cyberdeck Music Player Sheet */}
-                {activeSheet === 'cyberdeck' && (
-                  <Suspense fallback={null}>
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9, y: 30 }}
-                      animate={{ opacity: 1, scale: 0.88, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                      transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-                      className="fixed bottom-24 inset-x-0 mx-auto z-50 flex justify-center pointer-events-auto"
-                    >
-                      <NexusCyberdeckPlayer
-                        onClose={handleCloseSheet}
-                        masterVolume={volume}
-                        isMuted={isMuted}
-                      />
-                    </motion.div>
-                  </Suspense>
                 )}
 
                 {/* 10. Individual Project Detail Sheet */}

@@ -537,6 +537,70 @@ app.get('/api/youtube-stats', scrapeLimiter, async (req, res) => {
   }
 });
 
+// Public endpoint: Fetch live YouTube playlist tracks via RSS feed
+const playlistFeedCache = new Map();
+
+app.get('/api/youtube-playlist', async (req, res) => {
+  const playlistId = req.query.playlistId || req.query.list || 'PLa-RnRky6wsc';
+  const noCache = req.query.nocache === '1' || req.query.refresh === '1';
+
+  const cached = playlistFeedCache.get(playlistId);
+  const now = Date.now();
+  if (!noCache && cached && (now - cached.timestamp < 60000)) {
+    res.set('Cache-Control', 'public, max-age=60');
+    return res.json(cached.data);
+  }
+
+  try {
+    const timestamp = Date.now();
+    const feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(playlistId)}&_cb=${timestamp}`;
+    const response = await fetch(feedUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!response.ok) {
+      if (cached && cached.data) {
+        return res.json(cached.data);
+      }
+      return res.status(response.status).json({ ok: false, error: `YouTube responded with status ${response.status}` });
+    }
+
+    const xml = await response.text();
+    const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
+    if (entries.length === 0) {
+      return res.json({ ok: true, playlistId, count: 0, tracks: [] });
+    }
+
+    const tracks = entries.map(e => {
+      const vId = e[1].match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1] || '';
+      const title = e[1].match(/<title>([^<]+)<\/title>/)?.[1] || '';
+      const rawAuthor = e[1].match(/<author>[\s\S]*?<name>([^<]+)<\/name>/)?.[1] || '';
+      const author = rawAuthor.replace(/ - Topic$/, '').trim();
+      return {
+        videoId: vId,
+        title: title.trim(),
+        author: author || 'YouTube Artist',
+        artwork: vId ? `https://img.youtube.com/vi/${vId}/hqdefault.jpg` : ''
+      };
+    });
+
+    const result = { ok: true, playlistId, count: tracks.length, tracks };
+    playlistFeedCache.set(playlistId, { timestamp: now, data: result });
+
+    res.set('Cache-Control', 'public, max-age=60');
+    return res.json(result);
+  } catch (err) {
+    console.error('[youtube-playlist] Failed to fetch playlist:', playlistId, err.message);
+    if (cached && cached.data) {
+      return res.json(cached.data);
+    }
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.get('/api/version', (_req, res) => {
   res.json({
     version: 'latest-master-sync-v1',

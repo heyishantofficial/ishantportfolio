@@ -16,11 +16,11 @@ import RetroArcadeApp from './RetroArcade/RetroArcadeApp';
 import NexusCyberdeckPlayer from './NexusCyberdeckPlayer';
 import NodeIcon from '../os/NodeIcon';
 import { 
-  QuickNotesModal, 
   PhotosModal, 
   MailModal 
 } from './macDockModals';
 import IOSFilesApp from './IOSFilesApp';
+import IOSNotesApp from './IOSNotesApp';
 
 export default function IOSMobileOS({
   isAppReady,
@@ -747,8 +747,8 @@ export default function IOSMobileOS({
               }}
               className="w-full h-[90dvh] ios-sheet-surface rounded-t-[2.2rem] shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
             >
-              {/* Sheet Grab Bar & Header (Hidden for Files, since Files renders its native iOS header) */}
-              {activeSheet !== 'finder' ? (
+              {/* Sheet Grab Bar & Header (Hidden for Files & Notes, since they render native iOS headers) */}
+              {activeSheet !== 'finder' && activeSheet !== 'notes' ? (
                 <div className="w-full pt-3 pb-2 px-5 flex items-center justify-between border-b border-black/10 dark:border-white/10 shrink-0 select-none">
                   <div className="flex items-center gap-2">
                     {activeSheet === 'folder' && (activeFolderStack.length > 1 || activeTextFile) ? (
@@ -858,9 +858,9 @@ export default function IOSMobileOS({
                   />
                 )}
 
-                {/* 3. Notes Workspace Sheet */}
+                {/* 3. Native iOS Notes App */}
                 {activeSheet === 'notes' && (
-                  <QuickNotesModal onClose={handleCloseSheet} />
+                  <IOSNotesApp onClose={handleCloseSheet} />
                 )}
 
                 {/* 4. Native iOS Files App */}

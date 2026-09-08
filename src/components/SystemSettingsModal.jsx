@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { 
   Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2, Share2, ExternalLink, LayoutGrid, User, RotateCcw, CheckCircle2, Folder, Search, AlertCircle,
-  RefreshCw, Cloud, Download, UploadCloud, Database, CheckCheck, Server, Film, Play, Square
+  RefreshCw, Cloud, Download, UploadCloud, Database, CheckCheck, Server, Film, Play, Square, ChevronLeft, ChevronRight
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { MacWindow } from "./macDockModals";
@@ -44,12 +44,19 @@ export default function SystemSettingsModal({
   bgVideoSound,
   onToggleBgVideoSound,
   bgVideoVolume,
-  onChangeBgVideoVolume
+  onChangeBgVideoVolume,
+  isEmbedded = false
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [showMobileDetail, setShowMobileDetail] = useState(false);
   
-  // Password Auth Gate for System Settings
-  const [isSettingsUnlocked, setIsSettingsUnlocked] = useState(false);
+  // Password Auth Gate for System Settings (unlocked if already authenticated)
+  const [isSettingsUnlocked, setIsSettingsUnlocked] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('ishant_admin_auth') === 'true' || Boolean(sessionStorage.getItem('ishant_admin_pwd'));
+    }
+    return false;
+  });
   const [settingsPasswordInput, setSettingsPasswordInput] = useState("");
   const [settingsAuthError, setSettingsAuthError] = useState("");
   const [isShaking, setIsShaking] = useState(false);
@@ -744,11 +751,12 @@ export default function SystemSettingsModal({
           </div>
         ) : (
           <>
-            {/* Settings Left Sidebar */}
-            <div className="w-full md:w-56 bg-white/30 dark:bg-slate-900/40 backdrop-blur-3xl border-r border-white/40 dark:border-white/10 p-3.5 flex flex-col justify-between shrink-0 font-sans text-xs">
-              <div className="space-y-4">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">
-                  System Settings
+            {/* Settings Left Sidebar (Drill-down master list on mobile, column on desktop) */}
+            <div className={`${showMobileDetail ? "hidden md:flex" : "flex"} w-full md:w-56 bg-white/30 dark:bg-slate-900/40 backdrop-blur-3xl border-r border-white/40 dark:border-white/10 p-3.5 flex-col justify-between shrink-0 font-sans text-xs overflow-y-auto h-full`}>
+              <div className="space-y-3 sm:space-y-4">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 flex items-center justify-between">
+                  <span>System Settings</span>
+                  <span className="md:hidden text-[9px] font-normal text-blue-600 dark:text-blue-400">Tap option to configure</span>
                 </div>
 
                 <div className="space-y-1">
@@ -770,22 +778,30 @@ export default function SystemSettingsModal({
                     return (
                       <button
                         key={item.id}
-                        onClick={() => { playMacClick(isMuted); setActiveTab(item.id); }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-medium transition-all ${
+                        type="button"
+                        onClick={() => { 
+                          playMacClick(isMuted); 
+                          setActiveTab(item.id); 
+                          setShowMobileDetail(true);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium transition-all cursor-pointer select-none active:scale-[0.98] ${
                           isActive 
                             ? "bg-white/90 dark:bg-white/20 text-slate-900 dark:text-white font-bold shadow-md backdrop-blur-xl border border-white/80 dark:border-white/30" 
                             : "hover:bg-white/40 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300"
                         }`}
                       >
-                        <div className="flex items-center gap-2.5">
-                          <IconComp className={`w-4 h-4 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`} />
-                          <span>{item.label}</span>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <IconComp className={`w-4 h-4 shrink-0 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`} />
+                          <span className="truncate">{item.label}</span>
                         </div>
-                        {item.badge && (
-                          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-                            {item.badge}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {item.badge && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                              {item.badge}
+                            </span>
+                          )}
+                          <ChevronRight className="w-4 h-4 text-slate-400/80 md:hidden" />
+                        </div>
                       </button>
                     );
                   })}
@@ -793,7 +809,7 @@ export default function SystemSettingsModal({
               </div>
 
               {/* Live Backend / Cloud Status Card */}
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-3 mt-3 border-t border-slate-200/50 dark:border-slate-800/50">
                 <div className={`p-2.5 rounded-xl border text-[11px] flex flex-col gap-1 backdrop-blur-md transition-all ${
                   serverHealth.online
                     ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
@@ -822,8 +838,39 @@ export default function SystemSettingsModal({
               </div>
             </div>
 
-            {/* Settings Right Main Content Area */}
-            <div className="flex-1 bg-white/15 dark:bg-slate-950/30 backdrop-blur-2xl overflow-y-auto p-5 space-y-6">
+            {/* Settings Right Main Content Area (Detail view on mobile with Back button) */}
+            <div className={`${!showMobileDetail ? "hidden md:block" : "block"} flex-1 bg-white/15 dark:bg-slate-950/30 backdrop-blur-2xl overflow-y-auto p-4 sm:p-5 space-y-6 h-full`}>
+              
+              {/* Mobile Back Navigation Header */}
+              <div className="md:hidden flex items-center justify-between pb-3 mb-2 border-b border-black/10 dark:border-white/10 sticky top-0 bg-white/85 dark:bg-slate-900/90 backdrop-blur-xl z-30 -mx-4 sm:-mx-5 px-4 sm:px-5 -mt-4 sm:-mt-5 pt-3.5 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playMacClick(isMuted);
+                    setShowMobileDetail(false);
+                  }}
+                  className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-semibold text-xs py-1.5 px-2.5 -ml-1 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Settings</span>
+                </button>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[170px]">
+                  {[
+                    { id: "master-sync", label: "Master Sync" },
+                    { id: "socials", label: "Social & Links Hub" },
+                    { id: "folder-icons", label: "Folder Icons" },
+                    { id: "dock", label: "Dock & Desktop" },
+                    { id: "profile", label: "Identity & Status" },
+                    { id: "wallpaper", label: "Desktop Wallpaper" },
+                    { id: "lockscreen", label: "Lock Screen Wallpaper" },
+                    { id: "appearance", label: "Appearance & Theme" },
+                    { id: "sound", label: "Sound & Audio" },
+                    { id: "password", label: "Password & Security" },
+                    { id: "about", label: "System Info" }
+                  ].find(t => t.id === activeTab)?.label || 'Settings'}
+                </span>
+                <div className="w-12" />
+              </div>
               
               {/* TAB: Master Sync */}
               {activeTab === "master-sync" && (

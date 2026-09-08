@@ -25,6 +25,7 @@ import { getFolderIcon } from '../lib/siteSettings';
 const SafariBrowser = React.lazy(() => import('./SafariBrowser'));
 const SystemSettingsModal = React.lazy(() => import('./SystemSettingsModal'));
 const RetroArcadeApp = React.lazy(() => import('./RetroArcade/RetroArcadeApp'));
+const IOSMusicApp = React.lazy(() => import('./IOSMusicApp'));
 
 /**
  * Authentic iOS Squircle Smartphone Icon
@@ -476,8 +477,15 @@ export default function IOSMobileOS({
     return [...mapped, filesAppItem];
   }, [version, handleOpenFolder, handleOpenProjectModal, handleAppLaunch]);
 
-  // Page 2: System Apps, Media, Arcade & Socials (8 items in a clean 4x2 grid)
+  // Page 2: System Apps, Media, Arcade & Socials
   const page2Items = useMemo(() => [
+    {
+      id: 'music',
+      name: 'Music',
+      type: 'app',
+      icon: '/icons/iTunes.png',
+      action: () => handleAppLaunch('music')
+    },
     {
       id: 'safari',
       name: 'Safari',
@@ -486,11 +494,11 @@ export default function IOSMobileOS({
       action: () => handleAppLaunch('safari')
     },
     {
-      id: 'notes',
-      name: 'Notes',
+      id: 'photos',
+      name: 'Photos',
       type: 'app',
-      icon: '/icons/Notes.png',
-      action: () => handleAppLaunch('notes')
+      icon: '/icons/Photos.png',
+      action: () => handleAppLaunch('photos')
     },
     {
       id: 'arcade',
@@ -500,11 +508,11 @@ export default function IOSMobileOS({
       action: () => handleAppLaunch('arcade')
     },
     {
-      id: 'photos',
-      name: 'Photos',
+      id: 'notes',
+      name: 'Notes',
       type: 'app',
-      icon: '/icons/Photos.png',
-      action: () => handleAppLaunch('photos')
+      icon: '/icons/Notes.png',
+      action: () => handleAppLaunch('notes')
     },
     {
       id: 'settings',
@@ -525,18 +533,18 @@ export default function IOSMobileOS({
       action: () => handleAppLaunch('youtube')
     },
     {
-      id: 'linkedin',
-      name: 'LinkedIn',
-      type: 'app',
-      icon: '/icons/LinkedIn.png',
-      action: () => handleAppLaunch('linkedin')
-    },
-    {
       id: 'instagram',
       name: 'Instagram',
       type: 'app',
       icon: '/icons/Instagram.png',
       action: () => handleAppLaunch('instagram')
+    },
+    {
+      id: 'linkedin',
+      name: 'LinkedIn',
+      type: 'app',
+      icon: '/icons/LinkedIn.png',
+      action: () => handleAppLaunch('linkedin')
     }
   ], [handleAppLaunch]);
 
@@ -925,8 +933,8 @@ export default function IOSMobileOS({
               }}
               className="w-full h-[90dvh] ios-sheet-surface rounded-t-[2.2rem] shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
             >
-              {/* Sheet Grab Bar & Header (Hidden for Files & Notes, since they render native iOS headers) */}
-              {activeSheet !== 'finder' && activeSheet !== 'notes' ? (
+              {/* Sheet Grab Bar & Header (Hidden for Files, Notes & Music, since they render native iOS headers) */}
+              {activeSheet !== 'finder' && activeSheet !== 'notes' && activeSheet !== 'music' ? (
                 <div className="w-full pt-3 pb-2 px-5 flex items-center justify-between border-b border-black/10 dark:border-white/10 shrink-0 select-none">
                   <div className="flex items-center gap-2">
                     {activeSheet === 'folder' && (activeFolderStack.length > 1 || activeTextFile) ? (
@@ -943,6 +951,7 @@ export default function IOSMobileOS({
                        activeSheet === 'arcade' ? 'Retro Arcade' :
                        activeSheet === 'photos' ? 'Photos Library' :
                        activeSheet === 'settings' ? 'System Settings' :
+                       activeSheet === 'music' ? 'Music' :
                        activeSheet === 'mail' ? 'Contact Ishant' :
                        activeSheet === 'project-detail' ? selectedProject?.title || 'Case Study' :
                        activeSheet}
@@ -1065,6 +1074,17 @@ export default function IOSMobileOS({
                 {/* 6. Photos Library Sheet */}
                 {activeSheet === 'photos' && (
                   <PhotosModal onClose={handleCloseSheet} />
+                )}
+
+                {/* 6.5 Native Apple Music Player Sheet */}
+                {activeSheet === 'music' && (
+                  <Suspense fallback={null}>
+                    <IOSMusicApp
+                      onClose={handleCloseSheet}
+                      masterVolume={volume}
+                      isMuted={isMuted}
+                    />
+                  </Suspense>
                 )}
 
                 {/* 7. System Settings Sheet */}

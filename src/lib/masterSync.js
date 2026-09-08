@@ -74,6 +74,35 @@ export function getCurrentWebsiteSnapshot(activeSettings = {}) {
     }
   }
 
+  // Read sound & volume settings
+  let volume = activeSettings.volume;
+  if (typeof volume !== 'number' || isNaN(volume)) {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('site_volume');
+        volume = stored !== null && !isNaN(Number(stored)) ? Number(stored) : DEFAULT_SETTINGS.volume;
+      } catch {
+        volume = DEFAULT_SETTINGS.volume;
+      }
+    } else {
+      volume = DEFAULT_SETTINGS.volume;
+    }
+  }
+
+  let isMuted = activeSettings.isMuted;
+  if (typeof isMuted !== 'boolean') {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('site_isMuted');
+        isMuted = stored !== null ? stored === 'true' : DEFAULT_SETTINGS.isMuted;
+      } catch {
+        isMuted = DEFAULT_SETTINGS.isMuted;
+      }
+    } else {
+      isMuted = DEFAULT_SETTINGS.isMuted;
+    }
+  }
+
   const now = new Date().toISOString();
   const masterVersionId = `master_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
@@ -91,6 +120,8 @@ export function getCurrentWebsiteSnapshot(activeSettings = {}) {
     settings: {
       wallpaper: wallpaper || DEFAULT_SETTINGS.wallpaper,
       lockWallpaper: lockWallpaper || DEFAULT_SETTINGS.lockWallpaper,
+      volume: typeof volume === 'number' && !isNaN(volume) ? volume : DEFAULT_SETTINGS.volume,
+      isMuted: typeof isMuted === 'boolean' ? isMuted : DEFAULT_SETTINGS.isMuted,
       socialLinks: socialLinks || DEFAULT_SETTINGS.socialLinks,
       dashboardConfig: dashboardConfig || DEFAULT_SETTINGS.dashboardConfig,
       folderIcons: folderIcons || {},
@@ -225,6 +256,26 @@ export async function applyMasterSnapshotToWindow(snapshot, callbacks = {}) {
     callbacks.onUpdateDashboardConfig(snapshot.settings.dashboardConfig);
     try {
       localStorage.setItem('site_dashboardConfig', JSON.stringify(snapshot.settings.dashboardConfig));
+    } catch {}
+  }
+
+  // 6. Hydrate volume & sound settings
+  if (typeof snapshot.settings?.volume === 'number' && !isNaN(snapshot.settings.volume)) {
+    if (callbacks.onChangeVolume) {
+      callbacks.onChangeVolume(snapshot.settings.volume);
+    }
+    try {
+      localStorage.setItem('site_volume', String(snapshot.settings.volume));
+    } catch {}
+  }
+  if (typeof snapshot.settings?.isMuted === 'boolean') {
+    if (callbacks.onSetMuted) {
+      callbacks.onSetMuted(snapshot.settings.isMuted);
+    } else if (callbacks.onToggleMute && callbacks.isMuted !== snapshot.settings.isMuted) {
+      callbacks.onToggleMute();
+    }
+    try {
+      localStorage.setItem('site_isMuted', String(snapshot.settings.isMuted));
     } catch {}
   }
 }

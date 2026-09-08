@@ -5,6 +5,8 @@
 export const DEFAULT_SETTINGS = {
   wallpaper: 'video',
   lockWallpaper: 'custom',
+  volume: 20,
+  isMuted: false,
   socialLinks: {
     youtube: 'https://youtube.com/@heyishant',
     linkedin: 'https://linkedin.com',
@@ -113,6 +115,8 @@ export async function fetchSiteSettings() {
     return {
       wallpaper: data.wallpaper || DEFAULT_SETTINGS.wallpaper,
       lockWallpaper: data.lockWallpaper || DEFAULT_SETTINGS.lockWallpaper,
+      volume: typeof data.volume === 'number' && !isNaN(data.volume) ? data.volume : DEFAULT_SETTINGS.volume,
+      isMuted: typeof data.isMuted === 'boolean' ? data.isMuted : DEFAULT_SETTINGS.isMuted,
       socialLinks: { ...DEFAULT_SETTINGS.socialLinks, ...(data.socialLinks || {}) },
       dashboardConfig: { ...DEFAULT_SETTINGS.dashboardConfig, ...(data.dashboardConfig || {}) },
       folderIcons,
@@ -127,12 +131,16 @@ export async function fetchSiteSettings() {
       const storedSocials = localStorage.getItem('site_socialLinks');
       const storedDashboard = localStorage.getItem('site_dashboardConfig');
       const storedFolderIcons = localStorage.getItem('site_folderIcons');
+      const storedVolume = localStorage.getItem('site_volume');
+      const storedMuted = localStorage.getItem('site_isMuted');
       const folderIcons = storedFolderIcons ? JSON.parse(storedFolderIcons) : DEFAULT_SETTINGS.folderIcons;
       setLocalFolderIcons(folderIcons);
 
       return {
         wallpaper: wp || DEFAULT_SETTINGS.wallpaper,
         lockWallpaper: lockWp || DEFAULT_SETTINGS.lockWallpaper,
+        volume: storedVolume !== null && !isNaN(Number(storedVolume)) ? Number(storedVolume) : DEFAULT_SETTINGS.volume,
+        isMuted: storedMuted !== null ? storedMuted === 'true' : DEFAULT_SETTINGS.isMuted,
         socialLinks: storedSocials ? { ...DEFAULT_SETTINGS.socialLinks, ...JSON.parse(storedSocials) } : DEFAULT_SETTINGS.socialLinks,
         dashboardConfig: storedDashboard ? { ...DEFAULT_SETTINGS.dashboardConfig, ...JSON.parse(storedDashboard) } : DEFAULT_SETTINGS.dashboardConfig,
         folderIcons,
@@ -157,10 +165,16 @@ export async function verifyAdminPassword(password) {
   }
 }
 
-export async function saveSiteSettings({ password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons }) {
+export async function saveSiteSettings({ password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted }) {
   try {
-    const res = await postJson('/api/settings', { password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons });
+    const res = await postJson('/api/settings', { password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted });
     if (folderIcons) setLocalFolderIcons(folderIcons);
+    if (typeof volume === 'number' && !isNaN(volume)) {
+      try { localStorage.setItem('site_volume', String(volume)); } catch {}
+    }
+    if (typeof isMuted === 'boolean') {
+      try { localStorage.setItem('site_isMuted', String(isMuted)); } catch {}
+    }
     return res;
   } catch (err) {
     // Fallback: save to localStorage on static host
@@ -171,8 +185,10 @@ export async function saveSiteSettings({ password, wallpaper, lockWallpaper, soc
         if (socialLinks) localStorage.setItem('site_socialLinks', JSON.stringify(socialLinks));
         if (dashboardConfig) localStorage.setItem('site_dashboardConfig', JSON.stringify(dashboardConfig));
         if (folderIcons) setLocalFolderIcons(folderIcons);
+        if (typeof volume === 'number' && !isNaN(volume)) localStorage.setItem('site_volume', String(volume));
+        if (typeof isMuted === 'boolean') localStorage.setItem('site_isMuted', String(isMuted));
       } catch {}
-      return { ok: true, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, fallback: true };
+      return { ok: true, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, fallback: true };
     }
     throw err;
   }

@@ -87,6 +87,19 @@ export default function SystemSettingsModal({
   const [socialsSavedNotice, setSocialsSavedNotice] = useState(false);
   const [dockSavedNotice, setDockSavedNotice] = useState(false);
 
+  // Sound & Volume state
+  const [localVolume, setLocalVolume] = useState(() => (typeof volume === 'number' && !isNaN(volume) ? volume : 20));
+  const [localIsMuted, setLocalIsMuted] = useState(() => (typeof isMuted === 'boolean' ? isMuted : false));
+  const [soundSavedNotice, setSoundSavedNotice] = useState(false);
+
+  useEffect(() => {
+    if (typeof volume === 'number' && !isNaN(volume)) setLocalVolume(volume);
+  }, [volume]);
+
+  useEffect(() => {
+    if (typeof isMuted === 'boolean') setLocalIsMuted(isMuted);
+  }, [isMuted]);
+
   // YouTube live status preview in settings
   const [ytPreview, setYtPreview] = useState(null);
   const [ytLoading, setYtLoading] = useState(false);
@@ -485,11 +498,14 @@ export default function SystemSettingsModal({
         lockWallpaper,
         socialLinks: localSocials,
         dashboardConfig: localDashboard,
-        folderIcons: localFolderIcons
+        folderIcons: localFolderIcons,
+        volume: localVolume,
+        isMuted: localIsMuted
       });
       if (onUpdateSocialLinks) onUpdateSocialLinks(localSocials);
       if (onUpdateDashboardConfig) onUpdateDashboardConfig(localDashboard);
       if (onUpdateFolderIcons) onUpdateFolderIcons(localFolderIcons);
+      if (onChangeVolume) onChangeVolume(localVolume);
 
       // Also trigger master sync to save full folders and filesystem globally
       try {
@@ -498,7 +514,9 @@ export default function SystemSettingsModal({
           lockWallpaper,
           socialLinks: localSocials,
           dashboardConfig: localDashboard,
-          folderIcons: localFolderIcons
+          folderIcons: localFolderIcons,
+          volume: localVolume,
+          isMuted: localIsMuted
         });
       } catch (masterErr) {
         console.warn('Master sync background update note:', masterErr.message);
@@ -662,7 +680,7 @@ export default function SystemSettingsModal({
                     { id: "wallpaper", label: "Desktop Wallpaper", icon: Image },
                     { id: "lockscreen", label: "Lock Screen Wallpaper", icon: Lock },
                     { id: "appearance", label: "Appearance & Theme", icon: isDarkMode ? Moon : Sun },
-                    { id: "sound", label: "Sound & Audio", icon: isMuted ? VolumeX : Volume2 },
+                    { id: "sound", label: "Sound & Audio", icon: localIsMuted ? VolumeX : Volume2 },
                     { id: "password", label: "Password & Security", icon: Key },
                     { id: "about", label: "System Info", icon: Monitor }
                   ].map((item) => {
@@ -1953,34 +1971,122 @@ export default function SystemSettingsModal({
                       Sound & Audio Controls
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Adjust master system volume and audio mute settings.
+                      Adjust master system volume and audio mute settings. Changes can be saved locally or published to all visitors.
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-4 max-w-md shadow-sm">
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-5 max-w-md shadow-sm">
+                    {/* Mute toggle row */}
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Mute Audio</span>
+                      <div className="flex items-center gap-2">
+                        {localIsMuted ? (
+                          <VolumeX className="w-4 h-4 text-rose-500" />
+                        ) : (
+                          <Volume2 className="w-4 h-4 text-emerald-500" />
+                        )}
+                        <div>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                            Mute Audio
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                            {localIsMuted ? "All sound effects and video audio silenced" : `Active at ${localVolume}%`}
+                          </span>
+                        </div>
+                      </div>
                       <button 
-                        onClick={onToggleMute}
-                        className={`w-11 h-6 rounded-full transition-colors relative p-0.5 ${isMuted ? "bg-red-500" : "bg-emerald-500"}`}
+                        type="button"
+                        onClick={() => {
+                          const next = !localIsMuted;
+                          setLocalIsMuted(next);
+                          if (onToggleMute) onToggleMute();
+                          try {
+                            localStorage.setItem('site_isMuted', String(next));
+                          } catch {}
+                        }}
+                        className={`w-11 h-6 rounded-full transition-colors relative p-0.5 cursor-pointer ${localIsMuted ? "bg-rose-500" : "bg-emerald-500"}`}
+                        title={localIsMuted ? "Unmute Audio" : "Mute Audio"}
                       >
-                        <div className={`w-5 h-5 rounded-full bg-white transition-transform ${isMuted ? "translate-x-5" : "translate-x-0"}`} />
+                        <div className={`w-5 h-5 rounded-full bg-white transition-transform ${localIsMuted ? "translate-x-5" : "translate-x-0"}`} />
                       </button>
                     </div>
 
-                    <div>
-                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {/* Volume Slider */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                         <span>Master Volume</span>
-                        <span>{volume}%</span>
+                        <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{localVolume}%</span>
                       </div>
                       <input
                         type="range"
                         min="0"
                         max="100"
-                        value={volume}
-                        onChange={(e) => onChangeVolume(Number(e.target.value))}
+                        value={localVolume}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setLocalVolume(val);
+                          if (onChangeVolume) onChangeVolume(val);
+                        }}
                         className="w-full accent-blue-500 cursor-pointer"
                       />
+
+                      {/* Quick Presets */}
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <span className="text-[10px] text-slate-500 font-semibold mr-1">Presets:</span>
+                        {[5, 20, 50, 100].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              setLocalVolume(preset);
+                              if (onChangeVolume) onChangeVolume(preset);
+                              try {
+                                localStorage.setItem('site_volume', String(preset));
+                              } catch {}
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                              localVolume === preset
+                                ? "bg-blue-600 text-white shadow-sm"
+                                : "bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-300"
+                            }`}
+                          >
+                            {preset}%{preset === 5 ? " (Low)" : preset === 20 ? " (Default)" : ""}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Action buttons: Test Sound & Save Sound */}
+                    <div className="pt-2 border-t border-slate-200/50 dark:border-white/10 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => playMacClick(localIsMuted)}
+                        className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-blue-500/20"
+                        title="Test audio click at current volume"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span>Test Click</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            localStorage.setItem('site_volume', String(localVolume));
+                            localStorage.setItem('site_isMuted', String(localIsMuted));
+                            if (onChangeVolume) onChangeVolume(localVolume);
+                            setSoundSavedNotice(true);
+                            setTimeout(() => setSoundSavedNotice(false), 2200);
+                          } catch {}
+                        }}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+                          soundSavedNotice
+                            ? "bg-emerald-600 text-white"
+                            : "bg-slate-900 hover:bg-slate-800 dark:bg-white/15 dark:hover:bg-white/25 text-white"
+                        }`}
+                      >
+                        {soundSavedNotice ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        <span>{soundSavedNotice ? "Saved Locally!" : "Save Sound Settings"}</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -2042,10 +2148,10 @@ export default function SystemSettingsModal({
                 {publishState === "error"
                   ? publishError
                   : publishState === "saved"
-                  ? "Saved — all future visitors will now load these wallpapers, custom folder icons, social links, and dashboard settings."
+                  ? "Saved — all future visitors will now load these wallpapers, sound settings, custom folder icons, social links, and dashboard settings."
                   : !canPublish
                   ? "Uploaded wallpapers live only in your browser and can't be published. Pick a built-in one."
-                  : "Saves current wallpapers, custom folder icons, social links, and dashboard preferences for all future visitors."}
+                  : "Saves current wallpapers, sound & volume preferences, custom folder icons, social links, and dashboard preferences for all future visitors."}
               </p>
             </div>
           </div>

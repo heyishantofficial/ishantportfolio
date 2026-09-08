@@ -1,6 +1,20 @@
 // Web Audio API Audio Engine for macOS Sound Effects
 
 let audioCtx = null;
+let masterGainNode = null;
+let currentMasterVolume = 0.2; // default 20%
+
+if (typeof window !== 'undefined') {
+  try {
+    const isMuted = localStorage.getItem('site_isMuted') === 'true';
+    const storedVol = localStorage.getItem('site_volume');
+    if (isMuted) {
+      currentMasterVolume = 0;
+    } else if (storedVol !== null && !isNaN(Number(storedVol))) {
+      currentMasterVolume = Math.max(0, Math.min(100, Number(storedVol))) / 100;
+    }
+  } catch {}
+}
 
 const getAudioContext = () => {
   if (typeof window === 'undefined') return null;
@@ -16,12 +30,40 @@ const getAudioContext = () => {
   return audioCtx;
 };
 
+const getMasterGain = (ctx) => {
+  if (!ctx) return null;
+  if (!masterGainNode || masterGainNode.context !== ctx) {
+    masterGainNode = ctx.createGain();
+    masterGainNode.gain.setValueAtTime(currentMasterVolume, ctx.currentTime);
+    masterGainNode.connect(ctx.destination);
+  }
+  return masterGainNode;
+};
+
+export const setSystemVolume = (volPercent, isMuted = false) => {
+  if (isMuted || Number(volPercent) === 0) {
+    currentMasterVolume = 0;
+  } else {
+    currentMasterVolume = Math.max(0, Math.min(100, Number(volPercent) || 0)) / 100;
+  }
+  if (audioCtx) {
+    try {
+      const mg = getMasterGain(audioCtx);
+      if (mg) {
+        mg.gain.cancelScheduledValues(audioCtx.currentTime);
+        mg.gain.setValueAtTime(currentMasterVolume, audioCtx.currentTime);
+      }
+    } catch {}
+  }
+};
+
 // 1. macOS Boot Chime (F-sharp major chord sweep)
 export const playBootChime = (muted = false) => {
   if (muted) return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+    const dest = getMasterGain(ctx) || ctx.destination;
 
     const now = ctx.currentTime;
     const freqs = [185.00, 277.18, 369.99, 466.16];
@@ -39,7 +81,7 @@ export const playBootChime = (muted = false) => {
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(dest);
 
       osc.start(now);
       osc.stop(now + 2.5);
@@ -53,6 +95,7 @@ export const playMacClick = (muted = false) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+    const dest = getMasterGain(ctx) || ctx.destination;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
@@ -66,7 +109,7 @@ export const playMacClick = (muted = false) => {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
 
     osc.start(now);
     osc.stop(now + 0.035);
@@ -79,6 +122,7 @@ export const playWindowPop = (muted = false) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+    const dest = getMasterGain(ctx) || ctx.destination;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
@@ -92,7 +136,7 @@ export const playWindowPop = (muted = false) => {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
 
     osc.start(now);
     osc.stop(now + 0.06);
@@ -105,6 +149,7 @@ export const playTrashSound = (muted = false) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+    const dest = getMasterGain(ctx) || ctx.destination;
 
     const now = ctx.currentTime;
     const bufferSize = ctx.sampleRate * 0.18;
@@ -128,7 +173,7 @@ export const playTrashSound = (muted = false) => {
 
     noise.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
 
     noise.start(now);
     noise.stop(now + 0.18);
@@ -141,6 +186,7 @@ export const playSpotlightSound = (muted = false) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+    const dest = getMasterGain(ctx) || ctx.destination;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
@@ -154,7 +200,7 @@ export const playSpotlightSound = (muted = false) => {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
 
     osc.start(now);
     osc.stop(now + 0.08);
@@ -167,6 +213,7 @@ export const playCameraShutter = (muted = false) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+    const dest = getMasterGain(ctx) || ctx.destination;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
@@ -180,7 +227,7 @@ export const playCameraShutter = (muted = false) => {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
 
     osc.start(now);
     osc.stop(now + 0.04);
@@ -193,6 +240,7 @@ export const playQuickLookSound = (muted = false, isClosing = false) => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
+    const dest = getMasterGain(ctx) || ctx.destination;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
@@ -209,9 +257,10 @@ export const playQuickLookSound = (muted = false, isClosing = false) => {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(dest);
 
     osc.start(now);
     osc.stop(now + 0.05);
   } catch (e) {}
 };
+

@@ -13,7 +13,7 @@ import ProjectModal from './components/ProjectModal';
 import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
 import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
 import { CircularProgressCombined } from './components/CircularProgress';
-import { playBootChime, playMacClick } from './utils/macAudioEngine';
+import { playBootChime, playMacClick, setSystemVolume } from './utils/macAudioEngine';
 import { DEFAULT_SETTINGS } from './lib/siteSettings';
 import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
 import { useFileSystem } from './utils/useFileSystem';
@@ -39,8 +39,24 @@ export default function App() {
 
   const [wallpaper, setWallpaper] = useState(DEFAULT_SETTINGS.wallpaper);
   const [lockWallpaper, setLockWallpaper] = useState(DEFAULT_SETTINGS.lockWallpaper);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(20);
+  const [isMuted, setIsMuted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('site_isMuted');
+        if (cached !== null) return cached === 'true';
+      } catch {}
+    }
+    return DEFAULT_SETTINGS.isMuted ?? false;
+  });
+  const [volume, setVolume] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('site_volume');
+        if (cached !== null && !isNaN(Number(cached))) return Number(cached);
+      } catch {}
+    }
+    return DEFAULT_SETTINGS.volume ?? 20;
+  });
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
 
   // Security state. The real password lives on the server (ADMIN_PASSWORD).
@@ -187,6 +203,19 @@ export default function App() {
           setIsMuted(true);
         }
       }
+      if (typeof settings?.volume === 'number' && !isNaN(settings.volume)) {
+        setVolume(settings.volume);
+        try {
+          localStorage.setItem('site_volume', String(settings.volume));
+        } catch {}
+        setSystemVolume(settings.volume, settings?.isMuted ?? false);
+      }
+      if (typeof settings?.isMuted === 'boolean') {
+        setIsMuted(settings.isMuted);
+        try {
+          localStorage.setItem('site_isMuted', String(settings.isMuted));
+        } catch {}
+      }
       // Let the ring sit visibly at 100% before handing over to the login screen.
       setTimeout(() => {
         if (!cancelled) setIsBootLoading(false);
@@ -212,6 +241,15 @@ export default function App() {
           if (s.socialLinks) setSocialLinks(s.socialLinks);
           if (s.folderIcons) setFolderIcons(s.folderIcons);
           if (s.dashboardConfig) setDashboardConfig(s.dashboardConfig);
+          if (typeof s.volume === 'number' && !isNaN(s.volume)) {
+            setVolume(s.volume);
+            try { localStorage.setItem('site_volume', String(s.volume)); } catch {}
+            setSystemVolume(s.volume, s?.isMuted ?? false);
+          }
+          if (typeof s.isMuted === 'boolean') {
+            setIsMuted(s.isMuted);
+            try { localStorage.setItem('site_isMuted', String(s.isMuted)); } catch {}
+          }
         }
       };
       return () => channel.close();
@@ -237,6 +275,7 @@ export default function App() {
 
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
+      videoRef.current.volume = (isMuted || volume === 0) ? 0 : (volume / 100);
       videoRef.current.play().catch(() => {});
     }
 
@@ -331,12 +370,33 @@ export default function App() {
   }, [isMuted, volume, isIpodPlaying, wallpaper]);
 
   const handleVolumeChange = (newVol) => {
-    setVolume(newVol);
-    if (newVol > 0 && isMuted) {
+    const clamped = Math.max(0, Math.min(100, Number(newVol) || 0));
+    setVolume(clamped);
+    try {
+      localStorage.setItem('site_volume', String(clamped));
+    } catch {}
+    if (clamped > 0 && isMuted) {
       setIsMuted(false);
-    } else if (newVol === 0 && !isMuted) {
+      try { localStorage.setItem('site_isMuted', 'false'); } catch {}
+      setSystemVolume(clamped, false);
+    } else if (clamped === 0 && !isMuted) {
       setIsMuted(true);
+      try { localStorage.setItem('site_isMuted', 'true'); } catch {}
+      setSystemVolume(0, true);
+    } else {
+      setSystemVolume(clamped, isMuted);
     }
+  };
+
+  const handleToggleMute = () => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('site_isMuted', String(next));
+      } catch {}
+      setSystemVolume(volume, next);
+      return next;
+    });
   };
 
   // Global Keyboard Shortcuts
@@ -576,7 +636,7 @@ export default function App() {
             activeProject={selectedProject}
             onSelectProject={(project) => setSelectedProject(project)}
             isMuted={isMuted}
-            onToggleMute={() => setIsMuted(!isMuted)}
+            onToggleMute={handleToggleMute}
             wallpaper={wallpaper}
             onChangeWallpaper={(wp) => setWallpaper(wp)}
             lockWallpaper={lockWallpaper}

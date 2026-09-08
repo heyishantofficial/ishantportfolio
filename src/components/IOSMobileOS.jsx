@@ -19,6 +19,8 @@ import {
 } from './macDockModals';
 import IOSFilesApp from './IOSFilesApp';
 import IOSNotesApp from './IOSNotesApp';
+import IOSMediaViewer from './IOSMediaViewer';
+import { getYouTubeEmbedUrl } from '../utils/mediaHelpers';
 import { findPresetById, BADGE_ICONS } from '../data/folderIconsCatalog';
 import { getFolderIcon } from '../lib/siteSettings';
 
@@ -225,7 +227,7 @@ export default function IOSMobileOS({
   const [activeSheet, setActiveSheet] = useState(null); 
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeFolderStack, setActiveFolderStack] = useState([]);
-  const [activeTextFile, setActiveTextFile] = useState(null);
+  const [activeFilePreview, setActiveFilePreview] = useState(null);
   const [showControlCenter, setShowControlCenter] = useState(false);
   const [isTorchOn, setIsTorchOn] = useState(false);
   const [currentTimeStr, setCurrentTimeStr] = useState('9:41');
@@ -380,7 +382,7 @@ export default function IOSMobileOS({
     }
 
     setActiveFolderStack([node.id]);
-    setActiveTextFile(null);
+    setActiveFilePreview(null);
     setActiveSheet('folder');
   }, [isMuted]);
 
@@ -388,25 +390,27 @@ export default function IOSMobileOS({
     playMacClick(isMuted);
     if (!childNode) return;
 
-    if (childNode.kind === 'folder') {
+    if (childNode.kind === 'folder' || (childNode.children && childNode.children.length > 0)) {
       setActiveFolderStack((prev) => [...prev, childNode.id]);
-      setActiveTextFile(null);
+      setActiveFilePreview(null);
       return;
     }
 
     if (childNode.kind === 'project') {
-      const proj = childNode.project || PROJECTS_DATA.find((p) => p.id === childNode.id) || childNode;
+      const rawId = childNode.id.replace(/^lab-app-|^proj-|^lab-/, '');
+      const pMatch = PROJECTS_DATA.find((p) => p.id === childNode.id || p.id === rawId);
+      const proj = {
+        ...(pMatch || {}),
+        ...(childNode.project || {}),
+        ...childNode,
+        videoUrl: childNode.project?.videoUrl || pMatch?.videoUrl || childNode.videoUrl || ''
+      };
       setSelectedProject(proj);
       setActiveSheet('project-detail');
       return;
     }
 
-    if (childNode.kind === 'text') {
-      setActiveTextFile(childNode);
-      return;
-    }
-
-    if (childNode.kind === 'pdf' || childNode.id === 'resume') {
+    if (childNode.id === 'resume') {
       window.open(childNode.href || '/resume.pdf', '_blank');
       return;
     }
@@ -416,15 +420,14 @@ export default function IOSMobileOS({
       return;
     }
 
-    if (childNode.kind === 'link') {
-      if (childNode.href) window.open(childNode.href, '_blank', 'noopener,noreferrer');
-    }
+    // For any media (video, image, audio, text, pdf, uploaded file, link):
+    setActiveFilePreview(childNode);
   };
 
   const handleFolderBack = () => {
     playMacClick(isMuted);
-    if (activeTextFile) {
-      setActiveTextFile(null);
+    if (activeFilePreview) {
+      setActiveFilePreview(null);
       return;
     }
     if (activeFolderStack.length > 1) {
@@ -456,7 +459,7 @@ export default function IOSMobileOS({
     setActiveSheet(null);
     setSelectedProject(null);
     setActiveFolderStack([]);
-    setActiveTextFile(null);
+    setActiveFilePreview(null);
   };
 
   const handleOpenProjectModal = useCallback((proj) => {
@@ -499,13 +502,12 @@ export default function IOSMobileOS({
         } else if (node.kind === 'project') {
           const proj = node.project || PROJECTS_DATA.find((p) => p.id === node.id) || node;
           handleOpenProjectModal(proj);
-        } else if (node.kind === 'link') {
-          if (node.href) window.open(node.href, '_blank', 'noopener,noreferrer');
-        } else if (node.kind === 'text') {
-          setActiveTextFile(node);
-          setActiveSheet('folder');
+        } else if (node.kind === 'mail') {
+          setActiveSheet('mail');
         } else {
-          handleOpenFolder(node.id);
+          setActiveFolderStack([]);
+          setActiveFilePreview(node);
+          setActiveSheet('folder');
         }
       }
     }));
@@ -986,7 +988,7 @@ export default function IOSMobileOS({
               {activeSheet !== 'finder' && activeSheet !== 'notes' && activeSheet !== 'music' ? (
                 <div className="w-full pt-3 pb-2 px-5 flex items-center justify-between border-b border-black/10 dark:border-white/10 shrink-0 select-none">
                   <div className="flex items-center gap-2">
-                    {activeSheet === 'folder' && (activeFolderStack.length > 1 || activeTextFile) ? (
+                    {activeSheet === 'folder' && (activeFolderStack.length > 1 || activeFilePreview) ? (
                       <button
                         onClick={handleFolderBack}
                         className="p-1 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95 flex items-center gap-1 px-2"
@@ -994,8 +996,8 @@ export default function IOSMobileOS({
                         <ArrowLeft className="w-3.5 h-3.5" /> Back
                       </button>
                     ) : null}
-                    <span className="font-bold text-sm tracking-tight capitalize">
-                      {activeSheet === 'folder' ? (activeTextFile?.name || currentFolder?.name || 'Folder') :
+                    <span className="font-bold text-sm tracking-tight capitalize truncate max-w-[200px]">
+                      {activeSheet === 'folder' ? (activeFilePreview?.name || currentFolder?.name || 'Folder') :
                        activeSheet === 'work' ? 'Featured Work' :
                        activeSheet === 'arcade' ? 'Retro Arcade' :
                        activeSheet === 'photos' ? 'Photos Library' :
@@ -1005,7 +1007,7 @@ export default function IOSMobileOS({
                        activeSheet === 'project-detail' ? selectedProject?.title || 'Case Study' :
                        activeSheet}
                     </span>
-                    {activeSheet === 'folder' && currentFolder?.children && !activeTextFile && (
+                    {activeSheet === 'folder' && currentFolder?.children && !activeFilePreview && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400">
                         {currentFolder.children.length} items
                       </span>
@@ -1030,21 +1032,15 @@ export default function IOSMobileOS({
                 {/* 1. Generic Folder / Data Explorer Sheet */}
                 {activeSheet === 'folder' && (
                   <div className="p-4 space-y-4">
-                    {activeTextFile ? (
-                      /* Text Document Reader View */
-                      <div className="space-y-3">
-                        <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-black/10 dark:border-white/10 shadow-sm">
-                          <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 mb-1">
-                            {activeTextFile.name}
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                            {activeTextFile.description}
-                          </p>
-                          <div className="font-mono text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed p-3 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-black/5 dark:border-white/5">
-                            {activeTextFile.body}
-                          </div>
-                        </div>
-                      </div>
+                    {activeFilePreview ? (
+                      /* Rich iOS Media Viewer (Video, Image, Audio, Document, File) */
+                      <IOSMediaViewer
+                        node={activeFilePreview}
+                        onBack={handleFolderBack}
+                        onClose={handleCloseSheet}
+                        isDarkMode={isDarkMode}
+                        isMuted={isMuted}
+                      />
                     ) : (
                       /* Folder Children Grid / List View */
                       <div className="space-y-3">
@@ -1167,60 +1163,158 @@ export default function IOSMobileOS({
 
                 {/* 10. Individual Project Detail Sheet */}
                 {activeSheet === 'project-detail' && selectedProject && (
-                  <div className="p-4 space-y-4 text-slate-800 dark:text-slate-100">
+                  <div className="p-4 space-y-4 text-slate-800 dark:text-slate-100 pb-10">
                     <div className="border-b border-black/10 dark:border-white/10 pb-3">
-                      <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                        {selectedProject.category} · {selectedProject.year}
-                      </span>
-                      <h2 className="text-xl font-black mt-0.5">{selectedProject.title}</h2>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                        {selectedProject.tagline || selectedProject.summary}
-                      </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                          {selectedProject.category || 'Project'} · {selectedProject.year || '2026'}
+                        </span>
+                        {selectedProject.status && (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold tracking-wider">
+                            {selectedProject.status}
+                          </span>
+                        )}
+                      </div>
+                      <h2 className="text-xl font-black mt-1 text-slate-900 dark:text-white">{selectedProject.title}</h2>
+                      {(selectedProject.description || selectedProject.tagline || selectedProject.summary) && (
+                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
+                          {selectedProject.description || selectedProject.tagline || selectedProject.summary}
+                        </p>
+                      )}
                     </div>
 
-                    {selectedProject.highlights && (
-                      <div className="space-y-1.5">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                          Highlights &amp; Architecture
+                    {/* Role & Client Meta Pills */}
+                    {(selectedProject.role || selectedProject.client) && (
+                      <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-xs">
+                        {selectedProject.role && (
+                          <div>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Role</span>
+                            <span className="font-medium text-slate-800 dark:text-slate-200 text-[11px]">{selectedProject.role}</span>
+                          </div>
+                        )}
+                        {selectedProject.client && (
+                          <div>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block">Client</span>
+                            <span className="font-medium text-slate-800 dark:text-slate-200 text-[11px]">{selectedProject.client}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Project Video Showcase if available */}
+                    {selectedProject.videoUrl && (
+                      <div className="rounded-2xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10 bg-black aspect-video mt-2">
+                        <iframe
+                          src={getYouTubeEmbedUrl(selectedProject.videoUrl) || selectedProject.videoUrl}
+                          title={selectedProject.title}
+                          className="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+
+                    {/* The Problem */}
+                    {selectedProject.problem && (
+                      <div className="space-y-1.5 p-3.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-black/10 dark:border-white/10 shadow-sm">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400">
+                          The Problem
                         </span>
-                        <ul className="space-y-1">
-                          {selectedProject.highlights.map((h, i) => (
+                        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                          {selectedProject.problem}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* The Idea */}
+                    {selectedProject.idea && (
+                      <div className="space-y-1.5 p-3.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-black/10 dark:border-white/10 shadow-sm">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-blue-500 dark:text-blue-400">
+                          The Idea
+                        </span>
+                        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                          {selectedProject.idea}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Execution / Highlights */}
+                    {((Array.isArray(selectedProject.execution) && selectedProject.execution.length > 0) ||
+                      (Array.isArray(selectedProject.highlights) && selectedProject.highlights.length > 0)) && (
+                      <div className="space-y-2 p-3.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-black/10 dark:border-white/10 shadow-sm">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Execution &amp; Highlights
+                        </span>
+                        <ul className="space-y-1.5">
+                          {(selectedProject.execution || selectedProject.highlights).map((item, i) => (
                             <li key={i} className="text-xs flex items-start gap-2 text-slate-700 dark:text-slate-300">
                               <span className="text-blue-500 font-bold">•</span>
-                              <span>{h}</span>
+                              <span className="leading-relaxed">{item}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
                     )}
 
-                    {selectedProject.techStack && (
+                    {/* Result / Metrics */}
+                    {(selectedProject.result || selectedProject.metrics) && (
+                      <div className="p-3.5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-xs">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-1">
+                          Result &amp; Impact
+                        </span>
+                        <p className="text-slate-800 dark:text-emerald-100 font-medium leading-relaxed">
+                          {selectedProject.result || selectedProject.metrics}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Built With / Tech Stack */}
+                    {((Array.isArray(selectedProject.stack) && selectedProject.stack.length > 0) ||
+                      (Array.isArray(selectedProject.techStack) && selectedProject.techStack.length > 0) ||
+                      (Array.isArray(selectedProject.tags) && selectedProject.tags.length > 0)) && (
                       <div className="space-y-1.5">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                          Tech Stack
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Built With
                         </span>
                         <div className="flex flex-wrap gap-1.5">
-                          {selectedProject.techStack.map((tech, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/10 text-[11px] font-mono">
-                              {tech}
-                            </span>
-                          ))}
+                          {[...(selectedProject.stack || selectedProject.techStack || []), ...(selectedProject.tags || [])]
+                            .filter((val, idx, arr) => arr.indexOf(val) === idx)
+                            .map((tech, i) => (
+                              <span key={i} className="px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/10 text-[11px] font-mono text-slate-700 dark:text-slate-300">
+                                {tech}
+                              </span>
+                            ))}
                         </div>
                       </div>
                     )}
 
-                    {selectedProject.demoUrl && selectedProject.demoUrl !== '#' && (
-                      <div className="pt-3">
+                    {/* Action Links */}
+                    {Array.isArray(selectedProject.links) && selectedProject.links.length > 0 ? (
+                      <div className="pt-2 space-y-2">
+                        {selectedProject.links.map((link, i) => (
+                          <a
+                            key={i}
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+                          >
+                            <ExternalLink className="w-4 h-4" /> {link.label || 'Visit Link'}
+                          </a>
+                        ))}
+                      </div>
+                    ) : selectedProject.demoUrl && selectedProject.demoUrl !== '#' ? (
+                      <div className="pt-2">
                         <a
                           href={selectedProject.demoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg"
+                          className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
                         >
                           <ExternalLink className="w-4 h-4" /> Visit Live Production App
                         </a>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 )}
 

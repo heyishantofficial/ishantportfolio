@@ -43,6 +43,7 @@ function caseStudyFromProject(p) {
     tags: p.tags || [],
     stack: p.techStack || [],
     links: p.demoUrl && p.demoUrl !== '#' ? [{ label: p.actionType || 'Visit', href: p.demoUrl }] : [],
+    videoUrl: p.videoUrl || '',
     accent: p.badgeColor || '#c0392b'
   };
 }

@@ -4,11 +4,12 @@ import {
   ChevronLeft, MoreHorizontal, Search, Mic, Clock, 
   Folder as FolderIcon, Users, FileText, Download, 
   Briefcase, Rocket, Sparkles, Code, 
-  Coffee, Mail, X, Check
+  Coffee, Mail, X, Check, Film, Music, Image as ImageIcon
 } from 'lucide-react';
 import { findNode, DESKTOP_ORDER } from '../data/ishantOS';
 import { useFileSystem } from '../utils/useFileSystem';
 import { PROJECTS_DATA } from '../data/projectsData';
+import IOSMediaViewer from './IOSMediaViewer';
 
 // Authentic Apple iOS Files Folder Component
 function IOSBlueFolder({ title, itemCount, badge, onClick }) {
@@ -71,8 +72,12 @@ function IOSBlueFolder({ title, itemCount, badge, onClick }) {
   );
 }
 
-// File Document Icon (for PDF / TXT / Project)
-function IOSDocumentItem({ title, subtext, kind, onClick }) {
+// File Document Icon (for PDF / TXT / Project / Video / Image / Audio)
+function IOSDocumentItem({ title, subtext, kind, node, onClick }) {
+  const isVideo = kind === 'video' || (node && (node.videoUrl || node.platform === 'youtube'));
+  const isImage = kind === 'image';
+  const isAudio = kind === 'audio';
+
   return (
     <div 
       onClick={onClick}
@@ -86,6 +91,18 @@ function IOSDocumentItem({ title, subtext, kind, onClick }) {
         ) : kind === 'project' ? (
           <div className="w-9 h-9 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
             <Sparkles className="w-5 h-5" />
+          </div>
+        ) : isVideo ? (
+          <div className="w-9 h-9 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
+            <Film className="w-5 h-5" />
+          </div>
+        ) : isImage ? (
+          <div className="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <ImageIcon className="w-5 h-5" />
+          </div>
+        ) : isAudio ? (
+          <div className="w-9 h-9 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <Music className="w-5 h-5" />
           </div>
         ) : (
           <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-white/80">
@@ -288,23 +305,19 @@ export default function IOSFilesApp({
 
   // Handle drill down into a child node
   const handleChildClick = (child) => {
-    if (child.kind === 'folder' || child.children) {
+    if (child.kind === 'folder' || (child.children && child.children.length > 0)) {
       setFolderStack(prev => [...prev, {
         id: child.id,
         name: child.name,
         children: child.children || []
       }]);
-    } else if (child.kind === 'text') {
-      setActiveReaderDoc(child);
     } else if (child.kind === 'project' || child.project) {
       const p = PROJECTS_DATA.find(item => item.id === child.id) || child.project;
       if (onSelectProject && p) {
         onSelectProject(p);
       }
-    } else if (child.kind === 'pdf') {
-      window.open('/resume.pdf', '_blank');
-    } else if (child.href) {
-      window.open(child.href, '_blank');
+    } else {
+      setActiveReaderDoc(child);
     }
   };
 
@@ -472,17 +485,14 @@ export default function IOSFilesApp({
       {/* 3. Main Scrollable Content */}
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-28">
         
-        {/* Document Reader Mode */}
+        {/* Document / Media Reader Mode */}
         {activeReaderDoc ? (
-          <div className="p-4 rounded-2xl bg-[#1c1c1e] border border-white/10 shadow-lg space-y-3">
-            <h2 className="text-base font-bold text-white">{activeReaderDoc.name}</h2>
-            {activeReaderDoc.description && (
-              <p className="text-xs text-[#8e8e93]">{activeReaderDoc.description}</p>
-            )}
-            <div className="p-3 rounded-xl bg-black/60 font-mono text-xs text-slate-200 whitespace-pre-line leading-relaxed border border-white/5">
-              {activeReaderDoc.body || 'No document content.'}
-            </div>
-          </div>
+          <IOSMediaViewer
+            node={activeReaderDoc}
+            onBack={handleBack}
+            onClose={() => setActiveReaderDoc(null)}
+            isDarkMode={true}
+          />
         ) : (
           <>
             {/* 3-Column iOS Folder & File Grid */}
@@ -532,6 +542,7 @@ export default function IOSFilesApp({
                       title={child.name || child.title}
                       subtext={child.subtext || (child.kind === 'text' ? 'Text File' : child.kind)}
                       kind={child.kind}
+                      node={child}
                       onClick={() => handleChildClick(child)}
                     />
                   )

@@ -545,10 +545,6 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
 
             </div>
 
-            <p className="text-[10px] text-white/90 font-mono tracking-wider text-center mt-3 drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
-              Tap <span className="text-white font-bold underline">MENU</span> for Playlist • Click Wheel to Control
-            </p>
-
           </div>
         ) : (
           /* ========================================================================= */

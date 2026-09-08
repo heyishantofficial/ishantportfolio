@@ -655,7 +655,6 @@ public asks for a demo.`)
   {
     createdAt: '2025',
     modifiedAt: 'Today',
-    statusLine: { Projects: '06', Live: '02', Building: '02', Experiments: '02' },
     meta: { size: '6 experiments', owner: 'Ishant', status: 'Currently running.' }
   }
 );

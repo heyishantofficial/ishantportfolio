@@ -282,7 +282,7 @@ This portfolio           LIVE
     You are inside it.
 
 Building in public is easy until the
-public asks for a demo.`)])],{createdAt:`2025`,modifiedAt:`Today`,statusLine:{Projects:`06`,Live:`02`,Building:`02`,Experiments:`02`},meta:{size:`6 experiments`,owner:`Ishant`,status:`Currently running.`}}),lp=X(`home`,`Home`,`Everything on this machine.`,[X(`about-me`,`ABOUT ME`,`The person behind the work.`,[rp(`about-who`,`who-am-i.txt`,`WHO AM I?
+public asks for a demo.`)])],{createdAt:`2025`,modifiedAt:`Today`,meta:{size:`6 experiments`,owner:`Ishant`,status:`Currently running.`}}),lp=X(`home`,`Home`,`Everything on this machine.`,[X(`about-me`,`ABOUT ME`,`The person behind the work.`,[rp(`about-who`,`who-am-i.txt`,`WHO AM I?
 
 I'm Ishant.
 

@@ -19,11 +19,23 @@ import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
 import { useFileSystem } from './utils/useFileSystem';
 import { useAdminAuth } from './utils/useAdminAuth';
 import AdminAuthModal from './components/AdminAuthModal';
+import IOSMobileOS from './components/IOSMobileOS';
 
 export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showCyberdeck, setShowCyberdeck] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [wallpaper, setWallpaper] = useState(DEFAULT_SETTINGS.wallpaper);
   const [lockWallpaper, setLockWallpaper] = useState(DEFAULT_SETTINGS.lockWallpaper);
@@ -425,6 +437,41 @@ export default function App() {
     neon: 'wallpaper-neon',
     aurora: 'wallpaper-aurora'
   };
+
+  // Render authentic iOS 18 Mobile Ecosystem on mobile screens
+  if (isMobile && !isBootLoading) {
+    return (
+      <IOSMobileOS
+        isAppReady={isAppReady}
+        onUnlock={handleBootSystem}
+        viewerName={viewerName}
+        setViewerName={setViewerName}
+        loginError={loginError}
+        setLoginError={setLoginError}
+        isLoggingIn={isLoggingIn}
+        isShaking={isShaking}
+        wallpaper={wallpaper}
+        lockWallpaper={lockWallpaper}
+        onChangeWallpaper={(wp) => setWallpaper(wp)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        isMuted={isMuted}
+        onToggleMute={() => setIsMuted(!isMuted)}
+        volume={volume}
+        onChangeVolume={handleVolumeChange}
+        socialLinks={socialLinks}
+        dashboardConfig={dashboardConfig}
+        onUpdateSocialLinks={setSocialLinks}
+        onUpdateDashboardConfig={setDashboardConfig}
+        folderIcons={folderIcons}
+        onUpdateFolderIcons={setFolderIcons}
+        customUploadDesktop={customUploadDesktop}
+        customUploadLock={customUploadLock}
+        onUploadDesktopWallpaper={(img) => setCustomUploadDesktop(img)}
+        onUploadLockWallpaper={(img) => setCustomUploadLock(img)}
+      />
+    );
+  }
 
   return (
     <div className={`w-full h-full min-h-[100dvh] max-h-[100dvh] overflow-hidden fixed inset-0 ${isDarkMode ? 'dark' : ''}`}>

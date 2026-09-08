@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, FileText, Image as ImageIcon, Download, 
@@ -7,9 +7,10 @@ import {
   Save, Lock, ShieldCheck
 } from 'lucide-react';
 import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
-import SafariBrowser from './SafariBrowser';
 import { useAdminAuth } from '../utils/useAdminAuth';
 import AdminAuthModal from './AdminAuthModal';
+
+const SafariBrowser = React.lazy(() => import('./SafariBrowser'));
 
 const InstagramIcon = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -304,7 +305,11 @@ export function FinderModal({ onSelectProject, onLaunchApp, onClose }) {
 
 // 3. Safari Browser Modal (Powered by macOS Sequoia Safari Engine)
 export function SafariModal({ onClose, onMinimize, socialLinks, dashboardConfig }) {
-  return <SafariBrowser onClose={onClose} onMinimize={onMinimize} socialLinks={socialLinks} dashboardConfig={dashboardConfig} />;
+  return (
+    <Suspense fallback={null}>
+      <SafariBrowser onClose={onClose} onMinimize={onMinimize} socialLinks={socialLinks} dashboardConfig={dashboardConfig} />
+    </Suspense>
+  );
 }
 
 

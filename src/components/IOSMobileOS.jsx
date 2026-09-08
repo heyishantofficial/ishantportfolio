@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Wifi, Battery, Sliders, Volume2, VolumeX, Moon, Sun, 
@@ -10,10 +10,6 @@ import { PROJECTS_DATA } from '../data/projectsData';
 import { findNode } from '../data/ishantOS';
 import { playMacClick } from '../utils/macAudioEngine';
 import AnimatedQuoteHeading from './AnimatedQuoteHeading';
-import SafariBrowser from './SafariBrowser';
-import SystemSettingsModal from './SystemSettingsModal';
-import RetroArcadeApp from './RetroArcade/RetroArcadeApp';
-import NexusCyberdeckPlayer from './NexusCyberdeckPlayer';
 import NodeIcon from '../os/NodeIcon';
 import { 
   PhotosModal, 
@@ -21,6 +17,11 @@ import {
 } from './macDockModals';
 import IOSFilesApp from './IOSFilesApp';
 import IOSNotesApp from './IOSNotesApp';
+
+const SafariBrowser = React.lazy(() => import('./SafariBrowser'));
+const SystemSettingsModal = React.lazy(() => import('./SystemSettingsModal'));
+const RetroArcadeApp = React.lazy(() => import('./RetroArcade/RetroArcadeApp'));
+const NexusCyberdeckPlayer = React.lazy(() => import('./NexusCyberdeckPlayer'));
 
 export default function IOSMobileOS({
   isAppReady,
@@ -592,7 +593,7 @@ export default function IOSMobileOS({
       {/* ========================================================================= */}
       {/* 2. iOS 18 HOME SCREEN                                                     */}
       {/* ========================================================================= */}
-      <div className="w-full h-full flex flex-col justify-between pt-safe pb-safe px-4 overflow-y-auto">
+      <div className="w-full h-full flex flex-col justify-between pt-safe pb-safe px-3 sm:px-4 overflow-x-hidden select-none">
 
         {/* Top iOS Status Bar */}
         <div className="w-full pt-1 pb-2 flex items-center justify-between text-white drop-shadow-md select-none">
@@ -613,19 +614,19 @@ export default function IOSMobileOS({
           </div>
         </div>
 
-        {/* Horizontal Swipeable 2-Page iOS Home Screens */}
-        <div className="relative w-full flex-1 overflow-hidden my-auto flex items-center">
+        {/* Horizontal Swipeable 2-Page iOS Home Screens (Adaptive to all screen widths) */}
+        <div className="w-full overflow-hidden my-auto select-none">
           <motion.div
-            className="flex w-[200%] h-full items-center touch-pan-y"
+            className="flex w-full touch-pan-y"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
+            dragElastic={0.25}
             onDragStart={() => {
               isDraggingRef.current = true;
             }}
             onDragEnd={(_, info) => {
-              const swipeThreshold = 35;
-              const velocityThreshold = 250;
+              const swipeThreshold = 30;
+              const velocityThreshold = 200;
               if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
                 setHomeScreenPage(1);
               } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
@@ -635,12 +636,12 @@ export default function IOSMobileOS({
                 isDraggingRef.current = false;
               }, 60);
             }}
-            animate={{ x: homeScreenPage === 0 ? '0%' : '-50%' }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            animate={{ x: homeScreenPage === 0 ? '0%' : '-100%' }}
+            transition={{ type: 'spring', stiffness: 360, damping: 34 }}
           >
-            {/* Screen 1: Primary Authentic Folders & Files */}
-            <div className="w-1/2 shrink-0 px-1 py-4 select-none">
-              <div className="grid grid-cols-4 gap-y-6 gap-x-2 justify-items-center">
+            {/* Screen 1: Primary Authentic Folders & Files (Strictly 100% viewport width) */}
+            <div className="w-full min-w-full shrink-0 flex-shrink-0 px-1 py-3 box-border">
+              <div className="grid grid-cols-4 gap-y-5 sm:gap-y-7 gap-x-2 sm:gap-x-4 justify-items-center w-full max-w-sm mx-auto">
                 {page1Items.map((app) => (
                   <div 
                     key={app.id}
@@ -648,17 +649,17 @@ export default function IOSMobileOS({
                       if (isDraggingRef.current) return;
                       app.action();
                     }}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform"
+                    className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
                   >
-                    {/* iOS Squircle Icon */}
-                    <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
+                    {/* iOS Squircle Icon (Responsive Size) */}
+                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-[1.15rem] sm:rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
                       {app.customRender ? (
                         app.customRender()
                       ) : (
                         <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
                       )}
                     </div>
-                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[62px] text-center">
+                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[66px] sm:max-w-[72px] text-center">
                       {app.name}
                     </span>
                   </div>
@@ -666,31 +667,58 @@ export default function IOSMobileOS({
               </div>
             </div>
 
-            {/* Screen 2: System Apps, Entertainment & Socials */}
-            <div className="w-1/2 shrink-0 px-1 py-4 select-none">
-              <div className="grid grid-cols-4 gap-y-6 gap-x-2 justify-items-center">
-                {page2Items.map((app) => (
+            {/* Screen 2: System Apps, Entertainment & Socials (Strictly 100% viewport width) */}
+            <div className="w-full min-w-full shrink-0 flex-shrink-0 px-1 py-3 box-border">
+              <div className="grid grid-cols-4 gap-y-5 sm:gap-y-7 gap-x-2 sm:gap-x-4 justify-items-center w-full max-w-sm mx-auto">
+                {page2Items.slice(0, 8).map((app) => (
                   <div 
                     key={app.id}
                     onClick={() => {
                       if (isDraggingRef.current) return;
                       app.action();
                     }}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform"
+                    className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
                   >
-                    {/* iOS Squircle Icon */}
-                    <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
+                    {/* iOS Squircle Icon (Responsive Size) */}
+                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-[1.15rem] sm:rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
                       {app.customRender ? (
                         app.customRender()
                       ) : (
                         <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
                       )}
                     </div>
-                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[62px] text-center">
+                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[66px] sm:max-w-[72px] text-center">
                       {app.name}
                     </span>
                   </div>
                 ))}
+
+                {/* Row 3: Neatly Centered 2 Extra Apps (Instagram & Mail) */}
+                {page2Items.length > 8 && (
+                  <div className="col-span-4 flex items-center justify-center gap-6 sm:gap-8 pt-1">
+                    {page2Items.slice(8).map((app) => (
+                      <div 
+                        key={app.id}
+                        onClick={() => {
+                          if (isDraggingRef.current) return;
+                          app.action();
+                        }}
+                        className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
+                      >
+                        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-[1.15rem] sm:rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
+                          {app.customRender ? (
+                            app.customRender()
+                          ) : (
+                            <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
+                          )}
+                        </div>
+                        <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[66px] sm:max-w-[72px] text-center">
+                          {app.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
@@ -864,12 +892,16 @@ export default function IOSMobileOS({
 
                 {/* 2. Safari Browser Sheet */}
                 {activeSheet === 'safari' && (
-                  <SafariBrowser 
-                    onClose={handleCloseSheet} 
-                    socialLinks={socialLinks} 
-                    dashboardConfig={dashboardConfig}
-                    isEmbedded={true}
-                  />
+                  <Suspense fallback={null}>
+                    <SafariBrowser
+                      isEmbedded={true}
+                      socialLinks={socialLinks}
+                      dashboardConfig={dashboardConfig}
+                      onClose={handleCloseSheet}
+                      onSelectProject={handleOpenProjectModal} 
+                      onLaunchApp={handleAppLaunch}
+                    />
+                  </Suspense>
                 )}
 
                 {/* 3. Native iOS Notes App */}
@@ -888,9 +920,11 @@ export default function IOSMobileOS({
 
                 {/* 5. Retro Arcade Game Sheet */}
                 {activeSheet === 'arcade' && (
-                  <div className="p-2 h-full">
-                    <RetroArcadeApp onClose={handleCloseSheet} />
-                  </div>
+                  <Suspense fallback={null}>
+                    <div className="p-2 h-full">
+                      <RetroArcadeApp onClose={handleCloseSheet} />
+                    </div>
+                  </Suspense>
                 )}
 
                 {/* 6. Photos Library Sheet */}
@@ -900,28 +934,30 @@ export default function IOSMobileOS({
 
                 {/* 7. System Settings Sheet */}
                 {activeSheet === 'settings' && (
-                  <SystemSettingsModal
-                    onClose={handleCloseSheet}
-                    wallpaper={wallpaper}
-                    onChangeWallpaper={onChangeWallpaper}
-                    lockWallpaper={lockWallpaper}
-                    onChangeLockWallpaper={onChangeWallpaper}
-                    isDarkMode={isDarkMode}
-                    onToggleDarkMode={onToggleDarkMode}
-                    volume={volume}
-                    onChangeVolume={onChangeVolume}
-                    socialLinks={socialLinks}
-                    onUpdateSocialLinks={onUpdateSocialLinks}
-                    dashboardConfig={dashboardConfig}
-                    onUpdateDashboardConfig={onUpdateDashboardConfig}
-                    folderIcons={folderIcons}
-                    onUpdateFolderIcons={onUpdateFolderIcons}
-                    customUploadDesktop={customUploadDesktop}
-                    onUploadDesktopWallpaper={onUploadDesktopWallpaper}
-                    customUploadLock={customUploadLock}
-                    onUploadLockWallpaper={onUploadLockWallpaper}
-                    isEmbedded={true}
-                  />
+                  <Suspense fallback={null}>
+                    <SystemSettingsModal
+                      onClose={handleCloseSheet}
+                      wallpaper={wallpaper}
+                      onChangeWallpaper={onChangeWallpaper}
+                      lockWallpaper={lockWallpaper}
+                      onChangeLockWallpaper={onChangeWallpaper}
+                      isDarkMode={isDarkMode}
+                      onToggleDarkMode={onToggleDarkMode}
+                      volume={volume}
+                      onChangeVolume={onChangeVolume}
+                      socialLinks={socialLinks}
+                      onUpdateSocialLinks={onUpdateSocialLinks}
+                      dashboardConfig={dashboardConfig}
+                      onUpdateDashboardConfig={onUpdateDashboardConfig}
+                      folderIcons={folderIcons}
+                      onUpdateFolderIcons={onUpdateFolderIcons}
+                      customUploadDesktop={customUploadDesktop}
+                      onUploadDesktopWallpaper={onUploadDesktopWallpaper}
+                      customUploadLock={customUploadLock}
+                      onUploadLockWallpaper={onUploadLockWallpaper}
+                      isEmbedded={true}
+                    />
+                  </Suspense>
                 )}
 
                 {/* 8. Mail & Contact Sheet */}
@@ -932,15 +968,23 @@ export default function IOSMobileOS({
                   />
                 )}
 
-                {/* 9. Nexus Cyberdeck Full Player Sheet */}
+                {/* 9. iOS Floating Cyberdeck Music Player Sheet */}
                 {activeSheet === 'cyberdeck' && (
-                  <div className="p-4 flex flex-col items-center justify-center min-h-[400px]">
-                    <NexusCyberdeckPlayer 
-                      onClose={handleCloseSheet}
-                      masterVolume={volume}
-                      isMuted={isMuted}
-                    />
-                  </div>
+                  <Suspense fallback={null}>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                      animate={{ opacity: 1, scale: 0.88, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                      transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+                      className="fixed bottom-24 inset-x-0 mx-auto z-50 flex justify-center pointer-events-auto"
+                    >
+                      <NexusCyberdeckPlayer
+                        onClose={handleCloseSheet}
+                        masterVolume={volume}
+                        isMuted={isMuted}
+                      />
+                    </motion.div>
+                  </Suspense>
                 )}
 
                 {/* 10. Individual Project Detail Sheet */}

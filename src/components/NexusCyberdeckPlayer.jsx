@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './nexusCyberdeck.css';
 import { Play, Pause, SkipBack, SkipForward, Minus, Maximize2, X, RefreshCw, Volume1, Volume2, VolumeX, Shuffle, Repeat } from 'lucide-react';
+import { getAudioContext, getMasterGain } from '../utils/macAudioEngine';
 
 export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMuted = false, onIsPlayingChange }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -54,23 +55,28 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
   }, [masterVolume, isMuted]);
 
   const playClickSound = () => {
+    if (isMuted) return;
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const dest = getMasterGain(ctx) || ctx.destination;
+      const now = ctx.currentTime;
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1200, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(350, ctx.currentTime + 0.015);
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(350, now + 0.015);
       
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.015);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
       
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(dest);
       
-      osc.start();
-      osc.stop(ctx.currentTime + 0.015);
+      osc.start(now);
+      osc.stop(now + 0.015);
     } catch (e) {}
   };
 

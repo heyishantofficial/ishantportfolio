@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { User, X, Wifi, Battery, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -11,7 +11,6 @@ import MacDock from './components/MacDock';
 
 import ProjectModal from './components/ProjectModal';
 import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
-import NexusCyberdeckPlayer from './components/NexusCyberdeckPlayer';
 import { CircularProgressCombined } from './components/CircularProgress';
 import { playBootChime, playMacClick, setSystemVolume } from './utils/macAudioEngine';
 import { DEFAULT_SETTINGS } from './lib/siteSettings';
@@ -19,7 +18,9 @@ import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
 import { useFileSystem } from './utils/useFileSystem';
 import { useAdminAuth } from './utils/useAdminAuth';
 import AdminAuthModal from './components/AdminAuthModal';
-import IOSMobileOS from './components/IOSMobileOS';
+
+const NexusCyberdeckPlayer = React.lazy(() => import('./components/NexusCyberdeckPlayer'));
+const IOSMobileOS = React.lazy(() => import('./components/IOSMobileOS'));
 
 export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -62,7 +63,6 @@ export default function App() {
   // Security state. The real password lives on the server (ADMIN_PASSWORD).
   // Mirrors the server-side admin password so the UI can reflect a change in-session.
   const [, setSystemPassword] = useState('');
-  const [, setPasswordInput] = useState('');
   const [customUploadDesktop, setCustomUploadDesktop] = useState(null);
   const [customUploadLock, setCustomUploadLock] = useState(null);
   const [settingsInitialTab, setSettingsInitialTab] = useState('wallpaper');
@@ -216,10 +216,10 @@ export default function App() {
           localStorage.setItem('site_isMuted', String(settings.isMuted));
         } catch {}
       }
-      // Let the ring sit visibly at 100% before handing over to the login screen.
+      // Crisp handover to the login screen once preloading resolves
       setTimeout(() => {
         if (!cancelled) setIsBootLoading(false);
-      }, 700);
+      }, 120);
     });
 
     return () => {
@@ -285,7 +285,7 @@ export default function App() {
       setIsDesktopEntering(true);
       // Warm the non-critical assets now that nothing is competing for bandwidth.
       preloadDeferredAssets();
-    }, 450);
+    }, 120);
   };
 
   // Drop the entrance class once the sequence has finished, so the desktop is
@@ -501,35 +501,37 @@ export default function App() {
   // Render authentic iOS 18 Mobile Ecosystem on mobile screens
   if (isMobile && !isBootLoading) {
     return (
-      <IOSMobileOS
-        isAppReady={isAppReady}
-        onUnlock={handleBootSystem}
-        viewerName={viewerName}
-        setViewerName={setViewerName}
-        loginError={loginError}
-        setLoginError={setLoginError}
-        isLoggingIn={isLoggingIn}
-        isShaking={isShaking}
-        wallpaper={wallpaper}
-        lockWallpaper={lockWallpaper}
-        onChangeWallpaper={(wp) => setWallpaper(wp)}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        isMuted={isMuted}
-        onToggleMute={() => setIsMuted(!isMuted)}
-        volume={volume}
-        onChangeVolume={handleVolumeChange}
-        socialLinks={socialLinks}
-        dashboardConfig={dashboardConfig}
-        onUpdateSocialLinks={setSocialLinks}
-        onUpdateDashboardConfig={setDashboardConfig}
-        folderIcons={folderIcons}
-        onUpdateFolderIcons={setFolderIcons}
-        customUploadDesktop={customUploadDesktop}
-        customUploadLock={customUploadLock}
-        onUploadDesktopWallpaper={(img) => setCustomUploadDesktop(img)}
-        onUploadLockWallpaper={(img) => setCustomUploadLock(img)}
-      />
+      <Suspense fallback={null}>
+        <IOSMobileOS
+          isAppReady={isAppReady}
+          onUnlock={handleBootSystem}
+          viewerName={viewerName}
+          setViewerName={setViewerName}
+          loginError={loginError}
+          setLoginError={setLoginError}
+          isLoggingIn={isLoggingIn}
+          isShaking={isShaking}
+          wallpaper={wallpaper}
+          lockWallpaper={lockWallpaper}
+          onChangeWallpaper={(wp) => setWallpaper(wp)}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+          isMuted={isMuted}
+          onToggleMute={() => setIsMuted(!isMuted)}
+          volume={volume}
+          onChangeVolume={handleVolumeChange}
+          socialLinks={socialLinks}
+          dashboardConfig={dashboardConfig}
+          onUpdateSocialLinks={setSocialLinks}
+          onUpdateDashboardConfig={setDashboardConfig}
+          folderIcons={folderIcons}
+          onUpdateFolderIcons={setFolderIcons}
+          customUploadDesktop={customUploadDesktop}
+          customUploadLock={customUploadLock}
+          onUploadDesktopWallpaper={(img) => setCustomUploadDesktop(img)}
+          onUploadLockWallpaper={(img) => setCustomUploadLock(img)}
+        />
+      </Suspense>
     );
   }
 
@@ -669,12 +671,14 @@ export default function App() {
                 transition={{ type: 'spring', damping: 24, stiffness: 280 }}
                 className="fixed bottom-14 right-4 z-50 pointer-events-auto origin-bottom-right"
               >
-                <NexusCyberdeckPlayer 
-                  onClose={() => handleCloseApp("ipod")}
-                  masterVolume={volume}
-                  isMuted={isMuted}
-                  onIsPlayingChange={(playing) => setIsIpodPlaying(playing)}
-                />
+                <Suspense fallback={null}>
+                  <NexusCyberdeckPlayer 
+                    onClose={() => handleCloseApp("ipod")}
+                    masterVolume={volume}
+                    isMuted={isMuted}
+                    onIsPlayingChange={(playing) => setIsIpodPlaying(playing)}
+                  />
+                </Suspense>
               </motion.div>
             )}
           </AnimatePresence>

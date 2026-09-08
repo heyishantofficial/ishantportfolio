@@ -16,7 +16,7 @@ if (typeof window !== 'undefined') {
   } catch {}
 }
 
-const getAudioContext = () => {
+export const getAudioContext = () => {
   if (typeof window === 'undefined') return null;
   if (!audioCtx) {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -30,7 +30,7 @@ const getAudioContext = () => {
   return audioCtx;
 };
 
-const getMasterGain = (ctx) => {
+export const getMasterGain = (ctx) => {
   if (!ctx) return null;
   if (!masterGainNode || masterGainNode.context !== ctx) {
     masterGainNode = ctx.createGain();

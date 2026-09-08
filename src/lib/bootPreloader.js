@@ -171,7 +171,7 @@ function loadFonts() {
   if (typeof document === 'undefined' || !document.fonts) return Promise.resolve();
   return Promise.race([
     document.fonts.ready,
-    new Promise((resolve) => setTimeout(resolve, 6000))
+    new Promise((resolve) => setTimeout(resolve, 2500))
   ]);
 }
 

@@ -35,6 +35,7 @@ export default function OSWindow({
   const dragState = useRef(null);
   const resizeState = useRef(null);
   const frameRef = useRef(null);
+  const rafMoveRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
   const clampX = (x, w) => Math.min(Math.max(x, -w + 120), window.innerWidth - 120);
@@ -50,19 +51,27 @@ export default function OSWindow({
   };
 
   const handlePointerMove = useCallback((e) => {
-    if (dragState.current) {
-      const { startX, startY, originX, originY } = dragState.current;
-      onMove(clampX(originX + e.clientX - startX, win.w), clampY(originY + e.clientY - startY));
-    } else if (resizeState.current) {
-      const { startX, startY, originW, originH } = resizeState.current;
-      onResize(
-        Math.max(MIN_W, Math.min(originW + e.clientX - startX, window.innerWidth - 24)),
-        Math.max(MIN_H, Math.min(originH + e.clientY - startY, window.innerHeight - DOCK_GUARD))
-      );
-    }
+    if (!dragState.current && !resizeState.current) return;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+
+    if (rafMoveRef.current) cancelAnimationFrame(rafMoveRef.current);
+    rafMoveRef.current = requestAnimationFrame(() => {
+      if (dragState.current) {
+        const { startX, startY, originX, originY } = dragState.current;
+        onMove(clampX(originX + clientX - startX, win.w), clampY(originY + clientY - startY));
+      } else if (resizeState.current) {
+        const { startX, startY, originW, originH } = resizeState.current;
+        onResize(
+          Math.max(MIN_W, Math.min(originW + clientX - startX, window.innerWidth - 24)),
+          Math.max(MIN_H, Math.min(originH + clientY - startY, window.innerHeight - DOCK_GUARD))
+        );
+      }
+    });
   }, [onMove, onResize, win.w]);
 
   const endGesture = useCallback(() => {
+    if (rafMoveRef.current) cancelAnimationFrame(rafMoveRef.current);
     dragState.current = null;
     resizeState.current = null;
     setDragging(false);
@@ -113,11 +122,11 @@ export default function OSWindow({
       onContextMenu={(e) => e.stopPropagation()}
       className={`os-window fixed flex flex-col overflow-hidden rounded-xl ${
         isActive ? 'os-window-active' : 'os-window-idle'
-      } ${dragging ? 'select-none cursor-grabbing' : ''}`}
+      } ${dragging ? 'select-none cursor-grabbing will-change-transform' : ''}`}
     >
-      {/* Progressive optical edge blurs */}
-      <GradientBlur direction="top" size={28} />
-      <GradientBlur direction="bottom" size={24} />
+      {/* Progressive optical edge blurs (suspended during active drag for 60/120fps smoothness) */}
+      {!dragging && <GradientBlur direction="top" size={28} />}
+      {!dragging && <GradientBlur direction="bottom" size={24} />}
 
       {/* Titlebar with specular top highlight */}
       <header

@@ -17,5 +17,20 @@ export default defineConfig({
       '/api': 'http://localhost:3000',
       '/uploads': 'http://localhost:3000'
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/framer-motion')) {
+            return 'vendor-framer';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-lucide';
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600
   }
 })

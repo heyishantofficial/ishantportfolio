@@ -1,6 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, Suspense } from 'react';
 import { Sliders } from 'lucide-react';
-import SystemSettingsModal from './SystemSettingsModal';
 import './macDock.css';
 import { 
   CreativeStudioModal, 
@@ -16,8 +15,10 @@ import {
   SafariModal,
   SystemInfoModal
 } from './macDockModals';
-import RetroArcadeApp from './RetroArcade/RetroArcadeApp';
 import { playMacClick, playTrashSound } from '../utils/macAudioEngine';
+
+const SystemSettingsModal = React.lazy(() => import('./SystemSettingsModal'));
+const RetroArcadeApp = React.lazy(() => import('./RetroArcade/RetroArcadeApp'));
 
 export default function MacDock({ 
   openApps = {},
@@ -55,6 +56,7 @@ export default function MacDock({
   const [bouncingId, setBouncingId] = useState(null);
   const [itemsInTrash, setItemsInTrash] = useState(2);
   const dockRef = useRef(null);
+  const rafDockRef = useRef(null);
 
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -174,13 +176,19 @@ export default function MacDock({
   ];
 
   const handleMouseMove = (e) => {
-    if (dockRef.current) {
-      const rect = dockRef.current.getBoundingClientRect();
-      setMouseX(e.clientX - rect.left);
-    }
+    if (!dockRef.current) return;
+    const clientX = e.clientX;
+    if (rafDockRef.current) cancelAnimationFrame(rafDockRef.current);
+    rafDockRef.current = requestAnimationFrame(() => {
+      if (dockRef.current) {
+        const rect = dockRef.current.getBoundingClientRect();
+        setMouseX(clientX - rect.left);
+      }
+    });
   };
 
   const handleMouseLeave = () => {
+    if (rafDockRef.current) cancelAnimationFrame(rafDockRef.current);
     setMouseX(null);
     setHoveredId(null);
   };
@@ -294,12 +302,14 @@ export default function MacDock({
         <PhotosModal onClose={() => onCloseApp('photos')} />
       )}
       {openApps.arcade && (
-        <RetroArcadeApp 
-          onClose={() => onCloseApp('arcade')} 
-          isMuted={isMuted}
-          onToggleMute={onToggleMute}
-          volume={volume}
-        />
+        <Suspense fallback={null}>
+          <RetroArcadeApp 
+            onClose={() => onCloseApp('arcade')} 
+            isMuted={isMuted}
+            onToggleMute={onToggleMute}
+            volume={volume}
+          />
+        </Suspense>
       )}
       {openApps.youtube && (
         <YouTubeModal 
@@ -329,32 +339,34 @@ export default function MacDock({
         />
       )}
       {openApps.settings && (
-        <SystemSettingsModal 
-          onClose={() => onCloseApp('settings')}
-          wallpaper={wallpaper}
-          onChangeWallpaper={onChangeWallpaper}
-          lockWallpaper={lockWallpaper}
-          onChangeLockWallpaper={onChangeLockWallpaper}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={onToggleDarkMode}
-          isMuted={isMuted}
-          onToggleMute={onToggleMute}
-          volume={volume}
-          onChangeVolume={onChangeVolume}
-          systemPassword={systemPassword}
-          onUpdatePassword={onUpdatePassword}
-          customUploadDesktop={customUploadDesktop}
-          onUploadDesktopWallpaper={onUploadDesktopWallpaper}
-          customUploadLock={customUploadLock}
-          onUploadLockWallpaper={onUploadLockWallpaper}
-          initialTab={settingsInitialTab}
-          socialLinks={socialLinks}
-          onUpdateSocialLinks={onUpdateSocialLinks}
-          dashboardConfig={dashboardConfig}
-          onUpdateDashboardConfig={onUpdateDashboardConfig}
-          folderIcons={folderIcons}
-          onUpdateFolderIcons={onUpdateFolderIcons}
-        />
+        <Suspense fallback={null}>
+          <SystemSettingsModal 
+            onClose={() => onCloseApp('settings')}
+            wallpaper={wallpaper}
+            onChangeWallpaper={onChangeWallpaper}
+            lockWallpaper={lockWallpaper}
+            onChangeLockWallpaper={onChangeLockWallpaper}
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={onToggleDarkMode}
+            isMuted={isMuted}
+            onToggleMute={onToggleMute}
+            volume={volume}
+            onChangeVolume={onChangeVolume}
+            systemPassword={systemPassword}
+            onUpdatePassword={onUpdatePassword}
+            customUploadDesktop={customUploadDesktop}
+            onUploadDesktopWallpaper={onUploadDesktopWallpaper}
+            customUploadLock={customUploadLock}
+            onUploadLockWallpaper={onUploadLockWallpaper}
+            initialTab={settingsInitialTab}
+            socialLinks={socialLinks}
+            onUpdateSocialLinks={onUpdateSocialLinks}
+            dashboardConfig={dashboardConfig}
+            onUpdateDashboardConfig={onUpdateDashboardConfig}
+            folderIcons={folderIcons}
+            onUpdateFolderIcons={onUpdateFolderIcons}
+          />
+        </Suspense>
       )}
       {openApps.trash && (
         <TrashModal 

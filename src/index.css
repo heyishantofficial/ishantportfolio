@@ -369,7 +369,7 @@ button, a, [role="button"], .cursor-pointer {
 
 .mac-traffic-glyph {
   opacity: 0;
-  color: rgba(0, 0, 0, 0.65);
+  color: rgba(0, 0, 0, 0.7);
   font-size: 8px;
   font-weight: 800;
   line-height: 1;
@@ -377,8 +377,18 @@ button, a, [role="button"], .cursor-pointer {
   pointer-events: none;
 }
 
+.mac-traffic-close .mac-traffic-glyph {
+  opacity: 0.85;
+}
+
 .mac-traffic-lights:hover .mac-traffic-glyph {
   opacity: 1;
+}
+
+@media (hover: none) {
+  .mac-traffic-glyph {
+    opacity: 0.85 !important;
+  }
 }
 
 /* macOS Finder Segmented Control */

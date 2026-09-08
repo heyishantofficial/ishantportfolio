@@ -33,9 +33,30 @@ export function MacWindow({ title, icon: IconComponent, onClose, onMinimize, chi
         {/* Continuous Glass Titlebar */}
         <div className="h-10 px-4 flex items-center justify-between select-none relative z-20">
           <div className="flex items-center gap-2">
-            <button className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:opacity-80 transition-opacity" onClick={onClose} title="Close" />
-            <button className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:opacity-80 transition-opacity" onClick={onMinimize || onClose} title="Minimize" />
-            <button className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:opacity-80 transition-opacity" onClick={onClose} title="Maximize" />
+            <button 
+              className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:opacity-90 active:scale-95 transition-all flex items-center justify-center text-[8px] font-black text-black/80 shadow-sm cursor-pointer" 
+              onClick={onClose} 
+              title="Close"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <button 
+              className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:opacity-90 active:scale-95 transition-all flex items-center justify-center text-[8px] font-bold text-black/60 shadow-sm cursor-pointer" 
+              onClick={onMinimize || onClose} 
+              title="Minimize"
+              aria-label="Minimize"
+            >
+              −
+            </button>
+            <button 
+              className="w-3.5 h-3.5 rounded-full bg-[#27c93f] border border-[#1aab29] hover:opacity-90 active:scale-95 transition-all flex items-center justify-center text-[7px] font-bold text-black/60 shadow-sm cursor-pointer" 
+              onClick={onClose} 
+              title="Maximize"
+              aria-label="Maximize"
+            >
+              ⤢
+            </button>
           </div>
           <div className="text-xs font-semibold flex items-center gap-1.5 opacity-80">
             {IconComponent && <IconComponent className="w-3.5 h-3.5" />}
@@ -128,9 +149,30 @@ export function FinderModal({ onSelectProject, onLaunchApp, onClose }) {
             
             {/* Top Left Window Controls (Red, Yellow, Green Dots) */}
             <div className="flex items-center gap-2 pt-1 pb-2 px-1">
-              <button className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:opacity-80 transition-opacity cursor-pointer" onClick={onClose} title="Close" />
-              <button className="w-3 h-3 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:opacity-80 transition-opacity cursor-pointer" onClick={onClose} title="Minimize" />
-              <button className="w-3 h-3 rounded-full bg-[#27c93f] border border-[#1aab29] hover:opacity-80 transition-opacity cursor-pointer" onClick={onClose} title="Maximize" />
+              <button 
+                className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:opacity-90 active:scale-95 transition-all flex items-center justify-center text-[8px] font-black text-black/80 shadow-sm cursor-pointer" 
+                onClick={onClose} 
+                title="Close"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+              <button 
+                className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] border border-[#dea123] hover:opacity-90 active:scale-95 transition-all flex items-center justify-center text-[8px] font-bold text-black/60 shadow-sm cursor-pointer" 
+                onClick={onClose} 
+                title="Minimize"
+                aria-label="Minimize"
+              >
+                −
+              </button>
+              <button 
+                className="w-3.5 h-3.5 rounded-full bg-[#27c93f] border border-[#1aab29] hover:opacity-90 active:scale-95 transition-all flex items-center justify-center text-[7px] font-bold text-black/60 shadow-sm cursor-pointer" 
+                onClick={onClose} 
+                title="Maximize"
+                aria-label="Maximize"
+              >
+                ⤢
+              </button>
             </div>
 
             {/* Favourites Section */}

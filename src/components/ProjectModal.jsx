@@ -22,18 +22,23 @@ export default function ProjectModal({ project, onClose }) {
             onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-2xl max-h-[90vh] apple-glass-panel rounded-3xl p-6 sm:p-10 shadow-2xl overflow-y-auto text-slate-900 border border-white/60"
           >
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className="absolute top-6 right-6 p-2.5 rounded-full bg-slate-100/80 text-slate-500 hover:text-slate-900 hover:bg-slate-200/80 apple-pressable cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* Top Bar with Compulsory Up-Left Close Cross Icon */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 active:scale-95 text-slate-700 flex items-center justify-center transition-all shadow-sm cursor-pointer"
+                aria-label="Close Project"
+                title="Close"
+              >
+                <X className="w-4 h-4 stroke-[2.5]" />
+              </button>
 
-            {/* Modal Top Info */}
-            <span className="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">
-              // PROJECT DETAIL
-            </span>
+              <span className="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest">
+                // PROJECT DETAIL
+              </span>
+
+              <div className="w-8" />
+            </div>
 
             <h2 className="font-serif-title italic text-3xl sm:text-5xl text-slate-900 apple-display-heading mb-2">
               {project.title.toLowerCase()}

@@ -376,9 +376,9 @@ export default function QuickLookPanel({
                 onClick={onClose}
                 aria-label="Close Quick Look"
                 title="Close (Space or Esc)"
-                className="w-3 h-3 rounded-full bg-[#ff5f56] hover:brightness-110 active:brightness-90 flex items-center justify-center group"
+                className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] hover:brightness-110 active:brightness-90 flex items-center justify-center group"
               >
-                <X className="w-2 h-2 text-black/70 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <X className="w-2.5 h-2.5 text-black/80 opacity-80 group-hover:opacity-100 transition-opacity" />
               </button>
               <div
                 title="Quick Look cannot be minimized"

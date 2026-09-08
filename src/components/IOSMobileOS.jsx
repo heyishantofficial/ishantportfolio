@@ -4,7 +4,7 @@ import {
   Wifi, Battery, Sliders, Volume2, VolumeX, Moon, Sun, 
   Lock, ChevronRight,
   ExternalLink, ArrowRight, Flashlight, Download,
-  ArrowLeft,
+  ArrowLeft, X,
   User, Rocket, Briefcase, Code, Heart, Coffee, FileText, Folder as FolderIcon, Sparkles
 } from 'lucide-react';
 import { PROJECTS_DATA } from '../data/projectsData';
@@ -986,17 +986,28 @@ export default function IOSMobileOS({
             >
               {/* Sheet Grab Bar & Header (Hidden for Files, Notes & Music, since they render native iOS headers) */}
               {activeSheet !== 'finder' && activeSheet !== 'notes' && activeSheet !== 'music' ? (
-                <div className="w-full pt-3 pb-2 px-5 flex items-center justify-between border-b border-black/10 dark:border-white/10 shrink-0 select-none">
+                <div className="w-full pt-3 pb-2 px-4 flex items-center justify-between border-b border-black/10 dark:border-white/10 shrink-0 select-none">
+                  {/* Left Controls: Compulsory Cross Close Button + Back Button */}
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleCloseSheet}
+                      className="w-7 h-7 rounded-full bg-slate-200/90 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all active:scale-90 shadow-sm shrink-0 cursor-pointer"
+                      aria-label="Close"
+                      title="Close"
+                    >
+                      <X className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+
                     {activeSheet === 'folder' && (activeFolderStack.length > 1 || activeFilePreview) ? (
                       <button
                         onClick={handleFolderBack}
-                        className="p-1 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95 flex items-center gap-1 px-2"
+                        className="h-7 px-2.5 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shrink-0"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" /> Back
                       </button>
                     ) : null}
-                    <span className="font-bold text-sm tracking-tight capitalize truncate max-w-[200px]">
+
+                    <span className="font-bold text-sm tracking-tight capitalize truncate max-w-[170px] sm:max-w-[220px]">
                       {activeSheet === 'folder' ? (activeFilePreview?.name || currentFolder?.name || 'Folder') :
                        activeSheet === 'work' ? 'Featured Work' :
                        activeSheet === 'arcade' ? 'Retro Arcade' :
@@ -1008,16 +1019,16 @@ export default function IOSMobileOS({
                        activeSheet}
                     </span>
                     {activeSheet === 'folder' && currentFolder && !activeFilePreview && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 shrink-0">
                         {itemCountLabel(currentFolder)}
                       </span>
                     )}
                   </div>
 
-                  {/* Done / Close Button */}
+                  {/* Done Button on Right */}
                   <button
                     onClick={handleCloseSheet}
-                    className="px-3.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95"
+                    className="px-3.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95 shrink-0"
                   >
                     Done
                   </button>

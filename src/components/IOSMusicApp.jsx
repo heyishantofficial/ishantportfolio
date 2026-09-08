@@ -319,12 +319,13 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
       {/* Dynamic Ambient Drop Glow Behind Player */}
       <div className={`absolute inset-0 bg-gradient-to-b ${currentTrack.accent} opacity-35 blur-3xl rounded-3xl pointer-events-none transition-colors duration-700`} />
 
-      {/* Floating Close Button */}
-      <div className="relative z-20 flex items-center justify-end w-full max-w-[250px] sm:max-w-[270px] mb-2 px-1">
+      {/* Floating Close Button (Top-Left Corner) */}
+      <div className="relative z-20 flex items-center justify-start w-full max-w-[250px] sm:max-w-[270px] mb-2 px-1">
         <button
           onClick={onClose}
           className="w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 active:scale-90 backdrop-blur-xl border border-white/25 text-white flex items-center justify-center shadow-lg transition-all cursor-pointer"
           title="Close iPod"
+          aria-label="Close iPod"
         >
           <X className="w-3.5 h-3.5 stroke-[2.5]" />
         </button>

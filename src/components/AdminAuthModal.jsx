@@ -62,11 +62,13 @@ export default function AdminAuthModal({ isOpen, onClose, onSuccess, initialProm
           className="relative w-full max-w-sm rounded-2xl bg-white/95 dark:bg-[#1e1e24]/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl p-6 overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close button */}
+          {/* Close button on Up-Left Corner */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3.5 right-3.5 w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            className="absolute top-3.5 left-3.5 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            aria-label="Close"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>

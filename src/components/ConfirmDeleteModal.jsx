@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { Trash2, AlertTriangle, X } from 'lucide-react';
 import { DESKTOP_ORDER } from '../data/ishantOS';
 
 export default function ConfirmDeleteModal({ isOpen, target, onConfirm, onClose }) {
@@ -22,8 +22,8 @@ export default function ConfirmDeleteModal({ isOpen, target, onConfirm, onClose 
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen || !target) return null;
@@ -45,6 +45,16 @@ export default function ConfirmDeleteModal({ isOpen, target, onConfirm, onClose 
           className="relative w-full max-w-[360px] rounded-2xl bg-white/95 dark:bg-[#1e1e24]/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl p-6 overflow-hidden text-center"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Top-Left Close Cross Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-3.5 left-3.5 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Close"
+            title="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
           {/* Top macOS Trash Icon */}
           <div className="flex justify-center mb-4">
             <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-b from-red-500/10 to-red-500/20 dark:from-red-500/20 dark:to-red-500/30 flex items-center justify-center border border-red-500/20 shadow-inner">

@@ -22,15 +22,18 @@ export default function IOSNotesApp({ onClose }) {
       {/* 1. Sleek iOS Navigation Header */}
       <div className="w-full pt-3 pb-2.5 px-4 flex items-center justify-between border-b border-white/10 shrink-0 bg-[#121214]/90 backdrop-blur-md">
         
-        {/* Left Back Button */}
-        <button
-          onClick={onClose}
-          className="flex items-center gap-1 text-amber-400 active:opacity-70 transition-opacity font-medium text-sm cursor-pointer"
-          aria-label="Back"
-        >
-          <ChevronLeft className="w-5 h-5 -ml-1" />
-          <span>Notes</span>
-        </button>
+        {/* Left Cross Close Button */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-amber-400 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+            aria-label="Close Notes"
+            title="Close Notes"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+          </button>
+          <span className="text-amber-400 font-medium text-xs">Notes</span>
+        </div>
 
         {/* Center Title */}
         <h1 className="font-semibold text-sm text-white tracking-tight text-center">

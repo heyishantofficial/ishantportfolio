@@ -162,10 +162,11 @@ export default function RetroArcadeApp({
         <div className="flex items-center gap-2" data-no-drag>
           <button
             onClick={onClose}
-            className="w-3 h-3 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:opacity-80 transition-opacity flex items-center justify-center text-[8px] text-black/60 group cursor-pointer"
+            className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] border border-[#e0443e] hover:opacity-90 active:scale-95 transition-all flex items-center justify-center text-[8px] font-black text-black/80 shadow-sm group cursor-pointer"
             title="Close Games"
+            aria-label="Close Games"
           >
-            <X className="w-2 h-2 opacity-0 group-hover:opacity-100" />
+            <X className="w-2.5 h-2.5 opacity-80 group-hover:opacity-100" />
           </button>
           <button
             onClick={() => {

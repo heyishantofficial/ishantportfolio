@@ -386,14 +386,26 @@ export default function IOSFilesApp({
       {/* 1. iOS Navigation Header */}
       <div className="w-full pt-3 pb-2 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
         
-        {/* Left Back / Dismiss Button */}
-        <button
-          onClick={handleBack}
-          className="w-9 h-9 rounded-full bg-[#1c1c1e] text-white flex items-center justify-center active:bg-[#2c2c2e] transition-colors"
-          aria-label="Back"
-        >
-          <ChevronLeft className="w-5 h-5 -ml-0.5" />
-        </button>
+        {/* Left Cross Close & Back Controls */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => { if (onClose) onClose(); }}
+            className="w-8 h-8 rounded-full bg-[#1c1c1e] text-white flex items-center justify-center active:bg-[#2c2c2e] active:scale-95 transition-all shadow-sm cursor-pointer"
+            aria-label="Close Files"
+            title="Close"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+          </button>
+          {(folderStack.length > 0 || activeReaderDoc) && (
+            <button
+              onClick={handleBack}
+              className="h-8 px-2.5 rounded-full bg-[#1c1c1e] text-xs font-semibold text-white flex items-center gap-1 active:bg-[#2c2c2e] active:scale-95 transition-all cursor-pointer"
+              aria-label="Back"
+            >
+              <ChevronLeft className="w-4 h-4 -ml-0.5" /> Back
+            </button>
+          )}
+        </div>
 
         {/* Center Title */}
         <h1 className="font-semibold text-base text-white tracking-tight truncate max-w-[200px] text-center">

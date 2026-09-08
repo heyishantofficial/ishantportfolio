@@ -107,8 +107,17 @@ export default function AddWorkLinkModal({ isOpen, onClose, folderNode, onAddLin
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 pt-5 pb-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2.5">
+          <div className="px-5 pt-5 pb-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Close"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center shadow-md shadow-rose-500/20">
                 <Sparkles className="w-4 h-4" />
               </div>
@@ -121,13 +130,7 @@ export default function AddWorkLinkModal({ isOpen, onClose, folderNode, onAddLin
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="w-7" />
           </div>
 
           {/* Body */}

@@ -747,7 +747,7 @@ export default function QuickLookPanel({
                           {child.name}
                         </div>
                         <div className="text-[10px] text-slate-400 truncate">
-                          {child.description || child.kind}
+                          {child.kind === 'folder' || child.children ? (typeof itemCountLabel === 'function' ? itemCountLabel(child) : 'Folder') : (child.description && child.description !== 'Folder' ? child.description : child.kind)}
                         </div>
                       </div>
                       <span className="text-[10px] text-slate-400 uppercase font-mono">

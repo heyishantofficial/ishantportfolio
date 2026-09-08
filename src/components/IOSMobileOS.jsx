@@ -8,7 +8,7 @@ import {
   User, Rocket, Briefcase, Code, Heart, Coffee, FileText, Folder as FolderIcon, Sparkles
 } from 'lucide-react';
 import { PROJECTS_DATA } from '../data/projectsData';
-import { findNode } from '../data/ishantOS';
+import { findNode, itemCountLabel } from '../data/ishantOS';
 import { useFileSystem } from '../utils/useFileSystem';
 import { playMacClick } from '../utils/macAudioEngine';
 import AnimatedQuoteHeading from './AnimatedQuoteHeading';
@@ -1007,9 +1007,9 @@ export default function IOSMobileOS({
                        activeSheet === 'project-detail' ? selectedProject?.title || 'Case Study' :
                        activeSheet}
                     </span>
-                    {activeSheet === 'folder' && currentFolder?.children && !activeFilePreview && (
+                    {activeSheet === 'folder' && currentFolder && !activeFilePreview && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400">
-                        {currentFolder.children.length} items
+                        {itemCountLabel(currentFolder)}
                       </span>
                     )}
                   </div>
@@ -1044,36 +1044,51 @@ export default function IOSMobileOS({
                     ) : (
                       /* Folder Children Grid / List View */
                       <div className="space-y-3">
-                        {currentFolder?.description && (
+                        {currentFolder?.description && currentFolder.description !== 'Folder' && (
                           <p className="text-xs text-slate-600 dark:text-slate-400 px-1">
                             {currentFolder.description}
                           </p>
                         )}
 
-                        <div className="grid grid-cols-1 gap-2.5">
-                          {(currentFolder?.children || []).map((child) => (
-                            <div
-                              key={child.id}
-                              onClick={() => handleFolderDrillDown(child)}
-                              className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-800/70 border border-black/10 dark:border-white/10 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all"
-                            >
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div className="w-10 h-10 shrink-0 flex items-center justify-center">
-                                  <NodeIcon node={child} size={38} />
+                        {(!currentFolder?.children || currentFolder.children.length === 0) ? (
+                          <div className="py-14 flex flex-col items-center justify-center text-center text-slate-400 dark:text-slate-500">
+                            <FolderIcon className="w-12 h-12 stroke-[1.5] mb-2 opacity-30" />
+                            <p className="text-xs font-semibold">Folder is empty</p>
+                            <p className="text-[10px] opacity-70 mt-0.5">0 items</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-2.5">
+                            {currentFolder.children.map((child) => {
+                              const isChildFolder = child.kind === 'folder' || Array.isArray(child.children);
+                              const subtitle = isChildFolder
+                                ? itemCountLabel(child)
+                                : (child.client || child.role || child.category || (child.description && child.description !== 'Folder' && child.description !== 'Uploaded file' ? child.description : (child.kind === 'text' ? 'Text Document' : child.kind === 'pdf' ? 'PDF Document' : child.kind === 'video' ? 'Video' : child.kind === 'image' ? 'Image' : child.kind === 'audio' ? 'Audio' : child.kind || 'File')));
+
+                              return (
+                                <div
+                                  key={child.id}
+                                  onClick={() => handleFolderDrillDown(child)}
+                                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-800/70 border border-black/10 dark:border-white/10 shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <div className="w-10 h-10 shrink-0 flex items-center justify-center">
+                                      <NodeIcon node={child} size={38} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <h4 className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">
+                                        {child.name}
+                                      </h4>
+                                      <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                        {subtitle}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                  <h4 className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">
-                                    {child.name}
-                                  </h4>
-                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                                    {child.description || (child.children ? `${child.children.length} items` : child.kind)}
-                                  </p>
-                                </div>
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                            </div>
-                          ))}
-                        </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

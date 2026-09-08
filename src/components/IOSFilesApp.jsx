@@ -6,7 +6,7 @@ import {
   Briefcase, Rocket, Sparkles, Code, 
   Coffee, Mail, X, Check, Film, Music, Image as ImageIcon
 } from 'lucide-react';
-import { findNode, DESKTOP_ORDER } from '../data/ishantOS';
+import { findNode, DESKTOP_ORDER, itemCountLabel } from '../data/ishantOS';
 import { useFileSystem } from '../utils/useFileSystem';
 import { PROJECTS_DATA } from '../data/projectsData';
 import IOSMediaViewer from './IOSMediaViewer';
@@ -528,7 +528,7 @@ export default function IOSFilesApp({
                     <IOSBlueFolder
                       key={child.id}
                       title={child.name}
-                      itemCount={child.children ? `${child.children.length} items` : 'Folder'}
+                      itemCount={itemCountLabel(child)}
                       badge={
                         <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white">
                           <FolderIcon className="w-4 h-4" />
@@ -540,7 +540,7 @@ export default function IOSFilesApp({
                     <IOSDocumentItem
                       key={child.id}
                       title={child.name || child.title}
-                      subtext={child.subtext || (child.kind === 'text' ? 'Text File' : child.kind)}
+                      subtext={child.subtext || (child.kind === 'text' ? 'Text File' : child.kind === 'pdf' ? 'PDF File' : child.kind === 'video' ? 'Video' : child.kind === 'image' ? 'Image' : child.kind === 'audio' ? 'Audio' : child.kind || 'File')}
                       kind={child.kind}
                       node={child}
                       onClick={() => handleChildClick(child)}

@@ -1463,7 +1463,11 @@ export function allNodes() {
 }
 
 export function itemCount(node) {
-  return node.children ? node.children.length : 0;
+  if (!node) return 0;
+  const target = (node.id && findNode(node.id)) || node;
+  if (Array.isArray(target?.children)) return target.children.length;
+  if (Array.isArray(node?.children)) return node.children.length;
+  return 0;
 }
 
 /** "1 item" / "4 items" — pluralised, because "1 items" reads like a bug. */

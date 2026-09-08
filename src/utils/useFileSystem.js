@@ -43,7 +43,7 @@ export function useFileSystem() {
       id,
       name: folderName,
       kind: 'folder',
-      description: 'Folder',
+      description: '',
       createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       modifiedAt: 'Just now',
       children: [],

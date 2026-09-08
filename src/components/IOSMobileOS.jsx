@@ -651,15 +651,15 @@ export default function IOSMobileOS({
                     }}
                     className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
                   >
-                    {/* iOS Squircle Icon (Responsive Size) */}
-                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-[1.15rem] sm:rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
+                    {/* iOS Squircle Icon */}
+                    <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
                       {app.customRender ? (
                         app.customRender()
                       ) : (
                         <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
                       )}
                     </div>
-                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[66px] sm:max-w-[72px] text-center">
+                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[70px] text-center">
                       {app.name}
                     </span>
                   </div>
@@ -679,15 +679,15 @@ export default function IOSMobileOS({
                     }}
                     className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
                   >
-                    {/* iOS Squircle Icon (Responsive Size) */}
-                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-[1.15rem] sm:rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
+                    {/* iOS Squircle Icon */}
+                    <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
                       {app.customRender ? (
                         app.customRender()
                       ) : (
                         <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
                       )}
                     </div>
-                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[66px] sm:max-w-[72px] text-center">
+                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[70px] text-center">
                       {app.name}
                     </span>
                   </div>
@@ -705,14 +705,14 @@ export default function IOSMobileOS({
                         }}
                         className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform select-none"
                       >
-                        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-[1.15rem] sm:rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
+                        <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
                           {app.customRender ? (
                             app.customRender()
                           ) : (
                             <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
                           )}
                         </div>
-                        <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[66px] sm:max-w-[72px] text-center">
+                        <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[70px] text-center">
                           {app.name}
                         </span>
                       </div>

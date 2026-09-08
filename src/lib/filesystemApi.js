@@ -8,26 +8,43 @@ export async function fetchServerFilesystem() {
       method: 'GET',
       cache: 'no-store'
     });
-    if (!res.ok) {
-      return null;
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data && data.ok) {
+          return {
+            customNodes: Array.isArray(data.customNodes) ? data.customNodes : [],
+            renames: data.renames && typeof data.renames === 'object' ? data.renames : {},
+            deleted: Array.isArray(data.deleted) ? data.deleted : [],
+            edits: data.edits && typeof data.edits === 'object' ? data.edits : {},
+            updatedAt: data.updatedAt || null
+          };
+        }
+      }
     }
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      return null;
-    }
-    const data = await res.json();
-    if (!data || !data.ok) return null;
-    return {
-      customNodes: Array.isArray(data.customNodes) ? data.customNodes : [],
-      renames: data.renames && typeof data.renames === 'object' ? data.renames : {},
-      deleted: Array.isArray(data.deleted) ? data.deleted : [],
-      edits: data.edits && typeof data.edits === 'object' ? data.edits : {},
-      updatedAt: data.updatedAt || null
-    };
   } catch (err) {
-    console.warn('[filesystemApi] Server unreachable, using local filesystem cache:', err.message);
-    return null;
+    console.warn('[filesystemApi] Server endpoint unreachable, checking fallback snapshot:', err.message);
   }
+
+  // Fallback: try static /master-snapshot.json (essential for static deployments and new mobile visitors)
+  try {
+    const snapRes = await fetch('/master-snapshot.json', { cache: 'no-store' });
+    if (snapRes.ok) {
+      const snapData = await snapRes.json();
+      if (snapData && snapData.filesystem) {
+        return {
+          customNodes: Array.isArray(snapData.filesystem.customNodes) ? snapData.filesystem.customNodes : [],
+          renames: snapData.filesystem.renames && typeof snapData.filesystem.renames === 'object' ? snapData.filesystem.renames : {},
+          deleted: Array.isArray(snapData.filesystem.deleted) ? snapData.filesystem.deleted : [],
+          edits: snapData.filesystem.edits && typeof snapData.filesystem.edits === 'object' ? snapData.filesystem.edits : {},
+          updatedAt: snapData.filesystem.updatedAt || null
+        };
+      }
+    }
+  } catch {}
+
+  return null;
 }
 
 export async function saveServerFilesystem({ password, customNodes, renames, deleted, edits }) {

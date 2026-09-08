@@ -6,7 +6,8 @@ import {
   Briefcase, Rocket, Sparkles, Code, 
   Coffee, Mail, X, Check
 } from 'lucide-react';
-import { findNode } from '../data/ishantOS';
+import { findNode, DESKTOP_ORDER } from '../data/ishantOS';
+import { useFileSystem } from '../utils/useFileSystem';
 import { PROJECTS_DATA } from '../data/projectsData';
 
 // Authentic Apple iOS Files Folder Component
@@ -109,98 +110,92 @@ export default function IOSFilesApp({
   onSelectProject, 
   onLaunchApp 
 }) {
+  const { version } = useFileSystem();
   const [activeTab, setActiveTab] = useState('browse'); // 'recents' | 'shared' | 'browse'
   const [searchQuery, setSearchQuery] = useState('');
   const [folderStack, setFolderStack] = useState([]); // [{ id, name, children }]
   const [activeReaderDoc, setActiveReaderDoc] = useState(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
-  // Core root folders from IshantOS
+  // Core root folders from IshantOS (dynamically synced with desktop filesystem & renames)
   const rootFolders = useMemo(() => {
-    const about = findNode('about-me');
-    const journey = findNode('experience');
-    const work = findNode('work');
-    const projects = findNode('ai-lab');
-    const other = findNode('random');
-    const contact = findNode('contact');
+    void version;
+    const homeNode = findNode('home');
+    const allChildren = homeNode?.children || [];
+    const ordered = DESKTOP_ORDER.map(findNode).filter(Boolean);
+    const orderedIds = new Set(ordered.map((n) => n.id));
+    const extra = allChildren.filter((n) => n && !orderedIds.has(n.id));
+    const nodes = [...ordered, ...extra];
 
-    return [
-      {
-        id: 'about-me',
-        name: 'About',
-        itemsText: '4 items',
-        node: about,
-        badge: (
+    return nodes.map((node) => {
+      if (node.id === 'resume' || node.kind === 'pdf') {
+        return {
+          id: node.id,
+          name: node.name || 'Resume.pdf',
+          itemsText: 'Official PDF',
+          isDoc: true,
+          kind: 'pdf',
+          node,
+          action: () => window.open(node.href || '/resume.pdf', '_blank')
+        };
+      }
+
+      let badge = null;
+      if (node.id === 'about-me') {
+        badge = (
           <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-[11px] shadow-sm">
             IC
           </div>
-        )
-      },
-      {
-        id: 'work',
-        name: 'Work',
-        itemsText: `${PROJECTS_DATA.length} items`,
-        node: work,
-        badge: (
+        );
+      } else if (node.id === 'work') {
+        badge = (
           <div className="w-8 h-8 rounded-xl bg-[#007aff] flex items-center justify-center text-white shadow-sm">
             <Briefcase className="w-4 h-4" />
           </div>
-        )
-      },
-      {
-        id: 'ai-lab',
-        name: 'Side Projects',
-        itemsText: `${projects?.children?.length || 6} items`,
-        node: projects,
-        badge: (
+        );
+      } else if (node.id === 'ai-lab') {
+        badge = (
           <div className="w-8 h-8 rounded-xl bg-[#7c1cf0] flex items-center justify-center text-white shadow-sm">
             <Code className="w-4 h-4" />
           </div>
-        )
-      },
-      {
-        id: 'experience',
-        name: 'The Journey',
-        itemsText: `${journey?.children?.length || 3} items`,
-        node: journey,
-        badge: (
+        );
+      } else if (node.id === 'experience') {
+        badge = (
           <div className="w-8 h-8 rounded-xl bg-[#ff9500] flex items-center justify-center text-white shadow-sm">
             <Rocket className="w-4 h-4" />
           </div>
-        )
-      },
-      {
-        id: 'random',
-        name: 'Other Things',
-        itemsText: `${other?.children?.length || 5} items`,
-        node: other,
-        badge: (
+        );
+      } else if (node.id === 'random') {
+        badge = (
           <div className="w-8 h-8 rounded-xl bg-[#ff2d55] flex items-center justify-center text-white shadow-sm">
             <Sparkles className="w-4 h-4" />
           </div>
-        )
-      },
-      {
-        id: 'contact',
-        name: 'Contact',
-        itemsText: `${contact?.children?.length || 4} items`,
-        node: contact,
-        badge: (
+        );
+      } else if (node.id === 'contact') {
+        badge = (
           <div className="w-8 h-8 rounded-xl bg-[#34c759] flex items-center justify-center text-white shadow-sm">
             <Coffee className="w-4 h-4" />
           </div>
-        )
-      },
-      {
-        id: 'resume',
-        name: 'Resume.pdf',
-        itemsText: '1.2 MB',
-        isDoc: true,
-        kind: 'pdf',
-        action: () => window.open('/resume.pdf', '_blank')
+        );
+      } else {
+        badge = (
+          <div className="w-8 h-8 rounded-xl bg-slate-700 flex items-center justify-center text-white shadow-sm">
+            <FolderIcon className="w-4 h-4" />
+          </div>
+        );
       }
-    ];
-  }, []);
+
+      const count = node.id === 'work' ? PROJECTS_DATA.length : (node.children?.length || 0);
+
+      return {
+        id: node.id,
+        name: node.name,
+        itemsText: `${count} item${count === 1 ? '' : 's'}`,
+        node,
+        badge
+      };
+    });
+  }, [version]);
 
   // Recents items list
   const recentItems = useMemo(() => [
@@ -259,8 +254,21 @@ export default function IOSFilesApp({
     }
   ], [onLaunchApp]);
 
-  // Current navigation level
-  const currentFolder = folderStack.length > 0 ? folderStack[folderStack.length - 1] : null;
+  // Current navigation level (dynamically resolved against live filesystem & version)
+  const currentStackTop = folderStack.length > 0 ? folderStack[folderStack.length - 1] : null;
+  const currentFolder = useMemo(() => {
+    void version;
+    if (!currentStackTop) return null;
+    const freshNode = findNode(currentStackTop.id);
+    if (freshNode) {
+      return {
+        id: freshNode.id,
+        name: freshNode.name,
+        children: freshNode.children || []
+      };
+    }
+    return currentStackTop;
+  }, [currentStackTop, version]);
 
   // Handle drill down into a folder
   const handleOpenFolder = (folder) => {

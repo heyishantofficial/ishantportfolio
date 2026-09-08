@@ -4,10 +4,11 @@ import {
   Wifi, Battery, Sliders, Volume2, VolumeX, Moon, Sun, 
   Lock, ChevronRight,
   ExternalLink, ArrowRight, Flashlight, Download, Radio,
-  Folder, FileText, ArrowLeft
+  ArrowLeft
 } from 'lucide-react';
 import { PROJECTS_DATA } from '../data/projectsData';
 import { findNode } from '../data/ishantOS';
+import { useFileSystem } from '../utils/useFileSystem';
 import { playMacClick } from '../utils/macAudioEngine';
 import AnimatedQuoteHeading from './AnimatedQuoteHeading';
 import NodeIcon from '../os/NodeIcon';
@@ -52,6 +53,8 @@ export default function IOSMobileOS({
   onUploadDesktopWallpaper,
   onUploadLockWallpaper
 }) {
+  const { version } = useFileSystem();
+
   // Mobile navigation & active sheet state
   const [activeSheet, setActiveSheet] = useState(null); 
   const [selectedProject, setSelectedProject] = useState(null);
@@ -105,7 +108,7 @@ export default function IOSMobileOS({
       return;
     }
 
-    setActiveFolderStack([node]);
+    setActiveFolderStack([node.id]);
     setActiveTextFile(null);
     setActiveSheet('folder');
   }, [isMuted]);
@@ -115,7 +118,7 @@ export default function IOSMobileOS({
     if (!childNode) return;
 
     if (childNode.kind === 'folder') {
-      setActiveFolderStack((prev) => [...prev, childNode]);
+      setActiveFolderStack((prev) => [...prev, childNode.id]);
       setActiveTextFile(null);
       return;
     }
@@ -185,11 +188,11 @@ export default function IOSMobileOS({
     setActiveTextFile(null);
   };
 
-  const handleOpenProjectModal = (proj) => {
+  const handleOpenProjectModal = useCallback((proj) => {
     playMacClick(isMuted);
     setSelectedProject(proj);
     setActiveSheet('project-detail');
-  };
+  }, [isMuted]);
 
   const wallpaperClasses = {
     video: 'wallpaper-video',
@@ -200,112 +203,62 @@ export default function IOSMobileOS({
     aurora: 'wallpaper-aurora'
   };
 
-  // Real filesystem nodes from IshantOS
-  const aboutNode = findNode('about-me');
-  const experienceNode = findNode('experience');
-  const workNode = findNode('work');
-  const aiLabNode = findNode('ai-lab');
-  const randomNode = findNode('random');
-  const contactNode = findNode('contact');
-  const resumeNode = findNode('resume');
+  // Dynamic filesystem items for Screen 1 (derived from live IshantOS tree, renames & version)
+  const page1Items = useMemo(() => {
+    void version;
+    const homeNode = findNode('home');
+    const allChildren = homeNode?.children || [];
+    // Prioritize standard portfolio order with Resume upfront for mobile convenience:
+    const preferredOrder = ['about-me', 'resume', 'experience', 'work', 'ai-lab', 'random', 'contact'];
+    const ordered = preferredOrder.map(findNode).filter(Boolean);
+    const orderedIds = new Set(ordered.map((n) => n.id));
+    const extra = allChildren.filter((n) => n && !orderedIds.has(n.id));
+    const allDesktopNodes = [...ordered, ...extra];
 
-  // Page 1: Primary Authentic Portfolio Folders & Files (8 items)
-  const page1Items = useMemo(() => [
-    // Row 1: Primary Folders
-    {
-      id: 'about-me',
-      name: 'About',
-      type: 'folder',
-      node: aboutNode,
-      action: () => handleOpenFolder('about-me'),
+    const mapped = allDesktopNodes.map((node) => ({
+      id: node.id,
+      name: node.name,
+      type: node.kind,
+      node,
+      action: () => {
+        if (node.id === 'resume' || node.kind === 'pdf') {
+          window.open(node.href || '/resume.pdf', '_blank');
+        } else if (node.kind === 'folder') {
+          handleOpenFolder(node.id);
+        } else if (node.kind === 'project') {
+          const proj = node.project || PROJECTS_DATA.find((p) => p.id === node.id) || node;
+          handleOpenProjectModal(proj);
+        } else if (node.kind === 'link') {
+          if (node.href) window.open(node.href, '_blank', 'noopener,noreferrer');
+        } else if (node.kind === 'text') {
+          setActiveTextFile(node);
+          setActiveSheet('folder');
+        } else {
+          handleOpenFolder(node.id);
+        }
+      },
       customRender: () => (
         <div className="w-full h-full flex items-center justify-center p-1.5">
-          {aboutNode ? <NodeIcon node={aboutNode} size={46} /> : <Folder className="w-8 h-8 text-blue-400" />}
+          <NodeIcon node={node} size={46} />
         </div>
       )
-    },
-    {
-      id: 'resume',
-      name: 'Resume',
-      type: 'document',
-      node: resumeNode,
-      action: () => window.open('/resume.pdf', '_blank'),
-      customRender: () => (
-        <div className="w-full h-full flex items-center justify-center p-1.5">
-          {resumeNode ? <NodeIcon node={resumeNode} size={46} /> : <FileText className="w-8 h-8 text-rose-500" />}
-        </div>
-      )
-    },
-    {
-      id: 'experience',
-      name: 'Journey',
-      type: 'folder',
-      node: experienceNode,
-      action: () => handleOpenFolder('experience'),
-      customRender: () => (
-        <div className="w-full h-full flex items-center justify-center p-1.5">
-          {experienceNode ? <NodeIcon node={experienceNode} size={46} /> : <Folder className="w-8 h-8 text-pink-400" />}
-        </div>
-      )
-    },
-    {
-      id: 'work',
-      name: 'Work',
-      type: 'folder',
-      node: workNode,
-      action: () => handleOpenFolder('work'),
-      customRender: () => (
-        <div className="w-full h-full flex items-center justify-center p-1.5">
-          {workNode ? <NodeIcon node={workNode} size={46} /> : <Folder className="w-8 h-8 text-blue-500" />}
-        </div>
-      )
-    },
+    }));
 
-    // Row 2: Secondary Folders & Files
-    {
-      id: 'ai-lab',
-      name: 'Projects',
-      type: 'folder',
-      node: aiLabNode,
-      action: () => handleOpenFolder('ai-lab'),
-      customRender: () => (
-        <div className="w-full h-full flex items-center justify-center p-1.5">
-          {aiLabNode ? <NodeIcon node={aiLabNode} size={46} /> : <Folder className="w-8 h-8 text-indigo-400" />}
-        </div>
-      )
-    },
-    {
-      id: 'random',
-      name: 'Other',
-      type: 'folder',
-      node: randomNode,
-      action: () => handleOpenFolder('random'),
-      customRender: () => (
-        <div className="w-full h-full flex items-center justify-center p-1.5">
-          {randomNode ? <NodeIcon node={randomNode} size={46} /> : <Folder className="w-8 h-8 text-pink-500" />}
-        </div>
-      )
-    },
-    {
-      id: 'contact',
-      name: 'Contact',
-      type: 'folder',
-      node: contactNode,
-      action: () => handleOpenFolder('contact'),
-      customRender: () => (
-        <div className="w-full h-full flex items-center justify-center p-1.5">
-          {contactNode ? <NodeIcon node={contactNode} size={46} /> : <Folder className="w-8 h-8 text-amber-500" />}
-        </div>
-      )
-    },
-    {
+    // Files (Finder) system app
+    const filesAppItem = {
       id: 'finder',
       name: 'Files',
       type: 'app',
       icon: '/icons/Finder.png',
       action: () => handleAppLaunch('finder')
+    };
+
+    // Insert Files app cleanly into the 8th slot (or append at end)
+    if (mapped.length >= 7) {
+      return [...mapped.slice(0, 7), filesAppItem, ...mapped.slice(7)];
     }
-  ], [aboutNode, resumeNode, experienceNode, workNode, aiLabNode, randomNode, contactNode, handleOpenFolder, handleAppLaunch]);
+    return [...mapped, filesAppItem];
+  }, [version, handleOpenFolder, handleOpenProjectModal, handleAppLaunch]);
 
   // Page 2: System Apps, Media, Arcade & Socials (10 items)
   const page2Items = useMemo(() => [
@@ -397,7 +350,13 @@ export default function IOSMobileOS({
     { id: 'finder', name: 'Files', icon: '/icons/Finder.png', action: () => handleAppLaunch('finder') }
   ], [handleAppLaunch]);
 
-  const currentFolder = activeFolderStack[activeFolderStack.length - 1];
+  const currentFolderId = activeFolderStack[activeFolderStack.length - 1];
+  const currentFolder = useMemo(() => {
+    void version;
+    if (!currentFolderId) return null;
+    const id = typeof currentFolderId === 'string' ? currentFolderId : currentFolderId.id;
+    return findNode(id) || (typeof currentFolderId === 'object' ? currentFolderId : null);
+  }, [currentFolderId, version]);
 
   return (
     <div className={`w-full h-full min-h-[100dvh] max-h-[100dvh] overflow-hidden fixed inset-0 select-none font-sans ${isDarkMode ? 'dark' : ''}`}>

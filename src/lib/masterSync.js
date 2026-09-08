@@ -179,13 +179,25 @@ export async function fetchMasterSnapshot() {
       headers: { 'Accept': 'application/json' },
       cache: 'no-store'
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data && data.ok ? data.masterSnapshot : null;
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.ok && data.masterSnapshot) {
+        return data.masterSnapshot;
+      }
+    }
   } catch (err) {
-    console.warn('[masterSync] Failed to fetch master snapshot:', err.message);
-    return null;
+    console.warn('[masterSync] Failed to fetch master snapshot from server:', err.message);
   }
+
+  // Fallback: fetch static /master-snapshot.json
+  try {
+    const fallbackRes = await fetch('/master-snapshot.json', { cache: 'no-store' });
+    if (fallbackRes.ok) {
+      return await fallbackRes.json();
+    }
+  } catch {}
+
+  return null;
 }
 
 /**

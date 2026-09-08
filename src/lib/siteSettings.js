@@ -128,6 +128,32 @@ export async function fetchSiteSettings() {
       isServerConnected: true
     };
   } catch {
+    // Try static /master-snapshot.json before falling back to bare defaults
+    try {
+      const snapRes = await fetch('/master-snapshot.json', { cache: 'no-store' });
+      if (snapRes.ok) {
+        const snapData = await snapRes.json();
+        if (snapData && snapData.settings) {
+          const s = snapData.settings;
+          const folderIcons = (s.folderIcons && typeof s.folderIcons === 'object') ? s.folderIcons : DEFAULT_SETTINGS.folderIcons;
+          setLocalFolderIcons(folderIcons);
+          return {
+            wallpaper: s.wallpaper || DEFAULT_SETTINGS.wallpaper,
+            lockWallpaper: s.lockWallpaper || DEFAULT_SETTINGS.lockWallpaper,
+            volume: typeof s.volume === 'number' && !isNaN(s.volume) ? s.volume : DEFAULT_SETTINGS.volume,
+            isMuted: typeof s.isMuted === 'boolean' ? s.isMuted : DEFAULT_SETTINGS.isMuted,
+            bgVideoSound: typeof s.bgVideoSound === 'boolean' ? s.bgVideoSound : DEFAULT_SETTINGS.bgVideoSound,
+            bgVideoVolume: typeof s.bgVideoVolume === 'number' && !isNaN(s.bgVideoVolume) ? s.bgVideoVolume : DEFAULT_SETTINGS.bgVideoVolume,
+            socialLinks: { ...DEFAULT_SETTINGS.socialLinks, ...(s.socialLinks || {}) },
+            dashboardConfig: { ...DEFAULT_SETTINGS.dashboardConfig, ...(s.dashboardConfig || {}) },
+            folderIcons,
+            updatedAt: s.updatedAt || null,
+            isServerConnected: false
+          };
+        }
+      }
+    } catch {}
+
     // Server unreachable or static host — fall back to localStorage / defaults
     try {
       const wp = localStorage.getItem('site_wallpaper');

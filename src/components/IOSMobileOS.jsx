@@ -915,7 +915,7 @@ export default function IOSMobileOS({
       {/* 3. iOS 18 GESTURE BOTTOM SHEET                                            */}
       {/* ========================================================================= */}
       <AnimatePresence>
-        {activeSheet && (
+        {activeSheet && activeSheet !== 'music' && (
           <div className="fixed inset-0 z-[9990] bg-black/60 flex flex-col justify-end animate-fadeIn">
             <motion.div
               initial={{ y: '100%' }}
@@ -1074,17 +1074,6 @@ export default function IOSMobileOS({
                 {/* 6. Photos Library Sheet */}
                 {activeSheet === 'photos' && (
                   <PhotosModal onClose={handleCloseSheet} />
-                )}
-
-                {/* 6.5 Native Apple Music Player Sheet */}
-                {activeSheet === 'music' && (
-                  <Suspense fallback={null}>
-                    <IOSMusicApp
-                      onClose={handleCloseSheet}
-                      masterVolume={volume}
-                      isMuted={isMuted}
-                    />
-                  </Suspense>
                 )}
 
                 {/* 7. System Settings Sheet */}
@@ -1275,6 +1264,35 @@ export default function IOSMobileOS({
               </div>
             </div>
 
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* 4. DEDICATED RETRO IPOD CLASSIC (ZERO BLACK NEGATIVE SPACE)               */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {activeSheet === 'music' && (
+          <div 
+            className="fixed inset-0 z-[9995] bg-black/40 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fadeIn select-none"
+            onClick={handleCloseSheet}
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.85, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative flex flex-col items-center"
+            >
+              <Suspense fallback={null}>
+                <IOSMusicApp
+                  onClose={handleCloseSheet}
+                  masterVolume={volume}
+                  isMuted={isMuted}
+                />
+              </Suspense>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

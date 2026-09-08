@@ -3,7 +3,7 @@ import './nexusCyberdeck.css';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume1, Volume2, VolumeX, 
   Shuffle, Repeat, Heart, ListMusic, Music, ChevronDown, Check,
-  RefreshCw, SlidersHorizontal, Sparkles
+  RefreshCw, SlidersHorizontal, Sparkles, X
 } from 'lucide-react';
 import { playMacClick, getAudioContext, getMasterGain } from '../utils/macAudioEngine';
 
@@ -317,7 +317,7 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="w-full h-full bg-[#0a0a0c] text-white flex flex-col font-sans select-none relative overflow-hidden">
+    <div className="relative flex flex-col items-center select-none font-sans max-w-[95vw]">
       
       {/* Hidden YouTube Iframe Audio Engine */}
       <div className="absolute -top-96 -left-96 w-1 h-1 opacity-0 pointer-events-none overflow-hidden" aria-hidden="true">
@@ -329,30 +329,19 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
         />
       </div>
 
-      {/* Dynamic Ambient Background Glow */}
-      <div className={`absolute inset-0 bg-gradient-to-b ${currentTrack.accent} opacity-60 blur-3xl pointer-events-none transition-colors duration-700`} />
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-2xl pointer-events-none" />
+      {/* Dynamic Ambient Drop Glow Behind Player */}
+      <div className={`absolute inset-0 bg-gradient-to-b ${currentTrack.accent} opacity-35 blur-3xl rounded-3xl pointer-events-none transition-colors duration-700`} />
 
-      {/* 1. iOS Top Navigation Header with Mode Switcher */}
-      <div className="relative z-20 w-full pt-3 pb-2.5 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
+      {/* Sleek Floating Header: Mode Switcher & Close Button (No black negative space) */}
+      <div className="relative z-20 flex items-center justify-between w-full max-w-[280px] mb-3 px-1">
         
-        {/* Minimize Button */}
-        <button
-          onClick={onClose}
-          className="flex items-center gap-1 text-slate-300 active:opacity-60 transition-opacity font-medium text-xs cursor-pointer py-1 px-1.5 -ml-1 rounded-lg hover:bg-white/5"
-          aria-label="Close Music"
-        >
-          <ChevronDown className="w-5 h-5" />
-          <span>Home</span>
-        </button>
-
         {/* Player Mode Switcher: iPod Classic vs Apple Music */}
-        <div className="flex items-center bg-white/10 p-0.5 rounded-full border border-white/10 shadow-inner">
+        <div className="flex items-center bg-black/60 backdrop-blur-xl p-0.5 rounded-full border border-white/20 shadow-lg">
           <button
             onClick={() => { playClickSound(); setPlayerMode('ipod'); }}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1 ${
+            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer ${
               playerMode === 'ipod'
-                ? 'bg-gradient-to-r from-slate-200 to-white text-slate-900 shadow-md font-bold'
+                ? 'bg-gradient-to-r from-slate-100 to-white text-slate-900 shadow-md font-bold'
                 : 'text-white/70 hover:text-white'
             }`}
           >
@@ -360,7 +349,7 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
           </button>
           <button
             onClick={() => { playClickSound(); setPlayerMode('apple-music'); }}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1 ${
+            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer ${
               playerMode === 'apple-music'
                 ? 'bg-rose-600 text-white shadow-md font-bold'
                 : 'text-white/70 hover:text-white'
@@ -370,26 +359,22 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
           </button>
         </div>
 
-        {/* Done Button */}
+        {/* Close (X) Circular Button */}
         <button
           onClick={onClose}
-          className="px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white font-semibold text-xs transition-all cursor-pointer"
+          className="w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 active:scale-90 backdrop-blur-xl border border-white/25 text-white flex items-center justify-center shadow-lg transition-all cursor-pointer"
+          title="Close iPod"
         >
-          Done
+          <X className="w-3.5 h-3.5 stroke-[2.5]" />
         </button>
       </div>
 
-      {/* 2. Main Content View */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-4 py-3 flex flex-col justify-center items-center max-w-[440px] mx-auto w-full">
-        
-        {playerMode === 'ipod' ? (
-          /* ========================================================================= */
-          /* MODE 1: THE ICONIC RETRO IPOD CLASSIC (EXACTLY LIKE PORTFOLIO DESKTOP)   */
-          /* ========================================================================= */
-          <div className="flex flex-col items-center justify-center my-auto scale-[1.12] sm:scale-[1.25] transition-transform origin-center">
-            
-            {/* RETRO IPOD CHASSIS */}
-            <div className="ipod shadow-[0_25px_60px_rgba(0,0,0,0.8),inset_5px_0px_15px_10px_rgba(0,0,0,0.56)]">
+      {/* Main Player Display (Zero Black Negative Space!) */}
+      {playerMode === 'ipod' ? (
+        <div className="relative z-10 flex flex-col items-center scale-[1.18] sm:scale-[1.28] origin-top my-1">
+          
+          {/* RETRO IPOD CHASSIS */}
+          <div className="ipod shadow-[0_25px_60px_rgba(0,0,0,0.65),inset_5px_0px_15px_10px_rgba(0,0,0,0.56)]">
               
               {/* LCD Screen */}
               <div className="screen relative">
@@ -560,8 +545,8 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
 
             </div>
 
-            <p className="text-[10px] text-white/50 font-mono tracking-wider text-center mt-3">
-              Tap <span className="text-white font-bold">MENU</span> for Playlist • Click Wheel to Control
+            <p className="text-[10px] text-white/90 font-mono tracking-wider text-center mt-3 drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+              Tap <span className="text-white font-bold underline">MENU</span> for Playlist • Click Wheel to Control
             </p>
 
           </div>
@@ -569,7 +554,7 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
           /* ========================================================================= */
           /* MODE 2: MODERN APPLE MUSIC VIEW                                           */
           /* ========================================================================= */
-          <div className="w-full flex-1 flex flex-col justify-between space-y-4 my-auto">
+          <div className="relative z-10 w-[330px] max-w-[92vw] rounded-3xl bg-slate-950/90 backdrop-blur-2xl border border-white/20 p-4 shadow-2xl space-y-3">
             {/* Segmented Switcher (Player / Up Next) */}
             <div className="flex items-center justify-center">
               <div className="flex items-center bg-white/10 p-0.5 rounded-full border border-white/10 shadow-inner">
@@ -709,8 +694,6 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
             )}
           </div>
         )}
-
-      </div>
 
     </div>
   );

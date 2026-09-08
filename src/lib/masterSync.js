@@ -103,6 +103,34 @@ export function getCurrentWebsiteSnapshot(activeSettings = {}) {
     }
   }
 
+  let bgVideoSound = activeSettings.bgVideoSound;
+  if (typeof bgVideoSound !== 'boolean') {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('site_bgVideoSound');
+        bgVideoSound = stored !== null ? stored === 'true' : DEFAULT_SETTINGS.bgVideoSound;
+      } catch {
+        bgVideoSound = DEFAULT_SETTINGS.bgVideoSound;
+      }
+    } else {
+      bgVideoSound = DEFAULT_SETTINGS.bgVideoSound;
+    }
+  }
+
+  let bgVideoVolume = activeSettings.bgVideoVolume;
+  if (typeof bgVideoVolume !== 'number' || isNaN(bgVideoVolume)) {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('site_bgVideoVolume');
+        bgVideoVolume = stored !== null && !isNaN(Number(stored)) ? Number(stored) : DEFAULT_SETTINGS.bgVideoVolume;
+      } catch {
+        bgVideoVolume = DEFAULT_SETTINGS.bgVideoVolume;
+      }
+    } else {
+      bgVideoVolume = DEFAULT_SETTINGS.bgVideoVolume;
+    }
+  }
+
   const now = new Date().toISOString();
   const masterVersionId = `master_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
@@ -122,6 +150,8 @@ export function getCurrentWebsiteSnapshot(activeSettings = {}) {
       lockWallpaper: lockWallpaper || DEFAULT_SETTINGS.lockWallpaper,
       volume: typeof volume === 'number' && !isNaN(volume) ? volume : DEFAULT_SETTINGS.volume,
       isMuted: typeof isMuted === 'boolean' ? isMuted : DEFAULT_SETTINGS.isMuted,
+      bgVideoSound: typeof bgVideoSound === 'boolean' ? bgVideoSound : DEFAULT_SETTINGS.bgVideoSound,
+      bgVideoVolume: typeof bgVideoVolume === 'number' && !isNaN(bgVideoVolume) ? bgVideoVolume : DEFAULT_SETTINGS.bgVideoVolume,
       socialLinks: socialLinks || DEFAULT_SETTINGS.socialLinks,
       dashboardConfig: dashboardConfig || DEFAULT_SETTINGS.dashboardConfig,
       folderIcons: folderIcons || {},
@@ -276,6 +306,22 @@ export async function applyMasterSnapshotToWindow(snapshot, callbacks = {}) {
     }
     try {
       localStorage.setItem('site_isMuted', String(snapshot.settings.isMuted));
+    } catch {}
+  }
+  if (typeof snapshot.settings?.bgVideoSound === 'boolean') {
+    if (callbacks.onChangeBgVideoSound) {
+      callbacks.onChangeBgVideoSound(snapshot.settings.bgVideoSound);
+    }
+    try {
+      localStorage.setItem('site_bgVideoSound', String(snapshot.settings.bgVideoSound));
+    } catch {}
+  }
+  if (typeof snapshot.settings?.bgVideoVolume === 'number' && !isNaN(snapshot.settings.bgVideoVolume)) {
+    if (callbacks.onChangeBgVideoVolume) {
+      callbacks.onChangeBgVideoVolume(snapshot.settings.bgVideoVolume);
+    }
+    try {
+      localStorage.setItem('site_bgVideoVolume', String(snapshot.settings.bgVideoVolume));
     } catch {}
   }
 }

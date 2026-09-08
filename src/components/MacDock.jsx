@@ -49,7 +49,11 @@ export default function MacDock({
   dashboardConfig,
   onUpdateDashboardConfig,
   folderIcons,
-  onUpdateFolderIcons
+  onUpdateFolderIcons,
+  bgVideoSound,
+  onToggleBgVideoSound,
+  bgVideoVolume,
+  onChangeBgVideoVolume
 }) {
   const [mouseX, setMouseX] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
@@ -365,6 +369,10 @@ export default function MacDock({
             onUpdateDashboardConfig={onUpdateDashboardConfig}
             folderIcons={folderIcons}
             onUpdateFolderIcons={onUpdateFolderIcons}
+            bgVideoSound={bgVideoSound}
+            onToggleBgVideoSound={onToggleBgVideoSound}
+            bgVideoVolume={bgVideoVolume}
+            onChangeBgVideoVolume={onChangeBgVideoVolume}
           />
         </Suspense>
       )}

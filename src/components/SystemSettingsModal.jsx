@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { 
   Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2, Share2, ExternalLink, LayoutGrid, User, RotateCcw, CheckCircle2, Folder, Search, AlertCircle,
-  RefreshCw, Cloud, Download, UploadCloud, Database, CheckCheck, Server
+  RefreshCw, Cloud, Download, UploadCloud, Database, CheckCheck, Server, Film, Play, Square
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { MacWindow } from "./macDockModals";
@@ -40,7 +40,11 @@ export default function SystemSettingsModal({
   dashboardConfig,
   onUpdateDashboardConfig,
   folderIcons,
-  onUpdateFolderIcons
+  onUpdateFolderIcons,
+  bgVideoSound,
+  onToggleBgVideoSound,
+  bgVideoVolume,
+  onChangeBgVideoVolume
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   
@@ -90,6 +94,10 @@ export default function SystemSettingsModal({
   // Sound & Volume state
   const [localVolume, setLocalVolume] = useState(() => (typeof volume === 'number' && !isNaN(volume) ? volume : 20));
   const [localIsMuted, setLocalIsMuted] = useState(() => (typeof isMuted === 'boolean' ? isMuted : false));
+  const [localBgVideoSound, setLocalBgVideoSound] = useState(() => (typeof bgVideoSound === 'boolean' ? bgVideoSound : true));
+  const [localBgVideoVolume, setLocalBgVideoVolume] = useState(() => (typeof bgVideoVolume === 'number' && !isNaN(bgVideoVolume) ? bgVideoVolume : 80));
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const previewAudioRef = useRef(null);
   const [soundSavedNotice, setSoundSavedNotice] = useState(false);
 
   useEffect(() => {
@@ -99,6 +107,58 @@ export default function SystemSettingsModal({
   useEffect(() => {
     if (typeof isMuted === 'boolean') setLocalIsMuted(isMuted);
   }, [isMuted]);
+
+  useEffect(() => {
+    if (typeof bgVideoSound === 'boolean') setLocalBgVideoSound(bgVideoSound);
+  }, [bgVideoSound]);
+
+  useEffect(() => {
+    if (typeof bgVideoVolume === 'number' && !isNaN(bgVideoVolume)) setLocalBgVideoVolume(bgVideoVolume);
+  }, [bgVideoVolume]);
+
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleTogglePreviewSound = () => {
+    if (isPlayingPreview && previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+      setIsPlayingPreview(false);
+      return;
+    }
+
+    try {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+      const audio = new Audio('/bg-video.mp4');
+      const effVol = (localIsMuted || !localBgVideoSound) ? 0.25 : Math.max(0.15, (localVolume / 100) * (localBgVideoVolume / 100) * 1.4);
+      audio.volume = Math.min(1, Math.max(0, effVol));
+      audio.currentTime = 1.0;
+      audio.play().then(() => {
+        setIsPlayingPreview(true);
+        previewAudioRef.current = audio;
+        audio.onended = () => setIsPlayingPreview(false);
+      }).catch((err) => {
+        console.warn('Audio preview play blocked:', err);
+      });
+
+      setTimeout(() => {
+        if (previewAudioRef.current === audio) {
+          audio.pause();
+          setIsPlayingPreview(false);
+        }
+      }, 7000);
+    } catch (e) {
+      console.warn('Preview error:', e);
+    }
+  };
 
   // YouTube live status preview in settings
   const [ytPreview, setYtPreview] = useState(null);
@@ -278,9 +338,13 @@ export default function SystemSettingsModal({
       lockWallpaper,
       socialLinks: localSocials,
       dashboardConfig: localDashboard,
-      folderIcons: localFolderIcons
+      folderIcons: localFolderIcons,
+      volume: localVolume,
+      isMuted: localIsMuted,
+      bgVideoSound: localBgVideoSound,
+      bgVideoVolume: localBgVideoVolume
     });
-  }, [wallpaper, lockWallpaper, localSocials, localDashboard, localFolderIcons]);
+  }, [wallpaper, lockWallpaper, localSocials, localDashboard, localFolderIcons, localVolume, localIsMuted, localBgVideoSound, localBgVideoVolume]);
 
   const handleExecuteMasterSync = async () => {
     setMasterSyncState("syncing");
@@ -298,7 +362,11 @@ export default function SystemSettingsModal({
         lockWallpaper,
         socialLinks: localSocials,
         dashboardConfig: localDashboard,
-        folderIcons: localFolderIcons
+        folderIcons: localFolderIcons,
+        volume: localVolume,
+        isMuted: localIsMuted,
+        bgVideoSound: localBgVideoSound,
+        bgVideoVolume: localBgVideoVolume
       });
 
       setLiveMasterSnapshot(res.snapshot);
@@ -332,7 +400,11 @@ export default function SystemSettingsModal({
         onChangeLockWallpaper,
         onUpdateSocialLinks,
         onUpdateDashboardConfig,
-        onUpdateFolderIcons
+        onUpdateFolderIcons,
+        onChangeVolume: (v) => setLocalVolume(v),
+        onSetMuted: (m) => setLocalIsMuted(m),
+        onChangeBgVideoSound: (s) => setLocalBgVideoSound(s),
+        onChangeBgVideoVolume: (v) => setLocalBgVideoVolume(v)
       });
       setLiveMasterSnapshot(snapshot);
       playMacClick(isMuted);
@@ -364,7 +436,11 @@ export default function SystemSettingsModal({
         onChangeLockWallpaper,
         onUpdateSocialLinks,
         onUpdateDashboardConfig,
-        onUpdateFolderIcons
+        onUpdateFolderIcons,
+        onChangeVolume: (v) => setLocalVolume(v),
+        onSetMuted: (m) => setLocalIsMuted(m),
+        onChangeBgVideoSound: (s) => setLocalBgVideoSound(s),
+        onChangeBgVideoVolume: (v) => setLocalBgVideoVolume(v)
       });
       playMacClick(isMuted);
       setMasterSyncState("synced");
@@ -500,12 +576,15 @@ export default function SystemSettingsModal({
         dashboardConfig: localDashboard,
         folderIcons: localFolderIcons,
         volume: localVolume,
-        isMuted: localIsMuted
+        isMuted: localIsMuted,
+        bgVideoSound: localBgVideoSound,
+        bgVideoVolume: localBgVideoVolume
       });
       if (onUpdateSocialLinks) onUpdateSocialLinks(localSocials);
       if (onUpdateDashboardConfig) onUpdateDashboardConfig(localDashboard);
       if (onUpdateFolderIcons) onUpdateFolderIcons(localFolderIcons);
       if (onChangeVolume) onChangeVolume(localVolume);
+      if (onChangeBgVideoVolume) onChangeBgVideoVolume(localBgVideoVolume);
 
       // Also trigger master sync to save full folders and filesystem globally
       try {
@@ -516,7 +595,9 @@ export default function SystemSettingsModal({
           dashboardConfig: localDashboard,
           folderIcons: localFolderIcons,
           volume: localVolume,
-          isMuted: localIsMuted
+          isMuted: localIsMuted,
+          bgVideoSound: localBgVideoSound,
+          bgVideoVolume: localBgVideoVolume
         });
       } catch (masterErr) {
         console.warn('Master sync background update note:', masterErr.message);
@@ -1971,25 +2052,27 @@ export default function SystemSettingsModal({
                       Sound & Audio Controls
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Adjust master system volume and audio mute settings. Changes can be saved locally or published to all visitors.
+                      Adjust system click effects and background video soundtrack. Changes can be saved locally or published as defaults to all visitors.
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-5 max-w-md shadow-sm">
-                    {/* Mute toggle row */}
+                  {/* Card 1: Master Audio Controls */}
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-4 max-w-md shadow-sm">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {localIsMuted ? (
-                          <VolumeX className="w-4 h-4 text-rose-500" />
-                        ) : (
-                          <Volume2 className="w-4 h-4 text-emerald-500" />
-                        )}
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-colors ${
+                          localIsMuted 
+                            ? "bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 border-rose-500/20" 
+                            : "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-500 border-emerald-500/20"
+                        }`}>
+                          {localIsMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                        </div>
                         <div>
                           <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                            Mute Audio
+                            Master Audio & Mute
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
-                            {localIsMuted ? "All sound effects and video audio silenced" : `Active at ${localVolume}%`}
+                            {localIsMuted ? "All sound effects and video audio silenced" : `Active at ${localVolume}% master volume`}
                           </span>
                         </div>
                       </div>
@@ -2055,8 +2138,11 @@ export default function SystemSettingsModal({
                       </div>
                     </div>
 
-                    {/* Action buttons: Test Sound & Save Sound */}
+                    {/* Test Click Button */}
                     <div className="pt-2 border-t border-slate-200/50 dark:border-white/10 flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        System UI Click Feedback
+                      </span>
                       <button
                         type="button"
                         onClick={() => playMacClick(localIsMuted)}
@@ -2066,28 +2152,166 @@ export default function SystemSettingsModal({
                         <Volume2 className="w-3.5 h-3.5" />
                         <span>Test Click</span>
                       </button>
+                    </div>
+                  </div>
 
+                  {/* Card 2: Background Video Wallpaper Audio */}
+                  <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/15 space-y-4 max-w-md shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20">
+                          <Film className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                            Background Video Audio
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                            Ambient soundtrack for video wallpaper
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Video audio toggle */}
                       <button
                         type="button"
                         onClick={() => {
+                          const next = !localBgVideoSound;
+                          setLocalBgVideoSound(next);
+                          if (onToggleBgVideoSound) onToggleBgVideoSound();
                           try {
-                            localStorage.setItem('site_volume', String(localVolume));
-                            localStorage.setItem('site_isMuted', String(localIsMuted));
-                            if (onChangeVolume) onChangeVolume(localVolume);
-                            setSoundSavedNotice(true);
-                            setTimeout(() => setSoundSavedNotice(false), 2200);
+                            localStorage.setItem('site_bgVideoSound', String(next));
                           } catch {}
                         }}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
-                          soundSavedNotice
-                            ? "bg-emerald-600 text-white"
-                            : "bg-slate-900 hover:bg-slate-800 dark:bg-white/15 dark:hover:bg-white/25 text-white"
+                        className={`w-11 h-6 rounded-full transition-colors relative p-0.5 cursor-pointer ${
+                          localBgVideoSound ? "bg-purple-600" : "bg-slate-400 dark:bg-slate-600"
                         }`}
+                        title={localBgVideoSound ? "Disable Video Sound" : "Enable Video Sound"}
                       >
-                        {soundSavedNotice ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Sparkles className="w-3.5 h-3.5" />}
-                        <span>{soundSavedNotice ? "Saved Locally!" : "Save Sound Settings"}</span>
+                        <div
+                          className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                            localBgVideoSound ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
                       </button>
                     </div>
+
+                    {/* Status notification chip */}
+                    <div className="flex items-center justify-between text-[11px] px-3 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5">
+                      <span className="text-slate-600 dark:text-slate-300 font-medium">Sound Status:</span>
+                      <span className="font-semibold flex items-center gap-1.5">
+                        {wallpaper !== 'video' ? (
+                          <span className="text-amber-500 dark:text-amber-400">🟡 Video wallpaper inactive</span>
+                        ) : localIsMuted ? (
+                          <span className="text-rose-500 dark:text-rose-400">🔇 Muted by Master Mute</span>
+                        ) : !localBgVideoSound ? (
+                          <span className="text-slate-400">⚪ Video Sound Disabled</span>
+                        ) : localVolume === 0 ? (
+                          <span className="text-amber-500">🔈 Master Volume 0%</span>
+                        ) : (
+                          <span className="text-emerald-600 dark:text-emerald-400">🟢 Playing Ambient Audio</span>
+                        )}
+                      </span>
+                    </div>
+
+                    {/* Video Sound Level Slider */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        <span>Video Sound Level</span>
+                        <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
+                          {localBgVideoVolume}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={localBgVideoVolume}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setLocalBgVideoVolume(val);
+                          if (onChangeBgVideoVolume) onChangeBgVideoVolume(val);
+                        }}
+                        className="w-full accent-purple-600 cursor-pointer"
+                      />
+
+                      {/* Quick Video Presets */}
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <span className="text-[10px] text-slate-500 font-semibold mr-1">Level:</span>
+                        {[30, 60, 80, 100].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              setLocalBgVideoVolume(preset);
+                              if (onChangeBgVideoVolume) onChangeBgVideoVolume(preset);
+                              try {
+                                localStorage.setItem('site_bgVideoVolume', String(preset));
+                              } catch {}
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                              localBgVideoVolume === preset
+                                ? "bg-purple-600 text-white shadow-sm"
+                                : "bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-300"
+                            }`}
+                          >
+                            {preset}%{preset === 80 ? " (Default)" : ""}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Live Preview Button */}
+                    <div className="pt-2 border-t border-slate-200/50 dark:border-white/10 flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        Instant audio preview
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleTogglePreviewSound}
+                        className="px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-purple-500/20"
+                        title="Preview background video soundtrack"
+                      >
+                        {isPlayingPreview ? (
+                          <>
+                            <Square className="w-3.5 h-3.5 fill-current" />
+                            <span>Stop Preview</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <span>Preview Video Audio</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Save Sound Settings locally */}
+                  <div className="max-w-md flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          localStorage.setItem('site_volume', String(localVolume));
+                          localStorage.setItem('site_isMuted', String(localIsMuted));
+                          localStorage.setItem('site_bgVideoSound', String(localBgVideoSound));
+                          localStorage.setItem('site_bgVideoVolume', String(localBgVideoVolume));
+                          if (onChangeVolume) onChangeVolume(localVolume);
+                          if (onChangeBgVideoVolume) onChangeBgVideoVolume(localBgVideoVolume);
+                          setSoundSavedNotice(true);
+                          setTimeout(() => setSoundSavedNotice(false), 2200);
+                        } catch {}
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+                        soundSavedNotice
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-900 hover:bg-slate-800 dark:bg-white/15 dark:hover:bg-white/25 text-white"
+                      }`}
+                    >
+                      {soundSavedNotice ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      <span>{soundSavedNotice ? "Saved Locally!" : "Save Sound Settings"}</span>
+                    </button>
                   </div>
                 </div>
               )}

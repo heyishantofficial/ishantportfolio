@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { User, X, Wifi, Battery, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -57,6 +57,24 @@ export default function App() {
       } catch {}
     }
     return DEFAULT_SETTINGS.volume ?? 20;
+  });
+  const [bgVideoSound, setBgVideoSound] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('site_bgVideoSound');
+        if (cached !== null) return cached === 'true';
+      } catch {}
+    }
+    return DEFAULT_SETTINGS.bgVideoSound ?? true;
+  });
+  const [bgVideoVolume, setBgVideoVolume] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('site_bgVideoVolume');
+        if (cached !== null && !isNaN(Number(cached))) return Number(cached);
+      } catch {}
+    }
+    return DEFAULT_SETTINGS.bgVideoVolume ?? 80;
   });
   const [isIpodPlaying, setIsIpodPlaying] = useState(false);
 
@@ -216,6 +234,18 @@ export default function App() {
           localStorage.setItem('site_isMuted', String(settings.isMuted));
         } catch {}
       }
+      if (typeof settings?.bgVideoSound === 'boolean') {
+        setBgVideoSound(settings.bgVideoSound);
+        try {
+          localStorage.setItem('site_bgVideoSound', String(settings.bgVideoSound));
+        } catch {}
+      }
+      if (typeof settings?.bgVideoVolume === 'number' && !isNaN(settings.bgVideoVolume)) {
+        setBgVideoVolume(settings.bgVideoVolume);
+        try {
+          localStorage.setItem('site_bgVideoVolume', String(settings.bgVideoVolume));
+        } catch {}
+      }
       // Crisp handover to the login screen once preloading resolves
       setTimeout(() => {
         if (!cancelled) setIsBootLoading(false);
@@ -250,6 +280,14 @@ export default function App() {
             setIsMuted(s.isMuted);
             try { localStorage.setItem('site_isMuted', String(s.isMuted)); } catch {}
           }
+          if (typeof s.bgVideoSound === 'boolean') {
+            setBgVideoSound(s.bgVideoSound);
+            try { localStorage.setItem('site_bgVideoSound', String(s.bgVideoSound)); } catch {}
+          }
+          if (typeof s.bgVideoVolume === 'number' && !isNaN(s.bgVideoVolume)) {
+            setBgVideoVolume(s.bgVideoVolume);
+            try { localStorage.setItem('site_bgVideoVolume', String(s.bgVideoVolume)); } catch {}
+          }
         }
       };
       return () => channel.close();
@@ -274,8 +312,9 @@ export default function App() {
     confetti({ particleCount: 90, spread: 75, origin: { y: 0.5 } });
 
     if (videoRef.current) {
-      videoRef.current.muted = isMuted;
-      videoRef.current.volume = (isMuted || volume === 0) ? 0 : (volume / 100);
+      const targetVol = getTargetVideoVolume();
+      videoRef.current.muted = targetVol === 0;
+      videoRef.current.volume = targetVol;
       videoRef.current.play().catch(() => {});
     }
 
@@ -333,22 +372,57 @@ export default function App() {
     return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
-  // Safe background video audio sync
+  // Target volume calculation for the ambient background video
+  const getTargetVideoVolume = useCallback(() => {
+    if (isMuted || !bgVideoSound || isIpodPlaying || volume === 0 || bgVideoVolume === 0) {
+      return 0;
+    }
+    // Perceptual audio scaling curve:
+    // Video track is mixed softly (~-33 dB mean). Linear scaling at 5% volume yields -59 dB (inaudible silence).
+    // Using mild power-law curves ensures 5% volume produces an audibly comfortable, gentle background ambient sound.
+    const masterFactor = Math.pow(Math.max(0, Math.min(100, volume)) / 100, 0.55);
+    const videoFactor = Math.pow(Math.max(0, Math.min(100, bgVideoVolume)) / 100, 0.75);
+    return Math.max(0, Math.min(1, masterFactor * videoFactor));
+  }, [isMuted, bgVideoSound, isIpodPlaying, volume, bgVideoVolume]);
+
+  // Safe background video audio playback on user interaction
   useEffect(() => {
-    const handleFirstInteraction = () => {
-      if (isAppReady && videoRef.current) {
-        videoRef.current.muted = isMuted;
-        videoRef.current.play().catch(() => {});
+    const handleUserGesture = () => {
+      if (videoRef.current) {
+        const targetVol = getTargetVideoVolume();
+        videoRef.current.muted = targetVol === 0;
+        videoRef.current.volume = targetVol;
+        if (videoRef.current.paused) {
+          videoRef.current.play().catch(() => {});
+        }
       }
     };
-    window.addEventListener('click', handleFirstInteraction);
-    return () => window.removeEventListener('click', handleFirstInteraction);
-  }, [isMuted, isAppReady]);
+    window.addEventListener('click', handleUserGesture, { passive: true });
+    window.addEventListener('keydown', handleUserGesture, { passive: true });
+    window.addEventListener('pointerdown', handleUserGesture, { passive: true });
+    window.addEventListener('touchstart', handleUserGesture, { passive: true });
+
+    return () => {
+      window.removeEventListener('click', handleUserGesture);
+      window.removeEventListener('keydown', handleUserGesture);
+      window.removeEventListener('pointerdown', handleUserGesture);
+      window.removeEventListener('touchstart', handleUserGesture);
+    };
+  }, [getTargetVideoVolume, isAppReady]);
 
   // Smooth Volume Sync
   useEffect(() => {
     if (!videoRef.current) return;
-    const targetVol = (isMuted || isIpodPlaying || volume === 0) ? 0 : (volume / 100);
+    const targetVol = getTargetVideoVolume();
+    const shouldMute = targetVol === 0;
+
+    if (shouldMute) {
+      videoRef.current.muted = true;
+      videoRef.current.volume = 0;
+      return;
+    }
+
+    videoRef.current.muted = false;
     const interval = setInterval(() => {
       if (!videoRef.current) return;
       const currentVol = videoRef.current.volume;
@@ -364,10 +438,28 @@ export default function App() {
       } else {
         videoRef.current.volume = Math.max(targetVol, currentVol - step);
       }
-    }, 30);
+    }, 25);
 
     return () => clearInterval(interval);
-  }, [isMuted, volume, isIpodPlaying, wallpaper]);
+  }, [getTargetVideoVolume, wallpaper]);
+
+  const handleToggleBgVideoSound = () => {
+    setBgVideoSound((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('site_bgVideoSound', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleChangeBgVideoVolume = (newVol) => {
+    const clamped = Math.max(0, Math.min(100, Number(newVol) || 0));
+    setBgVideoVolume(clamped);
+    try {
+      localStorage.setItem('site_bgVideoVolume', String(clamped));
+    } catch {}
+  };
 
   const handleVolumeChange = (newVol) => {
     const clamped = Math.max(0, Math.min(100, Number(newVol) || 0));
@@ -556,7 +648,7 @@ export default function App() {
               autoPlay
               loop
               playsInline
-              muted={isMuted}
+              muted={isMuted || !bgVideoSound}
               className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-100 scale-100 origin-center"
             />
           )}
@@ -574,7 +666,7 @@ export default function App() {
             isControlCenterOpen={showControlCenter}
             onToggleSpotlight={() => setShowSpotlight(!showSpotlight)}
             isMuted={isMuted}
-            onToggleMute={() => setIsMuted(!isMuted)}
+            onToggleMute={handleToggleMute}
             volume={volume}
             onVolumeChange={handleVolumeChange}
             showCyberdeck={showCyberdeck}
@@ -594,7 +686,7 @@ export default function App() {
               wallpaper={wallpaper}
               onChangeWallpaper={(wp) => setWallpaper(wp)}
               isMuted={isMuted}
-              onToggleMute={() => setIsMuted(!isMuted)}
+              onToggleMute={handleToggleMute}
               volume={volume}
               onVolumeChange={handleVolumeChange}
               showCyberdeck={showCyberdeck}
@@ -647,6 +739,10 @@ export default function App() {
             onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
             volume={volume}
             onChangeVolume={handleVolumeChange}
+            bgVideoSound={bgVideoSound}
+            onToggleBgVideoSound={handleToggleBgVideoSound}
+            bgVideoVolume={bgVideoVolume}
+            onChangeBgVideoVolume={handleChangeBgVideoVolume}
             onUpdatePassword={(newPass) => setSystemPassword(newPass)}
             customUploadDesktop={customUploadDesktop}
             onUploadDesktopWallpaper={(img) => setCustomUploadDesktop(img)}

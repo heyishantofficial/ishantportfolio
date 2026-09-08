@@ -31,6 +31,8 @@ const FALLBACK = {
   lockWallpaper: 'custom',
   volume: 20,
   isMuted: false,
+  bgVideoSound: true,
+  bgVideoVolume: 80,
   socialLinks: {
     youtube: 'https://youtube.com/@heyishant',
     linkedin: 'https://linkedin.com',
@@ -69,6 +71,8 @@ async function readState() {
       lockWallpaper: VALID_WALLPAPERS.includes(parsed.lockWallpaper) ? parsed.lockWallpaper : FALLBACK.lockWallpaper,
       volume: typeof parsed.volume === 'number' && !isNaN(parsed.volume) ? Math.max(0, Math.min(100, parsed.volume)) : FALLBACK.volume,
       isMuted: typeof parsed.isMuted === 'boolean' ? parsed.isMuted : FALLBACK.isMuted,
+      bgVideoSound: typeof parsed.bgVideoSound === 'boolean' ? parsed.bgVideoSound : FALLBACK.bgVideoSound,
+      bgVideoVolume: typeof parsed.bgVideoVolume === 'number' && !isNaN(parsed.bgVideoVolume) ? Math.max(0, Math.min(100, parsed.bgVideoVolume)) : FALLBACK.bgVideoVolume,
       socialLinks: { ...FALLBACK.socialLinks, ...(parsed.socialLinks || {}) },
       dashboardConfig: { ...FALLBACK.dashboardConfig, ...(parsed.dashboardConfig || {}) },
       folderIcons: parsed.folderIcons && typeof parsed.folderIcons === 'object' ? parsed.folderIcons : (FALLBACK.folderIcons || {}),
@@ -499,6 +503,8 @@ app.post('/api/master-sync', async (req, res) => {
       lockWallpaper: VALID_WALLPAPERS.includes(snapshot.settings?.lockWallpaper) ? snapshot.settings.lockWallpaper : FALLBACK.lockWallpaper,
       volume: typeof snapshot.settings?.volume === 'number' && !isNaN(snapshot.settings.volume) ? Math.max(0, Math.min(100, snapshot.settings.volume)) : FALLBACK.volume,
       isMuted: typeof snapshot.settings?.isMuted === 'boolean' ? snapshot.settings.isMuted : FALLBACK.isMuted,
+      bgVideoSound: typeof snapshot.settings?.bgVideoSound === 'boolean' ? snapshot.settings.bgVideoSound : FALLBACK.bgVideoSound,
+      bgVideoVolume: typeof snapshot.settings?.bgVideoVolume === 'number' && !isNaN(snapshot.settings.bgVideoVolume) ? Math.max(0, Math.min(100, snapshot.settings.bgVideoVolume)) : FALLBACK.bgVideoVolume,
       socialLinks: { ...FALLBACK.socialLinks, ...(snapshot.settings?.socialLinks || {}) },
       dashboardConfig: { ...FALLBACK.dashboardConfig, ...(snapshot.settings?.dashboardConfig || {}) },
       folderIcons: snapshot.settings?.folderIcons && typeof snapshot.settings.folderIcons === 'object' ? snapshot.settings.folderIcons : (FALLBACK.folderIcons || {}),
@@ -605,7 +611,7 @@ app.post('/api/upload', async (req, res) => {
 // Public: every visitor reads the current global defaults on boot.
 // The stored password is never included in the response.
 app.get('/api/settings', async (_req, res) => {
-  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, updatedAt } = await readState();
+  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, bgVideoSound, bgVideoVolume, updatedAt } = await readState();
   res.set('Cache-Control', 'no-store');
   res.json({
     wallpaper,
@@ -615,6 +621,8 @@ app.get('/api/settings', async (_req, res) => {
     folderIcons: folderIcons || {},
     volume: typeof volume === 'number' ? volume : FALLBACK.volume,
     isMuted: typeof isMuted === 'boolean' ? isMuted : FALLBACK.isMuted,
+    bgVideoSound: typeof bgVideoSound === 'boolean' ? bgVideoSound : FALLBACK.bgVideoSound,
+    bgVideoVolume: typeof bgVideoVolume === 'number' ? bgVideoVolume : FALLBACK.bgVideoVolume,
     updatedAt,
     serverStatus: 'online'
   });
@@ -630,7 +638,7 @@ app.post('/api/settings/verify', async (req, res) => {
 app.post('/api/settings', async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
 
-  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted } = req.body || {};
+  const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, bgVideoSound, bgVideoVolume } = req.body || {};
   if (wallpaper && !VALID_WALLPAPERS.includes(wallpaper)) {
     return res.status(400).json({
       error: 'Uploaded wallpapers only exist in your own browser, so they cannot be published to visitors. Pick one of the built-in wallpapers.'
@@ -649,6 +657,8 @@ app.post('/api/settings', async (req, res) => {
     ...(lockWallpaper ? { lockWallpaper } : {}), 
     ...(typeof volume === 'number' && !isNaN(volume) ? { volume: Math.max(0, Math.min(100, volume)) } : {}),
     ...(typeof isMuted === 'boolean' ? { isMuted } : {}),
+    ...(typeof bgVideoSound === 'boolean' ? { bgVideoSound } : {}),
+    ...(typeof bgVideoVolume === 'number' && !isNaN(bgVideoVolume) ? { bgVideoVolume: Math.max(0, Math.min(100, bgVideoVolume)) } : {}),
     ...(socialLinks ? { socialLinks: { ...state.socialLinks, ...socialLinks } } : {}),
     ...(dashboardConfig ? { dashboardConfig: { ...state.dashboardConfig, ...dashboardConfig } } : {}),
     ...(folderIcons && typeof folderIcons === 'object' ? { folderIcons } : {}),
@@ -661,6 +671,8 @@ app.post('/api/settings', async (req, res) => {
       lockWallpaper: next.lockWallpaper, 
       volume: next.volume,
       isMuted: next.isMuted,
+      bgVideoSound: next.bgVideoSound,
+      bgVideoVolume: next.bgVideoVolume,
       socialLinks: next.socialLinks,
       dashboardConfig: next.dashboardConfig,
       folderIcons: next.folderIcons,

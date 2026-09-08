@@ -7,6 +7,8 @@ export const DEFAULT_SETTINGS = {
   lockWallpaper: 'custom',
   volume: 20,
   isMuted: false,
+  bgVideoSound: true,
+  bgVideoVolume: 80,
   socialLinks: {
     youtube: 'https://youtube.com/@heyishant',
     linkedin: 'https://linkedin.com',
@@ -117,6 +119,8 @@ export async function fetchSiteSettings() {
       lockWallpaper: data.lockWallpaper || DEFAULT_SETTINGS.lockWallpaper,
       volume: typeof data.volume === 'number' && !isNaN(data.volume) ? data.volume : DEFAULT_SETTINGS.volume,
       isMuted: typeof data.isMuted === 'boolean' ? data.isMuted : DEFAULT_SETTINGS.isMuted,
+      bgVideoSound: typeof data.bgVideoSound === 'boolean' ? data.bgVideoSound : DEFAULT_SETTINGS.bgVideoSound,
+      bgVideoVolume: typeof data.bgVideoVolume === 'number' && !isNaN(data.bgVideoVolume) ? data.bgVideoVolume : DEFAULT_SETTINGS.bgVideoVolume,
       socialLinks: { ...DEFAULT_SETTINGS.socialLinks, ...(data.socialLinks || {}) },
       dashboardConfig: { ...DEFAULT_SETTINGS.dashboardConfig, ...(data.dashboardConfig || {}) },
       folderIcons,
@@ -133,6 +137,8 @@ export async function fetchSiteSettings() {
       const storedFolderIcons = localStorage.getItem('site_folderIcons');
       const storedVolume = localStorage.getItem('site_volume');
       const storedMuted = localStorage.getItem('site_isMuted');
+      const storedBgSound = localStorage.getItem('site_bgVideoSound');
+      const storedBgVol = localStorage.getItem('site_bgVideoVolume');
       const folderIcons = storedFolderIcons ? JSON.parse(storedFolderIcons) : DEFAULT_SETTINGS.folderIcons;
       setLocalFolderIcons(folderIcons);
 
@@ -141,6 +147,8 @@ export async function fetchSiteSettings() {
         lockWallpaper: lockWp || DEFAULT_SETTINGS.lockWallpaper,
         volume: storedVolume !== null && !isNaN(Number(storedVolume)) ? Number(storedVolume) : DEFAULT_SETTINGS.volume,
         isMuted: storedMuted !== null ? storedMuted === 'true' : DEFAULT_SETTINGS.isMuted,
+        bgVideoSound: storedBgSound !== null ? storedBgSound === 'true' : DEFAULT_SETTINGS.bgVideoSound,
+        bgVideoVolume: storedBgVol !== null && !isNaN(Number(storedBgVol)) ? Number(storedBgVol) : DEFAULT_SETTINGS.bgVideoVolume,
         socialLinks: storedSocials ? { ...DEFAULT_SETTINGS.socialLinks, ...JSON.parse(storedSocials) } : DEFAULT_SETTINGS.socialLinks,
         dashboardConfig: storedDashboard ? { ...DEFAULT_SETTINGS.dashboardConfig, ...JSON.parse(storedDashboard) } : DEFAULT_SETTINGS.dashboardConfig,
         folderIcons,
@@ -165,15 +173,21 @@ export async function verifyAdminPassword(password) {
   }
 }
 
-export async function saveSiteSettings({ password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted }) {
+export async function saveSiteSettings({ password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, bgVideoSound, bgVideoVolume }) {
   try {
-    const res = await postJson('/api/settings', { password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted });
+    const res = await postJson('/api/settings', { password, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, bgVideoSound, bgVideoVolume });
     if (folderIcons) setLocalFolderIcons(folderIcons);
     if (typeof volume === 'number' && !isNaN(volume)) {
       try { localStorage.setItem('site_volume', String(volume)); } catch {}
     }
     if (typeof isMuted === 'boolean') {
       try { localStorage.setItem('site_isMuted', String(isMuted)); } catch {}
+    }
+    if (typeof bgVideoSound === 'boolean') {
+      try { localStorage.setItem('site_bgVideoSound', String(bgVideoSound)); } catch {}
+    }
+    if (typeof bgVideoVolume === 'number' && !isNaN(bgVideoVolume)) {
+      try { localStorage.setItem('site_bgVideoVolume', String(bgVideoVolume)); } catch {}
     }
     return res;
   } catch (err) {
@@ -187,8 +201,10 @@ export async function saveSiteSettings({ password, wallpaper, lockWallpaper, soc
         if (folderIcons) setLocalFolderIcons(folderIcons);
         if (typeof volume === 'number' && !isNaN(volume)) localStorage.setItem('site_volume', String(volume));
         if (typeof isMuted === 'boolean') localStorage.setItem('site_isMuted', String(isMuted));
+        if (typeof bgVideoSound === 'boolean') localStorage.setItem('site_bgVideoSound', String(bgVideoSound));
+        if (typeof bgVideoVolume === 'number' && !isNaN(bgVideoVolume)) localStorage.setItem('site_bgVideoVolume', String(bgVideoVolume));
       } catch {}
-      return { ok: true, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, fallback: true };
+      return { ok: true, wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, bgVideoSound, bgVideoVolume, fallback: true };
     }
     throw err;
   }

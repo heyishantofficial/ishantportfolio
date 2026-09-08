@@ -94,6 +94,22 @@ export const MUSIC_PLAYLIST = [
     author: "Sunita Bagri",
     artwork: "https://img.youtube.com/vi/4ZyW3TQZftA/hqdefault.jpg",
     accent: "from-yellow-500/25 via-amber-950/30 to-black/80"
+  },
+  {
+    videoId: "1MQr9wJks6E",
+    title: "The Burning Ghat",
+    subtitle: "Sitar & Classical Fusion",
+    author: "Rishab Rikhiram Sharma",
+    artwork: "https://img.youtube.com/vi/1MQr9wJks6E/hqdefault.jpg",
+    accent: "from-orange-500/25 via-red-950/30 to-black/80"
+  },
+  {
+    videoId: "5d3EuRN43bU",
+    title: "Mexico",
+    subtitle: "Modern Punjabi Classic",
+    author: "Karan Aujla",
+    artwork: "https://img.youtube.com/vi/5d3EuRN43bU/hqdefault.jpg",
+    accent: "from-emerald-500/25 via-teal-950/30 to-black/80"
   }
 ];
 
@@ -121,6 +137,9 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
   const [volume, setVolume] = useState(masterVolume || 80);
   const [isAudioMuted, setIsAudioMuted] = useState(isMuted);
 
+  const initialVideoId = useRef(MUSIC_PLAYLIST[0].videoId);
+  const playerReadyRef = useRef(false);
+  const pendingTrackRef = useRef(null);
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const isDraggingScrubber = useRef(false);
@@ -159,12 +178,32 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
     }
   }, [isAudioMuted]);
 
-  // Helper to fetch uncached YouTube playlist RSS feed
-  const fetchLatestPlaylistFeed = useCallback(async () => {
+  // Helper to fetch live YouTube playlist RSS feed
+  const fetchLatestPlaylistFeed = useCallback(async (bypassCache = false) => {
     const timestamp = Date.now();
+    // 1. First attempt: Direct backend proxy endpoint (no CORS restrictions, ultrafast)
+    try {
+      const serverUrl = `/api/youtube-playlist?playlistId=${ytPlaylistId}${bypassCache ? '&nocache=1' : ''}&_cb=${timestamp}`;
+      const res = await fetch(serverUrl, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.tracks) && data.tracks.length > 0) {
+          return data.tracks.map((t, idx) => ({
+            videoId: t.videoId,
+            title: t.title || "YouTube Track",
+            subtitle: "YouTube Playlist",
+            author: t.author || "YouTube Artist",
+            artwork: t.artwork || (t.videoId ? `https://img.youtube.com/vi/${t.videoId}/hqdefault.jpg` : (MUSIC_PLAYLIST[idx % MUSIC_PLAYLIST.length]?.artwork || "")),
+            accent: ACCENTS[idx % ACCENTS.length]
+          }));
+        }
+      }
+    } catch (serverErr) {
+      console.warn("Backend playlist proxy failed, falling back to public CORS proxies", serverErr);
+    }
+
+    // 2. Fallback: Public CORS proxies
     const targetFeedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${ytPlaylistId}&_cb=${timestamp}`;
-    
-    // Proxy URLs with cache-busting timestamp
     const proxyUrls = [
       `https://api.allorigins.win/raw?timestamp=${timestamp}&url=${encodeURIComponent(targetFeedUrl)}`,
       `https://corsproxy.io/?url=${encodeURIComponent(targetFeedUrl)}`
@@ -220,23 +259,14 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
     return () => { isMounted = false; };
   }, [fetchLatestPlaylistFeed]);
 
-  // Sync / Refresh playlist handler matching desktop player
+  // Sync / Refresh playlist handler
   const refreshPlaylist = async (e) => {
     if (e) e.stopPropagation();
     playClickSound();
     if (isRefreshing) return;
     setIsRefreshing(true);
     try {
-      if (playerRef.current && typeof playerRef.current.loadPlaylist === 'function') {
-        try {
-          playerRef.current.loadPlaylist({
-            list: ytPlaylistId,
-            listType: 'playlist'
-          });
-        } catch (err) {}
-      }
-
-      const latestTracks = await fetchLatestPlaylistFeed();
+      const latestTracks = await fetchLatestPlaylistFeed(true);
       if (latestTracks && latestTracks.length > 0) {
         setPlaylistTracks(latestTracks);
       }
@@ -247,7 +277,7 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
     }
   };
 
-  // Load YouTube Iframe API if not already present
+  // Load YouTube Iframe API once and attach persistent player instance
   useEffect(() => {
     if (!window.YT) {
       const tag = document.createElement('script');
@@ -264,7 +294,13 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
           playerRef.current = new window.YT.Player(iframeRef.current, {
             events: {
               onReady: (e) => {
+                playerReadyRef.current = true;
                 e.target.setVolume(isAudioMuted ? 0 : volume);
+                if (pendingTrackRef.current) {
+                  e.target.loadVideoById(pendingTrackRef.current);
+                  e.target.playVideo();
+                  pendingTrackRef.current = null;
+                }
               },
               onStateChange: (e) => {
                 if (e.data === window.YT.PlayerState.PLAYING) {
@@ -303,9 +339,9 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
     }, 800);
 
     return () => clearInterval(timer);
-  }, [currentTrackIndex]);
+  }, []);
 
-  // Handle track switching
+  // Handle smooth track switching without iframe recreation
   const playTrack = useCallback((index) => {
     playClickSound();
     setCurrentTrackIndex(index);
@@ -313,11 +349,28 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
     setCurrentTime(0);
 
     const track = playlistTracks[index] || playlistTracks[0];
-    if (track && playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
+    if (!track || !track.videoId) return;
+
+    if (playerReadyRef.current && playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
       try {
         playerRef.current.loadVideoById(track.videoId);
         playerRef.current.playVideo();
       } catch (err) {}
+    } else {
+      pendingTrackRef.current = track.videoId;
+    }
+
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'loadVideoById', args: [track.videoId] }),
+          '*'
+        );
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+          '*'
+        );
+      } catch (e) {}
     }
   }, [playClickSound, playlistTracks]);
 
@@ -328,10 +381,26 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
       if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
         try { playerRef.current.pauseVideo(); } catch (err) {}
       }
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }),
+            '*'
+          );
+        } catch (e) {}
+      }
     } else {
       setIsPlaying(true);
       if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
         try { playerRef.current.playVideo(); } catch (err) {}
+      }
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+            '*'
+          );
+        } catch (e) {}
       }
     }
   }, [isPlaying, playClickSound]);
@@ -422,7 +491,7 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
       <div className="absolute -top-96 -left-96 w-1 h-1 opacity-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <iframe
           ref={iframeRef}
-          src={`https://www.youtube.com/embed/${currentTrack.videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}&playsinline=1&controls=0`}
+          src={`https://www.youtube.com/embed/${initialVideoId.current}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}&playsinline=1&controls=0`}
           allow="autoplay; encrypted-media"
           title="iPod Audio Engine"
         />

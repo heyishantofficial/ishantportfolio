@@ -17,6 +17,15 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
   const [volume, setVolume] = useState(80);
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
+
+  const activeTrackIndexRef = useRef(activeTrackIndex);
+  useEffect(() => {
+    activeTrackIndexRef.current = activeTrackIndex;
+  }, [activeTrackIndex]);
+
+  const playlistTracksRef = useRef([]);
+  const playPlaylistItemRef = useRef(null);
+
   // Sync iPod playback state with parent callback (for background audio ducking)
   useEffect(() => {
     if (onIsPlayingChange) {
@@ -186,8 +195,22 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
       videoId: "4ZyW3TQZftA",
       title: "Ab Tera Beta Mera Hai",
       author: "Sunita Bagri"
+    },
+    {
+      videoId: "1MQr9wJks6E",
+      title: "The Burning Ghat",
+      author: "Rishab Rikhiram Sharma"
+    },
+    {
+      videoId: "5d3EuRN43bU",
+      title: "Mexico",
+      author: "Karan Aujla"
     }
   ]);
+
+  useEffect(() => {
+    playlistTracksRef.current = playlistTracks;
+  }, [playlistTracks]);
 
   const nameRef = useRef(null);
   const iframeRef = useRef(null);
@@ -209,12 +232,29 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
     return null;
   };
 
-  // Helper to fetch uncached YouTube playlist RSS feed
-  const fetchLatestPlaylistFeed = async () => {
+  // Helper to fetch live YouTube playlist RSS feed
+  const fetchLatestPlaylistFeed = async (bypassCache = false) => {
     const timestamp = Date.now();
+    // 1. First attempt: Direct backend proxy endpoint (no CORS restrictions, ultrafast)
+    try {
+      const serverUrl = `/api/youtube-playlist?playlistId=${ytPlaylistId}${bypassCache ? '&nocache=1' : ''}&_cb=${timestamp}`;
+      const res = await fetch(serverUrl, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.tracks) && data.tracks.length > 0) {
+          return data.tracks.map(t => ({
+            videoId: t.videoId,
+            title: t.title || "YouTube Track",
+            author: t.author || "YouTube Artist"
+          }));
+        }
+      }
+    } catch (serverErr) {
+      console.warn("Backend playlist proxy failed, falling back to public CORS proxies", serverErr);
+    }
+
+    // 2. Fallback: Public CORS proxies
     const targetFeedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${ytPlaylistId}&_cb=${timestamp}`;
-    
-    // Proxy URLs with cache-busting timestamp
     const proxyUrls = [
       `https://api.allorigins.win/raw?timestamp=${timestamp}&url=${encodeURIComponent(targetFeedUrl)}`,
       `https://corsproxy.io/?url=${encodeURIComponent(targetFeedUrl)}`
@@ -277,16 +317,7 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
     if (!ytPlaylistId || isRefreshing) return;
     setIsRefreshing(true);
     try {
-      if (playerRef.current && typeof playerRef.current.loadPlaylist === 'function') {
-        try {
-          playerRef.current.loadPlaylist({
-            list: ytPlaylistId,
-            listType: 'playlist'
-          });
-        } catch (err) {}
-      }
-
-      const latestTracks = await fetchLatestPlaylistFeed();
+      const latestTracks = await fetchLatestPlaylistFeed(true);
       if (latestTracks && latestTracks.length > 0) {
         setPlaylistTracks(latestTracks);
       } else if (playerRef.current && typeof playerRef.current.getPlaylist === 'function') {
@@ -382,8 +413,17 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
             onReady: (e) => updateTrackMeta(e.target),
             onStateChange: (e) => {
               updateTrackMeta(e.target);
-              if (e.data === window.YT.PlayerState.PLAYING) setIsPlaying(true);
-              else if (e.data === window.YT.PlayerState.PAUSED || e.data === window.YT.PlayerState.ENDED) setIsPlaying(false);
+              if (e.data === window.YT.PlayerState.PLAYING) {
+                setIsPlaying(true);
+              } else if (e.data === window.YT.PlayerState.PAUSED) {
+                setIsPlaying(false);
+              } else if (e.data === window.YT.PlayerState.ENDED) {
+                setIsPlaying(false);
+                const tracks = playlistTracksRef.current;
+                const len = tracks?.length || 1;
+                const nextIdx = (activeTrackIndexRef.current + 1) % len;
+                playPlaylistItemRef.current?.(nextIdx);
+              }
             }
           }
         });
@@ -526,18 +566,6 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
     }
   };
 
-  const nextSong = (e) => {
-    if (e) e.stopPropagation();
-    playClickSound();
-    postYtCommand('nextVideo');
-  };
-
-  const prevSong = (e) => {
-    if (e) e.stopPropagation();
-    playClickSound();
-    postYtCommand('previousVideo');
-  };
-
   const playPlaylistItem = (index) => {
     playClickSound();
     setActiveTrackIndex(index);
@@ -548,16 +576,60 @@ export default function NexusCyberdeckPlayer({ onClose, masterVolume = 20, isMut
       if (selectedTrack.videoId) {
         setYtLiveThumbnail(`https://img.youtube.com/vi/${selectedTrack.videoId}/hqdefault.jpg`);
       }
-    }
-    if (playerRef.current && typeof playerRef.current.playVideoAt === 'function') {
-      try {
-        playerRef.current.playVideoAt(index);
-        setIsPlaying(true);
-      } catch (err) {}
-    } else {
-      postYtCommand('nextVideo');
+      if (selectedTrack.videoId && playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
+        try {
+          playerRef.current.loadVideoById(selectedTrack.videoId);
+          playerRef.current.playVideo();
+          setIsPlaying(true);
+        } catch (err) {}
+      } else if (playerRef.current && typeof playerRef.current.playVideoAt === 'function') {
+        try {
+          playerRef.current.playVideoAt(index);
+          setIsPlaying(true);
+        } catch (err) {}
+      } else {
+        postYtCommand('nextVideo');
+      }
+
+      if (iframeRef.current && iframeRef.current.contentWindow && selectedTrack.videoId) {
+        try {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: 'loadVideoById', args: [selectedTrack.videoId] }),
+            '*'
+          );
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+            '*'
+          );
+        } catch (e) {}
+      }
     }
     setShowPlaylistMenu(false);
+  };
+
+  useEffect(() => {
+    playPlaylistItemRef.current = playPlaylistItem;
+  });
+
+  const nextSong = (e) => {
+    if (e) e.stopPropagation();
+    playClickSound();
+    const len = playlistTracks.length || 1;
+    let nextIdx;
+    if (isShuffle) {
+      nextIdx = Math.floor(Math.random() * len);
+    } else {
+      nextIdx = (activeTrackIndex + 1) % len;
+    }
+    playPlaylistItem(nextIdx);
+  };
+
+  const prevSong = (e) => {
+    if (e) e.stopPropagation();
+    playClickSound();
+    const len = playlistTracks.length || 1;
+    const prevIdx = (activeTrackIndex - 1 + len) % len;
+    playPlaylistItem(prevIdx);
   };
 
   return (

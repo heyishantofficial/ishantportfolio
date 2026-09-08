@@ -93,9 +93,40 @@ export function formatBytes(bytes, decimals = 1) {
 /**
  * Generates a lightweight compressed image thumbnail (~4-8 KB) using HTML Canvas
  */
-export function generateImageThumbnail(file, maxWidth = 160, maxHeight = 160) {
+export async function generateImageThumbnail(file, maxWidth = 200, maxHeight = 200) {
+  if (typeof window === 'undefined') return null;
+
+  // Try modern createImageBitmap (hardware accelerated, handles EXIF orientation)
+  if ('createImageBitmap' in window) {
+    try {
+      const bitmap = await createImageBitmap(file);
+      let width = bitmap.width;
+      let height = bitmap.height;
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, width);
+      canvas.height = Math.max(1, height);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close?.();
+      return canvas.toDataURL('image/jpeg', 0.7);
+    } catch {
+      // Fallback to standard Image below
+    }
+  }
+
   return new Promise((resolve) => {
-    if (typeof window === 'undefined' || !window.URL) return resolve(null);
+    if (!window.URL) return resolve(null);
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
@@ -118,7 +149,7 @@ export function generateImageThumbnail(file, maxWidth = 160, maxHeight = 160) {
         canvas.height = Math.max(1, height);
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        const thumb = canvas.toDataURL('image/jpeg', 0.65);
+        const thumb = canvas.toDataURL('image/jpeg', 0.7);
         URL.revokeObjectURL(url);
         resolve(thumb);
       } catch {
@@ -289,26 +320,25 @@ export async function readFileAsNode(file) {
     thumbnailUrl = await generateVideoThumbnail(file);
   }
 
-  // Upload full file to server uploads directory
+  // For files under 20MB, ALWAYS generate persistent base64 dataUrl so the file NEVER breaks across browser restarts, mobile sync, or server outages
+  let dataUrl = null;
+  if (file.size < 20 * 1024 * 1024) {
+    dataUrl = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Upload full file to server uploads directory if admin is authenticated
   const uploadRes = await uploadFileToServer(file);
   let fileUrl = null;
-  let dataUrl = null;
 
   if (uploadRes && uploadRes.ok && uploadRes.url) {
     fileUrl = uploadRes.url;
   } else {
-    // If under ~25MB, read as persistent base64 data URL so file never dies across browser refreshes
-    if (file.size < 25 * 1024 * 1024) {
-      dataUrl = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(file);
-      });
-      fileUrl = dataUrl;
-    } else {
-      fileUrl = URL.createObjectURL(file);
-    }
+    fileUrl = dataUrl || URL.createObjectURL(file);
   }
 
   return {

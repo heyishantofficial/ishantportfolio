@@ -977,6 +977,8 @@ function syncWindowCaches() {
     window.__ISHANT_FS_RENAMES__ = renamesCache;
     window.__ISHANT_FS_DELETED__ = deletedCache;
     window.__ISHANT_FS_EDITS__ = editsCache;
+    window.__ISHANT_REGISTER_CUSTOM__ = registerCustomNode;
+    window.__ISHANT_REBUILD__ = rebuildFSTree;
   }
 }
 

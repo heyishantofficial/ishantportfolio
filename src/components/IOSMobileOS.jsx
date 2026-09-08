@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Wifi, Battery, Sliders, Volume2, VolumeX, Moon, Sun, 
   Lock, ChevronRight,
-  ExternalLink, ArrowRight, Flashlight, Download,
+  ExternalLink, ArrowRight, Flashlight, Download, Radio,
   Folder, FileText, ArrowLeft
 } from 'lucide-react';
 import { PROJECTS_DATA } from '../data/projectsData';
@@ -18,9 +18,9 @@ import NodeIcon from '../os/NodeIcon';
 import { 
   QuickNotesModal, 
   PhotosModal, 
-  MailModal, 
-  FinderModal 
+  MailModal 
 } from './macDockModals';
+import IOSFilesApp from './IOSFilesApp';
 
 export default function IOSMobileOS({
   isAppReady,
@@ -60,7 +60,9 @@ export default function IOSMobileOS({
   const [isTorchOn, setIsTorchOn] = useState(false);
   const [currentTimeStr, setCurrentTimeStr] = useState('9:41');
   const [currentDateStr, setCurrentDateStr] = useState('');
+  const [homeScreenPage, setHomeScreenPage] = useState(0);
 
+  const isDraggingRef = useRef(false);
   const nameInputRef = useRef(null);
 
   // Live iOS Clock & Date update
@@ -194,8 +196,8 @@ export default function IOSMobileOS({
   const contactNode = findNode('contact');
   const resumeNode = findNode('resume');
 
-  // Home Screen App & Folder Grid (4 Columns)
-  const homeGridItems = [
+  // Page 1: Primary Authentic Portfolio Folders & Files (8 items)
+  const page1Items = [
     // Row 1: Primary Folders
     {
       id: 'about-me',
@@ -289,9 +291,11 @@ export default function IOSMobileOS({
       type: 'app',
       icon: '/icons/Finder.png',
       action: () => handleAppLaunch('finder')
-    },
+    }
+  ];
 
-    // Row 3: System Apps
+  // Page 2: System Apps, Media, Arcade & Socials (10 items)
+  const page2Items = [
     {
       id: 'safari',
       name: 'Safari',
@@ -314,6 +318,24 @@ export default function IOSMobileOS({
       action: () => handleAppLaunch('arcade')
     },
     {
+      id: 'cyberdeck',
+      name: 'Cyberdeck',
+      type: 'app',
+      action: () => handleAppLaunch('cyberdeck'),
+      customRender: () => (
+        <div className="w-full h-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-600 flex items-center justify-center p-2.5 text-white shadow-inner">
+          <Radio className="w-7 h-7" />
+        </div>
+      )
+    },
+    {
+      id: 'photos',
+      name: 'Photos',
+      type: 'app',
+      icon: '/icons/Photos.png',
+      action: () => handleAppLaunch('photos')
+    },
+    {
       id: 'settings',
       name: 'Settings',
       type: 'app',
@@ -323,15 +345,6 @@ export default function IOSMobileOS({
           <Sliders className="w-6 h-6" />
         </div>
       )
-    },
-
-    // Row 4: Media & Socials
-    {
-      id: 'photos',
-      name: 'Photos',
-      type: 'app',
-      icon: '/icons/Photos.png',
-      action: () => handleAppLaunch('photos')
     },
     {
       id: 'youtube',
@@ -353,6 +366,13 @@ export default function IOSMobileOS({
       type: 'app',
       icon: '/icons/Instagram.png',
       action: () => handleAppLaunch('instagram')
+    },
+    {
+      id: 'mail',
+      name: 'Mail',
+      type: 'app',
+      icon: '/icons/Mail.png',
+      action: () => handleAppLaunch('mail')
     }
   ];
 
@@ -580,33 +600,111 @@ export default function IOSMobileOS({
           </div>
         </div>
 
-        {/* 4-Column iOS App & Folder Grid */}
-        <div className="grid grid-cols-4 gap-y-5 gap-x-2 my-auto px-1 py-4">
-          {homeGridItems.map((app) => (
-            <div 
-              key={app.id}
-              onClick={app.action}
-              className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform"
-            >
-              {/* iOS Squircle Icon */}
-              <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
-                {app.customRender ? (
-                  app.customRender()
-                ) : (
-                  <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
-                )}
+        {/* Horizontal Swipeable 2-Page iOS Home Screens */}
+        <div className="relative w-full flex-1 overflow-hidden my-auto flex items-center">
+          <motion.div
+            className="flex w-[200%] h-full items-center touch-pan-y"
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragStart={() => {
+              isDraggingRef.current = true;
+            }}
+            onDragEnd={(_, info) => {
+              const swipeThreshold = 35;
+              const velocityThreshold = 250;
+              if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
+                setHomeScreenPage(1);
+              } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
+                setHomeScreenPage(0);
+              }
+              setTimeout(() => {
+                isDraggingRef.current = false;
+              }, 60);
+            }}
+            animate={{ x: homeScreenPage === 0 ? '0%' : '-50%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+          >
+            {/* Screen 1: Primary Authentic Folders & Files */}
+            <div className="w-1/2 shrink-0 px-1 py-4 select-none">
+              <div className="grid grid-cols-4 gap-y-6 gap-x-2 justify-items-center">
+                {page1Items.map((app) => (
+                  <div 
+                    key={app.id}
+                    onClick={() => {
+                      if (isDraggingRef.current) return;
+                      app.action();
+                    }}
+                    className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform"
+                  >
+                    {/* iOS Squircle Icon */}
+                    <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
+                      {app.customRender ? (
+                        app.customRender()
+                      ) : (
+                        <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
+                      )}
+                    </div>
+                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[62px] text-center">
+                      {app.name}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[62px] text-center">
-                {app.name}
-              </span>
             </div>
-          ))}
+
+            {/* Screen 2: System Apps, Entertainment & Socials */}
+            <div className="w-1/2 shrink-0 px-1 py-4 select-none">
+              <div className="grid grid-cols-4 gap-y-6 gap-x-2 justify-items-center">
+                {page2Items.map((app) => (
+                  <div 
+                    key={app.id}
+                    onClick={() => {
+                      if (isDraggingRef.current) return;
+                      app.action();
+                    }}
+                    className="flex flex-col items-center gap-1.5 cursor-pointer group active:scale-90 transition-transform"
+                  >
+                    {/* iOS Squircle Icon */}
+                    <div className="w-14 h-14 rounded-2xl ios-squircle shadow-lg flex items-center justify-center overflow-hidden border border-white/25 relative bg-white/20 backdrop-blur-md">
+                      {app.customRender ? (
+                        app.customRender()
+                      ) : (
+                        <img src={app.icon} alt={app.name} className="w-full h-full object-cover p-2 select-none pointer-events-none" />
+                      )}
+                    </div>
+                    <span className="text-[11px] font-medium text-white tracking-tight drop-shadow-md truncate max-w-[62px] text-center">
+                      {app.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Pagination indicator dots */}
-        <div className="flex items-center justify-center gap-1.5 py-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-white shadow" />
-          <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+        {/* Interactive Pagination Indicator Dots */}
+        <div className="flex items-center justify-center gap-2 py-2 select-none z-10">
+          <button
+            type="button"
+            onClick={() => setHomeScreenPage(0)}
+            className={`rounded-full transition-all duration-300 cursor-pointer ${
+              homeScreenPage === 0 
+                ? 'w-2 h-2 bg-white shadow scale-110' 
+                : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
+            }`}
+            aria-label="Home Screen 1"
+          />
+          <button
+            type="button"
+            onClick={() => setHomeScreenPage(1)}
+            className={`rounded-full transition-all duration-300 cursor-pointer ${
+              homeScreenPage === 1 
+                ? 'w-2 h-2 bg-white shadow scale-110' 
+                : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
+            }`}
+            aria-label="Home Screen 2"
+          />
         </div>
 
         {/* Bottom Floating iOS Frosted Dock (4 Apps) */}
@@ -649,44 +747,47 @@ export default function IOSMobileOS({
               }}
               className="w-full h-[90dvh] ios-sheet-surface rounded-t-[2.2rem] shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
             >
-              {/* Sheet Grab Bar & Header */}
-              <div className="w-full pt-3 pb-2 px-5 flex items-center justify-between border-b border-black/10 dark:border-white/10 shrink-0 select-none">
-                <div className="flex items-center gap-2">
-                  {activeSheet === 'folder' && (activeFolderStack.length > 1 || activeTextFile) ? (
-                    <button
-                      onClick={handleFolderBack}
-                      className="p-1 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95 flex items-center gap-1 px-2"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" /> Back
-                    </button>
-                  ) : null}
-                  <span className="font-bold text-sm tracking-tight capitalize">
-                    {activeSheet === 'folder' ? (activeTextFile?.name || currentFolder?.name || 'Folder') :
-                     activeSheet === 'work' ? 'Featured Work' :
-                     activeSheet === 'arcade' ? 'Retro Arcade' :
-                     activeSheet === 'photos' ? 'Photos Library' :
-                     activeSheet === 'settings' ? 'System Settings' :
-                     activeSheet === 'mail' ? 'Contact Ishant' :
-                     activeSheet === 'cyberdeck' ? 'Nexus Cyberdeck' :
-                     activeSheet === 'finder' ? 'Files Workspace' :
-                     activeSheet === 'project-detail' ? selectedProject?.title || 'Case Study' :
-                     activeSheet}
-                  </span>
-                  {activeSheet === 'folder' && currentFolder?.children && !activeTextFile && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400">
-                      {currentFolder.children.length} items
+              {/* Sheet Grab Bar & Header (Hidden for Files, since Files renders its native iOS header) */}
+              {activeSheet !== 'finder' ? (
+                <div className="w-full pt-3 pb-2 px-5 flex items-center justify-between border-b border-black/10 dark:border-white/10 shrink-0 select-none">
+                  <div className="flex items-center gap-2">
+                    {activeSheet === 'folder' && (activeFolderStack.length > 1 || activeTextFile) ? (
+                      <button
+                        onClick={handleFolderBack}
+                        className="p-1 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95 flex items-center gap-1 px-2"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" /> Back
+                      </button>
+                    ) : null}
+                    <span className="font-bold text-sm tracking-tight capitalize">
+                      {activeSheet === 'folder' ? (activeTextFile?.name || currentFolder?.name || 'Folder') :
+                       activeSheet === 'work' ? 'Featured Work' :
+                       activeSheet === 'arcade' ? 'Retro Arcade' :
+                       activeSheet === 'photos' ? 'Photos Library' :
+                       activeSheet === 'settings' ? 'System Settings' :
+                       activeSheet === 'mail' ? 'Contact Ishant' :
+                       activeSheet === 'cyberdeck' ? 'Nexus Cyberdeck' :
+                       activeSheet === 'project-detail' ? selectedProject?.title || 'Case Study' :
+                       activeSheet}
                     </span>
-                  )}
-                </div>
+                    {activeSheet === 'folder' && currentFolder?.children && !activeTextFile && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                        {currentFolder.children.length} items
+                      </span>
+                    )}
+                  </div>
 
-                {/* Done / Close Button */}
-                <button
-                  onClick={handleCloseSheet}
-                  className="px-3.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95"
-                >
-                  Done
-                </button>
-              </div>
+                  {/* Done / Close Button */}
+                  <button
+                    onClick={handleCloseSheet}
+                    className="px-3.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/20 hover:bg-slate-300 dark:hover:bg-white/30 text-xs font-bold transition-all active:scale-95"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <div className="w-12 h-1 bg-white/25 rounded-full mx-auto my-1.5 shrink-0" />
+              )}
 
               {/* Scrollable Sheet Body Container */}
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
@@ -762,12 +863,12 @@ export default function IOSMobileOS({
                   <QuickNotesModal onClose={handleCloseSheet} />
                 )}
 
-                {/* 4. Finder Workspace Sheet */}
+                {/* 4. Native iOS Files App */}
                 {activeSheet === 'finder' && (
-                  <FinderModal 
+                  <IOSFilesApp 
+                    onClose={handleCloseSheet}
                     onSelectProject={handleOpenProjectModal} 
                     onLaunchApp={handleAppLaunch}
-                    onClose={handleCloseSheet} 
                   />
                 )}
 

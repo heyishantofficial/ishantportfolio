@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './nexusCyberdeck.css';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume1, Volume2, VolumeX, 
-  Shuffle, Repeat, Heart, ListMusic, Music, ChevronDown, Check,
-  RefreshCw, SlidersHorizontal, Sparkles, X
+  Shuffle, Repeat, X
 } from 'lucide-react';
 import { playMacClick, getAudioContext, getMasterGain } from '../utils/macAudioEngine';
 
@@ -99,17 +98,13 @@ export const MUSIC_PLAYLIST = [
 ];
 
 export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = false }) {
-  // Mode: 'ipod' (default retro iPod Classic like desktop) vs 'apple-music' (modern iOS style)
-  const [playerMode, setPlayerMode] = useState('ipod');
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
-  const [activeTab, setActiveTab] = useState('player'); // for apple-music mode: 'player' | 'queue'
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(210);
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [volume, setVolume] = useState(masterVolume || 80);
   const [isAudioMuted, setIsAudioMuted] = useState(isMuted);
 
@@ -260,14 +255,6 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
     playTrack(prevIdx);
   }, [currentTime, currentTrackIndex, playClickSound, playTrack]);
 
-  const handleSeek = (e) => {
-    const val = parseFloat(e.target.value);
-    setCurrentTime(val);
-    if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
-      try { playerRef.current.seekTo(val, true); } catch (err) {}
-    }
-  };
-
   const setVolumeLevel = (val) => {
     playClickSound();
     const clamped = Math.max(0, Math.min(100, val));
@@ -332,34 +319,8 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
       {/* Dynamic Ambient Drop Glow Behind Player */}
       <div className={`absolute inset-0 bg-gradient-to-b ${currentTrack.accent} opacity-35 blur-3xl rounded-3xl pointer-events-none transition-colors duration-700`} />
 
-      {/* Sleek Floating Header: Mode Switcher & Close Button (No black negative space) */}
-      <div className="relative z-20 flex items-center justify-between w-full max-w-[280px] mb-3 px-1">
-        
-        {/* Player Mode Switcher: iPod Classic vs Apple Music */}
-        <div className="flex items-center bg-black/60 backdrop-blur-xl p-0.5 rounded-full border border-white/20 shadow-lg">
-          <button
-            onClick={() => { playClickSound(); setPlayerMode('ipod'); }}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer ${
-              playerMode === 'ipod'
-                ? 'bg-gradient-to-r from-slate-100 to-white text-slate-900 shadow-md font-bold'
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            <span>iPod Classic</span>
-          </button>
-          <button
-            onClick={() => { playClickSound(); setPlayerMode('apple-music'); }}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer ${
-              playerMode === 'apple-music'
-                ? 'bg-rose-600 text-white shadow-md font-bold'
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            <span>Apple Music</span>
-          </button>
-        </div>
-
-        {/* Close (X) Circular Button */}
+      {/* Floating Close Button */}
+      <div className="relative z-20 flex items-center justify-end w-full max-w-[250px] sm:max-w-[270px] mb-2 px-1">
         <button
           onClick={onClose}
           className="w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 active:scale-90 backdrop-blur-xl border border-white/25 text-white flex items-center justify-center shadow-lg transition-all cursor-pointer"
@@ -369,9 +330,8 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
         </button>
       </div>
 
-      {/* Main Player Display (Zero Black Negative Space!) */}
-      {playerMode === 'ipod' ? (
-        <div className="relative z-10 flex flex-col items-center scale-[1.18] sm:scale-[1.28] origin-top my-1">
+      {/* Main Retro iPod Classic Player */}
+      <div className="relative z-10 flex flex-col items-center scale-[1.18] sm:scale-[1.28] origin-top my-1">
           
           {/* RETRO IPOD CHASSIS */}
           <div className="ipod shadow-[0_25px_60px_rgba(0,0,0,0.65),inset_5px_0px_15px_10px_rgba(0,0,0,0.56)]">
@@ -546,150 +506,6 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
             </div>
 
           </div>
-        ) : (
-          /* ========================================================================= */
-          /* MODE 2: MODERN APPLE MUSIC VIEW                                           */
-          /* ========================================================================= */
-          <div className="relative z-10 w-[330px] max-w-[92vw] rounded-3xl bg-slate-950/90 backdrop-blur-2xl border border-white/20 p-4 shadow-2xl space-y-3">
-            {/* Segmented Switcher (Player / Up Next) */}
-            <div className="flex items-center justify-center">
-              <div className="flex items-center bg-white/10 p-0.5 rounded-full border border-white/10 shadow-inner">
-                <button
-                  onClick={() => { playClickSound(); setActiveTab('player'); }}
-                  className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
-                    activeTab === 'player' ? 'bg-rose-600 text-white shadow-sm' : 'text-white/70 hover:text-white'
-                  }`}
-                >
-                  Now Playing
-                </button>
-                <button
-                  onClick={() => { playClickSound(); setActiveTab('queue'); }}
-                  className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1 ${
-                    activeTab === 'queue' ? 'bg-rose-600 text-white shadow-sm' : 'text-white/70 hover:text-white'
-                  }`}
-                >
-                  <ListMusic className="w-3.5 h-3.5" />
-                  <span>Playlist ({MUSIC_PLAYLIST.length})</span>
-                </button>
-              </div>
-            </div>
-
-            {activeTab === 'player' ? (
-              <div className="flex-1 flex flex-col justify-between space-y-3">
-                {/* Album Artwork Squircle */}
-                <div className="w-full flex items-center justify-center pt-1">
-                  <div className="relative group w-[clamp(170px,46vw,220px)] aspect-square rounded-[22%] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.7)] ring-1 ring-white/20">
-                    <img src={currentTrack.artwork} alt={currentTrack.title} className="w-full h-full object-cover" />
-                    {isPlaying && (
-                      <div className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full flex items-center gap-1 border border-white/20">
-                        <span className="w-1 h-3 bg-rose-500 rounded-full animate-pulse" />
-                        <span className="w-1 h-4 bg-rose-400 rounded-full animate-pulse delay-75" />
-                        <span className="w-1 h-2.5 bg-rose-300 rounded-full animate-pulse delay-150" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Track Info */}
-                <div className="flex items-center justify-between gap-3 px-2">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-base font-bold text-white tracking-tight truncate drop-shadow-sm">
-                      {currentTrack.title}
-                    </h2>
-                    <p className="text-xs text-rose-300/80 font-medium truncate mt-0.5">
-                      {currentTrack.author} • {currentTrack.subtitle}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => { playClickSound(); setIsFavorite(!isFavorite); }}
-                    className={`p-2 rounded-full active:scale-90 ${isFavorite ? 'text-rose-500 bg-rose-500/10' : 'text-white/40'}`}
-                  >
-                    <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-1 px-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 100}
-                    value={currentTime}
-                    onChange={handleSeek}
-                    className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-rose-500"
-                    style={{
-                      background: `linear-gradient(to right, #f43f5e ${progressPercent}%, rgba(255,255,255,0.2) ${progressPercent}%)`
-                    }}
-                  />
-                  <div className="flex justify-between text-[11px] font-mono text-white/50">
-                    <span>{formatTime(currentTime)}</span>
-                    <span>-{formatTime(Math.max(0, (duration || 0) - currentTime))}</span>
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center justify-between px-3 py-1">
-                  <button onClick={toggleShuffle} className={`p-2 rounded-full ${isShuffle ? 'text-rose-400 bg-rose-500/20' : 'text-white/40'}`}>
-                    <Shuffle className="w-4 h-4" />
-                  </button>
-                  <button onClick={handlePrevTrack} className="p-3 text-white/90 active:scale-90">
-                    <SkipBack className="w-6 h-6 fill-current" />
-                  </button>
-                  <button onClick={handleTogglePlay} className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-xl active:scale-95">
-                    {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
-                  </button>
-                  <button onClick={handleNextTrack} className="p-3 text-white/90 active:scale-90">
-                    <SkipForward className="w-6 h-6 fill-current" />
-                  </button>
-                  <button onClick={toggleRepeat} className={`p-2 rounded-full ${isRepeat ? 'text-rose-400 bg-rose-500/20' : 'text-white/40'}`}>
-                    <Repeat className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Volume Bar */}
-                <div className="flex items-center gap-3 px-3 py-1.5 bg-white/5 rounded-2xl border border-white/10">
-                  <button onClick={toggleMute} className="text-white/50 hover:text-white">
-                    {isAudioMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume1 className="w-4 h-4" />}
-                  </button>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={isAudioMuted ? 0 : volume}
-                    onChange={(e) => setVolumeLevel(Number(e.target.value))}
-                    className="flex-1 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-white"
-                  />
-                  <Volume2 className="w-4 h-4 text-white/50" />
-                </div>
-              </div>
-            ) : (
-              /* Playlist Queue in Apple Music mode */
-              <div className="space-y-2 overflow-y-auto max-h-[52vh] pr-1">
-                {MUSIC_PLAYLIST.map((track, idx) => {
-                  const isCurrent = idx === currentTrackIndex;
-                  return (
-                    <div
-                      key={track.videoId}
-                      onClick={() => playTrack(idx)}
-                      className={`p-2 rounded-2xl flex items-center justify-between gap-3 cursor-pointer ${
-                        isCurrent ? 'bg-rose-500/20 border border-rose-500/40' : 'bg-white/5'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <img src={track.artwork} alt={track.title} className="w-10 h-10 rounded-xl object-cover" />
-                        <div className="min-w-0 flex-1">
-                          <h4 className={`text-xs font-bold truncate ${isCurrent ? 'text-rose-400' : 'text-white'}`}>{track.title}</h4>
-                          <p className="text-[10px] text-white/60 truncate">{track.author}</p>
-                        </div>
-                      </div>
-                      {isCurrent && <span className="text-[9px] px-2 py-0.5 rounded bg-rose-500 font-bold">Playing</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
 
     </div>
   );

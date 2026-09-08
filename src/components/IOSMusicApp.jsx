@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './nexusCyberdeck.css';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume1, Volume2, VolumeX, 
-  Shuffle, Repeat, X
+  Shuffle, Repeat, X, RefreshCw
 } from 'lucide-react';
 import { playMacClick, getAudioContext, getMasterGain } from '../utils/macAudioEngine';
 
@@ -97,7 +97,20 @@ export const MUSIC_PLAYLIST = [
   }
 ];
 
+const ACCENTS = [
+  "from-rose-500/25 via-red-900/30 to-black/80",
+  "from-amber-500/25 via-orange-950/30 to-black/80",
+  "from-indigo-500/25 via-blue-950/30 to-black/80",
+  "from-pink-500/25 via-rose-950/30 to-black/80",
+  "from-cyan-500/25 via-blue-950/30 to-black/80",
+  "from-emerald-500/25 via-teal-950/30 to-black/80",
+  "from-violet-500/25 via-purple-950/30 to-black/80",
+  "from-blue-500/25 via-slate-950/30 to-black/80",
+];
+
 export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = false }) {
+  const [playlistTracks, setPlaylistTracks] = useState(MUSIC_PLAYLIST);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
@@ -111,8 +124,11 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const isDraggingScrubber = useRef(false);
+  const handleNextTrackRef = useRef(null);
 
-  const currentTrack = MUSIC_PLAYLIST[currentTrackIndex] || MUSIC_PLAYLIST[0];
+  const ytPlaylistId = 'PLa-RnRky6wsc';
+
+  const currentTrack = playlistTracks[currentTrackIndex] || playlistTracks[0] || MUSIC_PLAYLIST[0];
 
   // Authentic iPod click sound synthesizer
   const playClickSound = useCallback(() => {
@@ -143,6 +159,94 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
     }
   }, [isAudioMuted]);
 
+  // Helper to fetch uncached YouTube playlist RSS feed
+  const fetchLatestPlaylistFeed = useCallback(async () => {
+    const timestamp = Date.now();
+    const targetFeedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${ytPlaylistId}&_cb=${timestamp}`;
+    
+    // Proxy URLs with cache-busting timestamp
+    const proxyUrls = [
+      `https://api.allorigins.win/raw?timestamp=${timestamp}&url=${encodeURIComponent(targetFeedUrl)}`,
+      `https://corsproxy.io/?url=${encodeURIComponent(targetFeedUrl)}`
+    ];
+
+    for (const url of proxyUrls) {
+      try {
+        const res = await fetch(url, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        });
+        if (res.ok) {
+          const xmlText = await res.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const entries = Array.from(xmlDoc.querySelectorAll("entry"));
+          
+          if (entries.length > 0) {
+            const fetchedTracks = entries.map((entry, idx) => {
+              const vId = entry.getElementsByTagName("yt:videoId")[0]?.textContent || entry.querySelector("videoId")?.textContent || "";
+              const t = entry.querySelector("title")?.textContent || "YouTube Track";
+              const a = (entry.querySelector("author name")?.textContent || "YouTube Artist").replace(/ - Topic$/, '');
+              return {
+                videoId: vId,
+                title: t,
+                subtitle: "YouTube Playlist",
+                author: a,
+                artwork: vId ? `https://img.youtube.com/vi/${vId}/hqdefault.jpg` : (MUSIC_PLAYLIST[idx % MUSIC_PLAYLIST.length]?.artwork || ""),
+                accent: ACCENTS[idx % ACCENTS.length]
+              };
+            });
+            return fetchedTracks;
+          }
+        }
+      } catch (err) {}
+    }
+    return null;
+  }, [ytPlaylistId]);
+
+  // Live Sync with YouTube Playlist RSS Feed on mount
+  useEffect(() => {
+    let isMounted = true;
+    const syncPlaylistRSS = async () => {
+      const latest = await fetchLatestPlaylistFeed();
+      if (isMounted && latest && latest.length > 0) {
+        setPlaylistTracks(latest);
+      }
+    };
+    syncPlaylistRSS();
+    return () => { isMounted = false; };
+  }, [fetchLatestPlaylistFeed]);
+
+  // Sync / Refresh playlist handler matching desktop player
+  const refreshPlaylist = async (e) => {
+    if (e) e.stopPropagation();
+    playClickSound();
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      if (playerRef.current && typeof playerRef.current.loadPlaylist === 'function') {
+        try {
+          playerRef.current.loadPlaylist({
+            list: ytPlaylistId,
+            listType: 'playlist'
+          });
+        } catch (err) {}
+      }
+
+      const latestTracks = await fetchLatestPlaylistFeed();
+      if (latestTracks && latestTracks.length > 0) {
+        setPlaylistTracks(latestTracks);
+      }
+    } catch (err) {
+      console.error("Refresh error:", err);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 600);
+    }
+  };
+
   // Load YouTube Iframe API if not already present
   useEffect(() => {
     if (!window.YT) {
@@ -168,7 +272,7 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
                 } else if (e.data === window.YT.PlayerState.PAUSED) {
                   setIsPlaying(false);
                 } else if (e.data === window.YT.PlayerState.ENDED) {
-                  handleNextTrack();
+                  handleNextTrackRef.current?.();
                 }
               }
             }
@@ -208,13 +312,14 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
     setIsPlaying(true);
     setCurrentTime(0);
 
-    if (playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
+    const track = playlistTracks[index] || playlistTracks[0];
+    if (track && playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
       try {
-        playerRef.current.loadVideoById(MUSIC_PLAYLIST[index].videoId);
+        playerRef.current.loadVideoById(track.videoId);
         playerRef.current.playVideo();
       } catch (err) {}
     }
-  }, [playClickSound]);
+  }, [playClickSound, playlistTracks]);
 
   const handleTogglePlay = useCallback(() => {
     playClickSound();
@@ -233,14 +338,15 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
 
   const handleNextTrack = useCallback(() => {
     playClickSound();
+    const len = playlistTracks.length || 1;
     let nextIdx;
     if (isShuffle) {
-      nextIdx = Math.floor(Math.random() * MUSIC_PLAYLIST.length);
+      nextIdx = Math.floor(Math.random() * len);
     } else {
-      nextIdx = (currentTrackIndex + 1) % MUSIC_PLAYLIST.length;
+      nextIdx = (currentTrackIndex + 1) % len;
     }
     playTrack(nextIdx);
-  }, [currentTrackIndex, isShuffle, playClickSound, playTrack]);
+  }, [currentTrackIndex, isShuffle, playClickSound, playTrack, playlistTracks.length]);
 
   const handlePrevTrack = useCallback(() => {
     playClickSound();
@@ -251,9 +357,15 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
       }
       return;
     }
-    const prevIdx = (currentTrackIndex - 1 + MUSIC_PLAYLIST.length) % MUSIC_PLAYLIST.length;
+    const len = playlistTracks.length || 1;
+    const prevIdx = (currentTrackIndex - 1 + len) % len;
     playTrack(prevIdx);
-  }, [currentTime, currentTrackIndex, playClickSound, playTrack]);
+  }, [currentTime, currentTrackIndex, playClickSound, playTrack, playlistTracks.length]);
+
+  // Keep handleNextTrackRef current
+  useEffect(() => {
+    handleNextTrackRef.current = handleNextTrack;
+  }, [handleNextTrack]);
 
   const setVolumeLevel = (val) => {
     playClickSound();
@@ -366,13 +478,21 @@ export default function IOSMusicApp({ onClose, masterVolume = 80, isMuted = fals
                   <div className="ipod-menu-container">
                     <div className="ipod-menu-header flex items-center justify-between px-2">
                       <span className="flex-1 text-center font-bold pl-3 text-[11px]">ishant's playlist</span>
+                      <button 
+                        onClick={refreshPlaylist} 
+                        className="p-0.5 text-slate-700 hover:text-slate-950 active:scale-90 transition-all cursor-pointer"
+                        title="Sync/Refresh YouTube Playlist"
+                        aria-label="Refresh Playlist"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      </button>
                     </div>
                     <div className="ipod-menu-list custom-scrollbar">
-                      {MUSIC_PLAYLIST.map((track, idx) => {
+                      {playlistTracks.map((track, idx) => {
                         const isCurrent = currentTrackIndex === idx;
                         return (
                           <div
-                            key={track.videoId}
+                            key={track.videoId || idx}
                             onClick={() => { playTrack(idx); setShowPlaylistMenu(false); }}
                             className={`ipod-menu-item ${isCurrent ? 'active' : ''}`}
                           >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Component } from 'react';
 import { 
   Activity, 
   BarChart3, 
@@ -28,14 +28,60 @@ import {
   TrendingUp,
   Trophy,
   Zap,
-  PieChart,
-  Flame,
-  ArrowRight
+  Layers,
+  Flame
 } from 'lucide-react';
 import { fetchAnalyticsSummary, resetAnalyticsData, localSessionMetrics } from '../lib/posthog';
 import { playMacClick } from '../utils/macAudioEngine';
 
-export default function AnalyticsDashboard({ isMuted, adminPassword }) {
+// Defensive Error Boundary so the dashboard NEVER crashes the OS/page
+class AnalyticsErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('[Analytics Error]', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-rose-500/30 text-slate-800 dark:text-slate-200 space-y-3">
+          <div className="flex items-center gap-2 text-rose-500 font-bold text-sm">
+            <AlertCircle className="w-5 h-5" />
+            <span>Unable to render Visitor Analytics</span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            A component error occurred while rendering telemetry. You can still access PostHog directly.
+          </p>
+          <div className="pt-2 flex items-center gap-3">
+            <a 
+              href="https://us.i.posthog.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5"
+            >
+              <span>Open PostHog Console</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="px-3 py-1.5 rounded-xl bg-white/40 dark:bg-white/10 text-xs font-semibold"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function AnalyticsDashboardContent({ isMuted, adminPassword }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sessionSeconds, setSessionSeconds] = useState(0);
@@ -48,7 +94,7 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
   // Live session timer
   useEffect(() => {
     const timer = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - localSessionMetrics.sessionStartTime) / 1000);
+      const elapsed = Math.floor((Date.now() - (localSessionMetrics?.sessionStartTime || Date.now())) / 1000);
       setSessionSeconds(elapsed);
     }, 1000);
     return () => clearInterval(timer);
@@ -56,11 +102,16 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
 
   const loadData = async () => {
     setLoading(true);
-    const summary = await fetchAnalyticsSummary();
-    if (summary) {
-      setData(summary);
+    try {
+      const summary = await fetchAnalyticsSummary();
+      if (summary) {
+        setData(summary);
+      }
+    } catch (err) {
+      console.warn('[Analytics load error]', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -77,7 +128,7 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
   };
 
   const handleReset = async () => {
-    if (!window.confirm('Are you sure you want to reset all visitor analytics counters? This cannot be undone.')) {
+    if (typeof window !== 'undefined' && !window.confirm('Are you sure you want to reset all visitor analytics counters? This cannot be undone.')) {
       return;
     }
     setIsResetting(true);
@@ -85,11 +136,11 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
     setResetError(null);
 
     const res = await resetAnalyticsData(adminPassword);
-    if (res.ok) {
+    if (res?.ok) {
       setResetNotice('Analytics counters have been reset.');
       await loadData();
     } else {
-      setResetError(res.error || 'Failed to reset analytics. Check admin password.');
+      setResetError(res?.error || 'Failed to reset analytics. Check admin password.');
     }
     setIsResetting(false);
   };
@@ -111,7 +162,8 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
     { id: 'photos', name: 'Photos App', icon: Image, color: 'text-purple-500 bg-purple-500/10' },
     { id: 'mail', name: 'Mail / Contact', icon: Mail, color: 'text-indigo-500 bg-indigo-500/10' }
   ].map(app => {
-    const count = (data?.appsLaunched?.[app.id] || 0) + (localSessionMetrics.appsLaunchedInSession[app.id] || 0);
+    const sessionCount = localSessionMetrics?.appsLaunchedInSession?.[app.id] || 0;
+    const count = (data?.appsLaunched?.[app.id] || 0) + sessionCount;
     return { ...app, count };
   }).sort((a, b) => b.count - a.count), [data]);
 
@@ -145,7 +197,8 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
   const app2Pct = 100 - app1Pct;
 
   // 4-Stage Visitor Funnel
-  const totalProjectsViewed = Object.values(data?.projectsViewed || {}).reduce((s, c) => s + c, 0) + localSessionMetrics.projectsViewedInSession.size;
+  const localProjectsCount = localSessionMetrics?.projectsViewedInSession ? localSessionMetrics.projectsViewedInSession.size : 0;
+  const totalProjectsViewed = Object.values(data?.projectsViewed || {}).reduce((s, c) => s + c, 0) + localProjectsCount;
   const baseVisitors = Math.max(totalVisits, 1);
   const funnelSteps = [
     { 
@@ -182,10 +235,9 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
     }
   ];
 
-  // Activity Sparkline Data Curve (Generated from recent events or distributed velocity)
+  // Activity Sparkline Data Curve
   const sparklinePoints = useMemo(() => {
     const rawEvents = data?.recentEvents || [];
-    // If few events, create a smooth distribution baseline based on total visits & launches
     const buckets = [0, 0, 0, 0, 0, 0, 0];
     const now = Date.now();
     const oneDay = 24 * 60 * 60 * 1000;
@@ -198,7 +250,6 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
       }
     });
 
-    // Ensure baseline visualization so graphs never look completely blank
     const baseline = [
       Math.max(buckets[0], Math.floor(totalVisits * 0.1)),
       Math.max(buckets[1], Math.floor(totalVisits * 0.15)),
@@ -220,7 +271,6 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
       return { x, y, val, day: `Day -${6 - idx}` };
     });
 
-    // Create SVG smooth bezier path
     let d = `M ${coords[0].x} ${coords[0].y}`;
     for (let i = 0; i < coords.length - 1; i++) {
       const p0 = coords[i];
@@ -410,7 +460,7 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
             { id: 'funnel', label: 'Conversion Funnel', icon: TrendingUp },
             { id: 'activity', label: 'Activity Velocity', icon: Zap }
           ].map(tab => {
-            const Icon = tab.icon || Activity;
+            const Icon = tab.icon;
             const isActive = visualMode === tab.id;
             return (
               <button
@@ -949,5 +999,13 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function AnalyticsDashboard(props) {
+  return (
+    <AnalyticsErrorBoundary>
+      <AnalyticsDashboardContent {...props} />
+    </AnalyticsErrorBoundary>
   );
 }

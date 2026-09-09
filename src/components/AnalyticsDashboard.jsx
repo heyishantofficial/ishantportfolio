@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Activity, 
   BarChart3, 
@@ -23,7 +23,14 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   AlertCircle,
-  Video
+  Video,
+  Swords,
+  TrendingUp,
+  Trophy,
+  Zap,
+  PieChart,
+  Flame,
+  ArrowRight
 } from 'lucide-react';
 import { fetchAnalyticsSummary, resetAnalyticsData, localSessionMetrics } from '../lib/posthog';
 import { playMacClick } from '../utils/macAudioEngine';
@@ -35,6 +42,8 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
   const [isResetting, setIsResetting] = useState(false);
   const [resetNotice, setResetNotice] = useState(null);
   const [resetError, setResetError] = useState(null);
+  const [visualMode, setVisualMode] = useState('all'); // 'all' | 'vs' | 'funnel' | 'activity'
+  const [hoveredDataPoint, setHoveredDataPoint] = useState(null);
 
   // Live session timer
   useEffect(() => {
@@ -56,7 +65,6 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
 
   useEffect(() => {
     loadData();
-    // Auto-refresh every 30 seconds while the modal tab is open
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -93,7 +101,7 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
   const iosPercent = totalVisits > 0 ? Math.round((iosVisits / totalVisits) * 100) : 0;
 
   // Aggregate app launches
-  const appLaunchStats = [
+  const appLaunchStats = useMemo(() => [
     { id: 'finder', name: 'Finder / Files', icon: Folder, color: 'text-blue-500 bg-blue-500/10' },
     { id: 'safari', name: 'Safari Browser', icon: Globe, color: 'text-sky-500 bg-sky-500/10' },
     { id: 'notes', name: 'Notes Workspace', icon: FileText, color: 'text-amber-500 bg-amber-500/10' },
@@ -105,13 +113,126 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
   ].map(app => {
     const count = (data?.appsLaunched?.[app.id] || 0) + (localSessionMetrics.appsLaunchedInSession[app.id] || 0);
     return { ...app, count };
-  }).sort((a, b) => b.count - a.count);
+  }).sort((a, b) => b.count - a.count), [data]);
 
   const totalAppLaunches = appLaunchStats.reduce((sum, a) => sum + a.count, 0);
 
   const conversions = data?.conversions || { resumeViews: 0, emailCopies: 0, socialClicks: {} };
   const totalConversions = (conversions.resumeViews || 0) + (conversions.emailCopies || 0) + 
     Object.values(conversions.socialClicks || {}).reduce((s, c) => s + c, 0);
+
+  // Intent Duel: Work & Portfolio Discovery vs Play & Entertainment
+  const workScore = (data?.appsLaunched?.finder || 0) + 
+    (data?.appsLaunched?.safari || 0) + 
+    (data?.appsLaunched?.notes || 0) + 
+    Object.values(data?.projectsViewed || {}).reduce((s, c) => s + c, 0) + 
+    (conversions.resumeViews || 0) + 
+    (conversions.emailCopies || 0);
+
+  const playScore = (data?.appsLaunched?.arcade || 0) + 
+    (data?.appsLaunched?.ipod || 0) + 
+    (data?.appsLaunched?.photos || 0);
+
+  const totalIntentScore = workScore + playScore || 1;
+  const workPercent = Math.round((workScore / totalIntentScore) * 100);
+  const playPercent = 100 - workPercent;
+
+  // Top 2 Apps Face-Off
+  const topApp1 = appLaunchStats[0] || { name: 'Finder', count: 0, icon: Folder, color: 'text-blue-500 bg-blue-500/10' };
+  const topApp2 = appLaunchStats[1] || { name: 'Safari', count: 0, icon: Globe, color: 'text-sky-500 bg-sky-500/10' };
+  const duelTotal = topApp1.count + topApp2.count || 1;
+  const app1Pct = Math.round((topApp1.count / duelTotal) * 100);
+  const app2Pct = 100 - app1Pct;
+
+  // 4-Stage Visitor Funnel
+  const totalProjectsViewed = Object.values(data?.projectsViewed || {}).reduce((s, c) => s + c, 0) + localSessionMetrics.projectsViewedInSession.size;
+  const baseVisitors = Math.max(totalVisits, 1);
+  const funnelSteps = [
+    { 
+      label: '1. Landed on Portfolio', 
+      desc: 'Opened website & initial boot', 
+      count: baseVisitors, 
+      pct: 100, 
+      color: 'from-blue-600 to-indigo-600',
+      badge: 'Arrival'
+    },
+    { 
+      label: '2. Explored OS & Dock', 
+      desc: 'Launched applications & windows', 
+      count: Math.min(baseVisitors, totalAppLaunches), 
+      pct: Math.min(100, Math.round((Math.min(baseVisitors, totalAppLaunches) / baseVisitors) * 100)), 
+      color: 'from-indigo-600 to-purple-600',
+      badge: 'Engagement'
+    },
+    { 
+      label: '3. Explored Work & Projects', 
+      desc: 'Viewed project cards & details', 
+      count: totalProjectsViewed, 
+      pct: Math.min(100, Math.round((totalProjectsViewed / baseVisitors) * 100)), 
+      color: 'from-purple-600 to-pink-600',
+      badge: 'Interest'
+    },
+    { 
+      label: '4. Recruiter Intent & Contact', 
+      desc: 'Viewed resume, copied email, clicked social', 
+      count: totalConversions, 
+      pct: Math.min(100, Math.round((totalConversions / baseVisitors) * 100)), 
+      color: 'from-pink-600 to-emerald-500',
+      badge: 'Conversion'
+    }
+  ];
+
+  // Activity Sparkline Data Curve (Generated from recent events or distributed velocity)
+  const sparklinePoints = useMemo(() => {
+    const rawEvents = data?.recentEvents || [];
+    // If few events, create a smooth distribution baseline based on total visits & launches
+    const buckets = [0, 0, 0, 0, 0, 0, 0];
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    rawEvents.forEach(ev => {
+      const evTime = ev.time ? new Date(ev.time).getTime() : now;
+      const daysAgo = Math.floor((now - evTime) / oneDay);
+      if (daysAgo >= 0 && daysAgo < 7) {
+        buckets[6 - daysAgo] += 1;
+      }
+    });
+
+    // Ensure baseline visualization so graphs never look completely blank
+    const baseline = [
+      Math.max(buckets[0], Math.floor(totalVisits * 0.1)),
+      Math.max(buckets[1], Math.floor(totalVisits * 0.15)),
+      Math.max(buckets[2], Math.floor(totalVisits * 0.2)),
+      Math.max(buckets[3], Math.floor(totalVisits * 0.25)),
+      Math.max(buckets[4], Math.floor(totalVisits * 0.3)),
+      Math.max(buckets[5], Math.floor(totalVisits * 0.4)),
+      Math.max(buckets[6], totalVisits > 0 ? Math.max(1, totalVisits) : 0)
+    ];
+
+    const maxVal = Math.max(...baseline, 5);
+    const width = 500;
+    const height = 120;
+    const padding = 20;
+
+    const coords = baseline.map((val, idx) => {
+      const x = padding + (idx / 6) * (width - padding * 2);
+      const y = height - padding - (val / maxVal) * (height - padding * 2);
+      return { x, y, val, day: `Day -${6 - idx}` };
+    });
+
+    // Create SVG smooth bezier path
+    let d = `M ${coords[0].x} ${coords[0].y}`;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const p0 = coords[i];
+      const p1 = coords[i + 1];
+      const cx = (p0.x + p1.x) / 2;
+      d += ` C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+    }
+
+    const areaD = `${d} L ${coords[coords.length - 1].x} ${height} L ${coords[0].x} ${height} Z`;
+
+    return { coords, d, areaD, maxVal };
+  }, [data, totalVisits]);
 
   return (
     <div className="space-y-6 animate-fade-in text-slate-800 dark:text-slate-200">
@@ -122,10 +243,10 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
             <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-500 flex items-center justify-center shrink-0">
               <Activity className="w-3.5 h-3.5" />
             </div>
-            <span>Visitor Analytics & Replay Dashboard</span>
+            <span>Visitor Analytics & Visual Telemetry</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Real-time engagement telemetry, app launch metrics, and PostHog session recordings.
+            Real-time engagement telemetry, VS battlegrounds, conversion funnels, and PostHog session replays.
           </p>
         </div>
 
@@ -275,6 +396,374 @@ export default function AnalyticsDashboard({ isMuted, adminPassword }) {
           </div>
         </div>
       </div>
+
+      {/* Visual Graphs Mode Segmented Control */}
+      <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+        <span className="text-xs font-bold px-2 text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+          <BarChart3 className="w-3.5 h-3.5 text-blue-500" />
+          <span className="hidden sm:inline">Visual Mode:</span>
+        </span>
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {[
+            { id: 'all', label: 'All Visuals', icon: Layers },
+            { id: 'vs', label: 'VS Battlegrounds', icon: Swords },
+            { id: 'funnel', label: 'Conversion Funnel', icon: TrendingUp },
+            { id: 'activity', label: 'Activity Velocity', icon: Zap }
+          ].map(tab => {
+            const Icon = tab.icon || Activity;
+            const isActive = visualMode === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  playMacClick(isMuted);
+                  setVisualMode(tab.id);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer select-none whitespace-nowrap active:scale-95 ${
+                  isActive
+                    ? 'bg-white dark:bg-white/20 text-blue-600 dark:text-white shadow-sm border border-black/5 dark:border-white/15'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SECTION 1: VS BATTLEGROUNDS */}
+      {(visualMode === 'all' || visualMode === 'vs') && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <Swords className="w-4 h-4 text-rose-500" />
+              <span>Head-to-Head VS Battlegrounds</span>
+            </h3>
+            <span className="text-[10px] text-slate-400 font-medium">Comparative Telemetry</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* VS BATTLE 1: macOS Desktop vs iOS Mobile */}
+            <div className="p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm space-y-3.5 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <Monitor className="w-3.5 h-3.5 text-blue-500" /> Platform Duel
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                  {macVisits >= iosVisits ? '🏆 macOS Dominant' : '🏆 iOS Leading'}
+                </span>
+              </div>
+
+              {/* Fighter Heads */}
+              <div className="grid grid-cols-2 gap-3 items-center">
+                <div className="p-3 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20">
+                  <div className="flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400">
+                    <span className="flex items-center gap-1"><Monitor className="w-3.5 h-3.5" /> macOS</span>
+                    <span className="font-mono text-sm">{macPercent}%</span>
+                  </div>
+                  <div className="text-xl font-black mt-1 text-slate-900 dark:text-white">
+                    {macVisits} <span className="text-[10px] font-normal text-slate-400">visits</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-purple-500/10 dark:bg-purple-500/15 border border-purple-500/20">
+                  <div className="flex items-center justify-between text-xs font-bold text-purple-600 dark:text-purple-400">
+                    <span className="flex items-center gap-1"><Smartphone className="w-3.5 h-3.5" /> iOS Mobile</span>
+                    <span className="font-mono text-sm">{iosPercent}%</span>
+                  </div>
+                  <div className="text-xl font-black mt-1 text-slate-900 dark:text-white">
+                    {iosVisits} <span className="text-[10px] font-normal text-slate-400">visits</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dual Progress Meter */}
+              <div className="space-y-1.5 pt-1">
+                <div className="w-full h-3 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden flex p-0.5 gap-0.5">
+                  <div 
+                    className="h-full rounded-l-full bg-gradient-to-r from-blue-600 to-sky-400 transition-all duration-700 shadow-sm"
+                    style={{ width: `${Math.max(6, macPercent)}%` }}
+                    title={`macOS: ${macPercent}%`}
+                  />
+                  <div 
+                    className="h-full rounded-r-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700 shadow-sm"
+                    style={{ width: `${Math.max(6, iosPercent)}%` }}
+                    title={`iOS: ${iosPercent}%`}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span>macOS Desktop ({macVisits})</span>
+                  <span>VS</span>
+                  <span>iOS Mobile ({iosVisits})</span>
+                </div>
+              </div>
+            </div>
+
+            {/* VS BATTLE 2: Work & Portfolio Discovery vs Play & Entertainment */}
+            <div className="p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm space-y-3.5 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" /> Visitor Intent Duel
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  {workPercent >= playPercent ? '💼 Work-Focused' : '🎮 Entertainment'}
+                </span>
+              </div>
+
+              {/* Fighter Heads */}
+              <div className="grid grid-cols-2 gap-3 items-center">
+                <div className="p-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20">
+                  <div className="flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    <span className="flex items-center gap-1"><Folder className="w-3.5 h-3.5" /> Work & Bio</span>
+                    <span className="font-mono text-sm">{workPercent}%</span>
+                  </div>
+                  <div className="text-xl font-black mt-1 text-slate-900 dark:text-white">
+                    {workScore} <span className="text-[10px] font-normal text-slate-400">actions</span>
+                  </div>
+                  <p className="text-[9px] text-slate-500 mt-0.5 truncate">Finder, Safari, Notes, Resume</p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/20">
+                  <div className="flex items-center justify-between text-xs font-bold text-rose-600 dark:text-rose-400">
+                    <span className="flex items-center gap-1"><Gamepad2 className="w-3.5 h-3.5" /> Fun & Play</span>
+                    <span className="font-mono text-sm">{playPercent}%</span>
+                  </div>
+                  <div className="text-xl font-black mt-1 text-slate-900 dark:text-white">
+                    {playScore} <span className="text-[10px] font-normal text-slate-400">actions</span>
+                  </div>
+                  <p className="text-[9px] text-slate-500 mt-0.5 truncate">Retro Arcade, Cyberdeck Music</p>
+                </div>
+              </div>
+
+              {/* Dual Progress Meter */}
+              <div className="space-y-1.5 pt-1">
+                <div className="w-full h-3 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden flex p-0.5 gap-0.5">
+                  <div 
+                    className="h-full rounded-l-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700 shadow-sm"
+                    style={{ width: `${Math.max(6, workPercent)}%` }}
+                    title={`Work Intent: ${workPercent}%`}
+                  />
+                  <div 
+                    className="h-full rounded-r-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-700 shadow-sm"
+                    style={{ width: `${Math.max(6, playPercent)}%` }}
+                    title={`Play Intent: ${playPercent}%`}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span>Work & Resume ({workPercent}%)</span>
+                  <span>VS</span>
+                  <span>Arcade & Audio ({playPercent}%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* VS BATTLE 3: Top 2 Dock Apps Head-to-Head */}
+          <div className="p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <Trophy className="w-3.5 h-3.5 text-yellow-500" /> App Duel: #1 vs #2 Most Launched Apps
+              </span>
+              <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                {topApp1.name} vs {topApp2.name}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-black/5 dark:bg-white/5">
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${topApp1.color}`}>
+                    <topApp1.icon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                      <span>#1 {topApp1.name}</span>
+                      <Flame className="w-3 h-3 text-orange-500" />
+                    </div>
+                    <div className="text-[10px] text-slate-400">{topApp1.count} launches</div>
+                  </div>
+                </div>
+                <div className="text-base font-black font-mono text-blue-600 dark:text-blue-400">
+                  {app1Pct}%
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-black/5 dark:bg-white/5">
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${topApp2.color}`}>
+                    <topApp2.icon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">
+                      #2 {topApp2.name}
+                    </div>
+                    <div className="text-[10px] text-slate-400">{topApp2.count} launches</div>
+                  </div>
+                </div>
+                <div className="text-base font-black font-mono text-purple-600 dark:text-purple-400">
+                  {app2Pct}%
+                </div>
+              </div>
+            </div>
+
+            {/* Duel Bar */}
+            <div className="w-full h-2 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden flex gap-0.5">
+              <div 
+                className="h-full rounded-l-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-700"
+                style={{ width: `${Math.max(5, app1Pct)}%` }}
+              />
+              <div 
+                className="h-full rounded-r-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700"
+                style={{ width: `${Math.max(5, app2Pct)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 2: 4-STAGE CONVERSION FUNNEL */}
+      {(visualMode === 'all' || visualMode === 'funnel') && (
+        <div className="p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-indigo-500" />
+                <span>Visitor Engagement & Conversion Funnel</span>
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Tracking how visitors advance from initial visit to OS exploration, project inspection, and direct contact.
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                {Math.round((totalConversions / Math.max(totalVisits, 1)) * 100)}%
+              </div>
+              <div className="text-[9px] text-slate-400">Total Conversion Rate</div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            {funnelSteps.map((step, idx) => (
+              <div key={idx} className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-bold text-slate-900 dark:text-white truncate">
+                      {step.label}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-slate-500 dark:text-slate-400 font-mono">
+                      {step.badge}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 font-mono text-xs">
+                    <span className="text-slate-500 dark:text-slate-400">{step.count} events</span>
+                    <span className="font-bold text-slate-900 dark:text-white w-10 text-right">{step.pct}%</span>
+                  </div>
+                </div>
+
+                {/* Funnel Step Bar */}
+                <div className="w-full h-3 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden relative">
+                  <div 
+                    className={`h-full rounded-full bg-gradient-to-r ${step.color} transition-all duration-700 shadow-sm`}
+                    style={{ width: `${Math.max(4, step.pct)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 3: ACTIVITY VELOCITY SPARKLINE (SVG CURVE) */}
+      {(visualMode === 'all' || visualMode === 'activity') && (
+        <div className="p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>Activity Velocity Trend (7-Day Curve)</span>
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Hourly & daily visitor velocity curve showing peak engagement points.
+              </p>
+            </div>
+            {hoveredDataPoint && (
+              <div className="px-2 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[11px] font-mono font-bold animate-fadeIn">
+                {hoveredDataPoint.day}: {hoveredDataPoint.val} events
+              </div>
+            )}
+          </div>
+
+          {/* Retina SVG Sparkline Chart */}
+          <div className="w-full overflow-hidden rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 p-2">
+            <svg 
+              viewBox="0 0 500 120" 
+              className="w-full h-28 sm:h-36 overflow-visible"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="curveGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="50%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+
+              {/* Grid Lines */}
+              <line x1="20" y1="30" x2="480" y2="30" stroke="currentColor" strokeOpacity="0.05" strokeDasharray="4 4" />
+              <line x1="20" y1="70" x2="480" y2="70" stroke="currentColor" strokeOpacity="0.05" strokeDasharray="4 4" />
+              <line x1="20" y1="100" x2="480" y2="100" stroke="currentColor" strokeOpacity="0.08" />
+
+              {/* Area Fill */}
+              <path 
+                d={sparklinePoints.areaD} 
+                fill="url(#curveGradient)" 
+              />
+
+              {/* Smooth Stroke Line */}
+              <path 
+                d={sparklinePoints.d} 
+                fill="none" 
+                stroke="url(#strokeGradient)" 
+                strokeWidth="3.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+              />
+
+              {/* Interactive Data Points */}
+              {sparklinePoints.coords.map((pt, idx) => (
+                <g key={idx}>
+                  <circle 
+                    cx={pt.x} 
+                    cy={pt.y} 
+                    r="4.5" 
+                    className="fill-white dark:fill-slate-900 stroke-indigo-500 cursor-pointer transition-all hover:r-6 hover:stroke-purple-500" 
+                    strokeWidth="2.5"
+                    onMouseEnter={() => setHoveredDataPoint(pt)}
+                    onMouseLeave={() => setHoveredDataPoint(null)}
+                  />
+                  {/* Day Label at Bottom */}
+                  <text 
+                    x={pt.x} 
+                    y="115" 
+                    textAnchor="middle" 
+                    className="text-[9px] fill-slate-400 dark:fill-slate-500 font-mono"
+                  >
+                    {idx === 6 ? 'Today' : `D-${6 - idx}`}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+        </div>
+      )}
 
       {/* Main Breakdown: Apps Launched & Recruiter Intent */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

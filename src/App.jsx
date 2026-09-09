@@ -18,6 +18,7 @@ import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
 import { useFileSystem } from './utils/useFileSystem';
 import { useAdminAuth } from './utils/useAdminAuth';
 import AdminAuthModal from './components/AdminAuthModal';
+import { trackAppLaunch, trackProjectView, trackResumeView, trackSocialClick } from './lib/posthog';
 
 const NexusCyberdeckPlayer = React.lazy(() => import('./components/NexusCyberdeckPlayer'));
 const IOSMobileOS = React.lazy(() => import('./components/IOSMobileOS'));
@@ -516,6 +517,19 @@ export default function App() {
   }, []);
 
   const handleLaunchApp = (appId) => {
+    // Analytics telemetry
+    if (appId === "resume" || appId === "resume.pdf") {
+      trackResumeView('dock');
+    } else if (appId === "youtube") {
+      trackSocialClick('youtube', socialLinks?.youtube || 'https://youtube.com/@heyishant');
+    } else if (appId === "linkedin") {
+      trackSocialClick('linkedin', socialLinks?.linkedin || 'https://linkedin.com');
+    } else if (appId === "instagram") {
+      trackSocialClick('instagram', socialLinks?.instagram || 'https://instagram.com/heyishant');
+    } else {
+      trackAppLaunch(appId, 'macos');
+    }
+
     // These three are folder-layer windows — the dock's old modals are bypassed.
     if (appId === "finder") {
       osRef.current?.openId("home");
@@ -741,7 +755,12 @@ export default function App() {
             onOpenPath={(nodeId) => osRef.current?.openId(nodeId)}
             onCloseApp={handleCloseApp}
             activeProject={selectedProject}
-            onSelectProject={(project) => setSelectedProject(project)}
+            onSelectProject={(project) => {
+              if (project) {
+                trackProjectView(project.name || project.title || 'Project Modal', 'macos');
+              }
+              setSelectedProject(project);
+            }}
             isMuted={isMuted}
             onToggleMute={handleToggleMute}
             wallpaper={wallpaper}

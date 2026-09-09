@@ -1,8 +1,10 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   ArrowLeft, ArrowRight, Download, ExternalLink, Send, Minus, Plus, Trash2, Check,
-  Save, Lock, RotateCcw, ShieldCheck, Type, Copy, FileText, Loader2, Film
+  Save, Lock, RotateCcw, ShieldCheck, Type, Copy, FileText, Loader2, Film,
+  CheckCircle2, AlertTriangle
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
 import { findNode, getPath, itemCount, itemCountLabel, PROJECT_SEQUENCE, TRASH_ITEMS } from '../data/ishantOS';
@@ -10,6 +12,7 @@ import { PROFILE_INFO } from '../data/projectsData';
 import { isYouTubeUrl, getYouTubeEmbedUrl, isInstagramUrl, getInstagramEmbedUrl, isYouTubeShortsUrl } from '../utils/mediaHelpers';
 import { useAdminAuth } from '../utils/useAdminAuth';
 import { useFileSystem } from '../utils/useFileSystem';
+import { sendContactEmail } from '../lib/emailService';
 
 const chrome = (props) => ({
   win: props.win,
@@ -748,47 +751,186 @@ export function MediaWindow(props) {
  * ------------------------------------------------------------------ */
 
 export function MailWindow(props) {
+  const [name, setName] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
   const [subject, setSubject] = useState("Let's work together");
-  const [body, setBody] = useState('Hi Ishant,\n\nI found your portfolio...');
+  const [body, setBody] = useState('Hi Ishant,\n\nI found your portfolio and wanted to reach out regarding...');
+  const [isSending, setIsSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState(null);
 
   const email = props.contactEmail || PROFILE_INFO.email;
   const mailto = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (isSending) return;
+    setError(null);
+    setIsSending(true);
+
+    try {
+      await sendContactEmail({
+        name,
+        email: senderEmail,
+        subject,
+        message: body
+      });
+      setSent(true);
+      try {
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+      } catch {}
+    } catch (err) {
+      setError(err.message || 'Failed to deliver message. Please check your internet or email directly.');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleReset = () => {
+    setName('');
+    setSenderEmail('');
+    setSubject("Let's work together");
+    setBody('Hi Ishant,\n\nI found your portfolio and wanted to reach out regarding...');
+    setError(null);
+    setSent(false);
+  };
+
   return (
     <OSWindow {...chrome(props)} title="New Message" subtitle={email}>
-      <div className="h-full flex flex-col bg-white dark:bg-slate-900">
-        <div className="shrink-0 px-4 py-2 border-b border-black/10 dark:border-white/10 space-y-1.5">
-          <Field label="To">
-            <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-100">
-              Ishant &lt;{email}&gt;
-            </span>
-          </Field>
-          <Field label="Subject">
-            <input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              aria-label="Subject"
-              className="w-full bg-transparent text-[12px] font-semibold text-slate-800 dark:text-slate-100 outline-none"
+      <div className="h-full flex flex-col bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+        {sent ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center shadow-inner">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5 max-w-sm">
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">Message Delivered Successfully!</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Thank you {name ? <span className="font-semibold">{name}</span> : ''}! Your email has been delivered straight to Ishant's Gmail.
+              </p>
+              {senderEmail && (
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  Ishant will reply directly to <span className="font-mono text-slate-700 dark:text-slate-300">{senderEmail}</span>.
+                </p>
+              )}
+            </div>
+            <div className="pt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                Send Another Message
+              </button>
+              {props.onClose && (
+                <button
+                  type="button"
+                  onClick={() => props.onClose(props.win.id)}
+                  className="px-4 py-2 bg-[var(--os-accent)] text-white text-xs font-semibold rounded-xl hover:brightness-110 transition-all cursor-pointer"
+                >
+                  Done
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="shrink-0 px-4 py-2.5 border-b border-black/10 dark:border-white/10 space-y-2">
+              <Field label="To">
+                <div className="flex items-center justify-between text-[12px] font-semibold text-slate-800 dark:text-slate-100">
+                  <span>Ishant &lt;{email}&gt;</span>
+                  <span className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                    Direct Inbox
+                  </span>
+                </div>
+              </Field>
+
+              <Field label="From">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your Name (e.g. John Doe)"
+                    disabled={isSending}
+                    className="w-full bg-transparent text-[12px] font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none border-b border-transparent focus:border-[var(--os-accent)] py-0.5 transition-colors"
+                  />
+                  <input
+                    type="email"
+                    required
+                    value={senderEmail}
+                    onChange={(e) => setSenderEmail(e.target.value)}
+                    placeholder="Your Email (e.g. john@example.com)"
+                    disabled={isSending}
+                    className="w-full bg-transparent text-[12px] font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none border-b border-transparent focus:border-[var(--os-accent)] py-0.5 transition-colors"
+                  />
+                </div>
+              </Field>
+
+              <Field label="Subject">
+                <input
+                  type="text"
+                  required
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  aria-label="Subject"
+                  placeholder="Subject of your message"
+                  disabled={isSending}
+                  className="w-full bg-transparent text-[12px] font-semibold text-slate-800 dark:text-slate-100 outline-none border-b border-transparent focus:border-[var(--os-accent)] py-0.5 transition-colors"
+                />
+              </Field>
+            </div>
+
+            {error && (
+              <div className="mx-4 mt-2 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex-1">{error}</span>
+              </div>
+            )}
+
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              aria-label="Message"
+              placeholder="Write your message here..."
+              disabled={isSending}
+              className="flex-1 w-full p-4 bg-transparent resize-none outline-none text-[13px] leading-relaxed text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
             />
-          </Field>
-        </div>
 
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          aria-label="Message"
-          className="flex-1 w-full p-4 bg-transparent resize-none outline-none text-[13px] leading-relaxed text-slate-800 dark:text-slate-200"
-        />
+            <div className="shrink-0 px-4 py-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSending}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--os-accent)] text-white text-[11px] font-bold hover:brightness-110 active:scale-95 disabled:opacity-60 transition-all cursor-pointer shadow-sm"
+                >
+                  {isSending ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send Message</span>
+                    </>
+                  )}
+                </button>
+                <span className="text-[10px] text-slate-400 hidden sm:inline">Delivers straight to Ishant's Gmail</span>
+              </div>
 
-        <div className="shrink-0 px-4 py-3 border-t border-black/10 dark:border-white/10 flex items-center gap-3">
-          <a
-            href={mailto}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--os-accent)] text-white text-[11px] font-bold hover:brightness-110"
-          >
-            <Send className="w-3.5 h-3.5" /> Send
-          </a>
-          <span className="text-[10px] text-slate-400">Opens in your own mail app.</span>
-        </div>
+              <a
+                href={mailto}
+                className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline transition-colors"
+                title="Open in your computer's default mail client"
+              >
+                Open in mail app ↗
+              </a>
+            </div>
+          </>
+        )}
       </div>
     </OSWindow>
   );

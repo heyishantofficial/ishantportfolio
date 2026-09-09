@@ -3,11 +3,12 @@ import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, FileText, Image as ImageIcon, Download, 
   Mail, Trash2, Layers, CheckCircle2, Send, RefreshCw, Sparkles, ExternalLink,
-  Globe, Cpu, Search, X, Maximize2, UploadCloud, Plus
+  Globe, Cpu, Search, X, Maximize2, UploadCloud, Plus, Loader2
 } from 'lucide-react';
 import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
 import { useAdminAuth } from '../utils/useAdminAuth';
 import { uploadFileToServer } from '../utils/fsStorage';
+import { sendContactEmail } from '../lib/emailService';
 
 const SafariBrowser = React.lazy(() => import('./SafariBrowser'));
 
@@ -1112,73 +1113,196 @@ export function LinkedInModal({ onClose, linkedinUrl, onOpenSettings }) {
 }
 
 // 10. Mail Modal
-export function MailModal({ onClose, contactEmail }) {
+export function MailModal({ onClose, contactEmail, isEmbedded = false }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitted(true);
-  };
+  const [error, setError] = useState(null);
 
   const recipient = contactEmail || PROFILE_INFO.email;
 
-  return (
-    <MacWindow title="New Message — macOS Mail" icon={Mail} onClose={onClose}>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await sendContactEmail({ name, email, subject, message });
+      setSubmitted(true);
+      try {
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+      } catch {}
+    } catch (err) {
+      setError(err.message || 'Unable to deliver message right now. Please try again or email directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReset = () => {
+    setName('');
+    setEmail('');
+    setSubject('');
+    setMessage('');
+    setError(null);
+    setSubmitted(false);
+  };
+
+  const content = (
+    <>
       {submitted ? (
-        <div className="py-6 text-center space-y-3 font-sans">
-          <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="py-8 text-center space-y-4 font-sans animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+            <CheckCircle2 className="w-6 h-6" />
           </div>
-          <h3 className="font-bold text-slate-800 text-sm">Message Sent Successfully!</h3>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto">
-            Thank you for reaching out. Your message has been dispatched via Apple Mail.
-          </p>
-          <button 
-            onClick={() => setSubmitted(false)}
-            className="mt-1 px-4 py-1.5 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-200"
-          >
-            Send Another Message
-          </button>
+          <div className="space-y-1">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Message Sent Successfully!</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto leading-relaxed">
+              Thank you {name ? <span className="font-semibold">{name}</span> : ''}! Your message has been delivered directly to Ishant's Gmail.
+            </p>
+            {email && (
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Ishant will reply to <span className="font-mono text-slate-600 dark:text-slate-300">{email}</span>.
+              </p>
+            )}
+          </div>
+          <div className="pt-2 flex items-center justify-center gap-2">
+            <button 
+              type="button"
+              onClick={handleReset}
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+            >
+              Send Another Message
+            </button>
+            <button 
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-md transition-colors cursor-pointer"
+            >
+              Done
+            </button>
+          </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-3 text-xs font-sans">
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs font-sans">
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="flex-1 leading-snug">{error}</div>
+            </div>
+          )}
+
           <div>
-            <label className="block text-slate-500 font-medium mb-1">To:</label>
-            <input 
-              type="text" 
-              readOnly 
-              value={recipient} 
-              className="w-full p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-mono text-xs"
-            />
+            <label className="block text-slate-500 dark:text-slate-400 font-medium mb-1">To:</label>
+            <div className="w-full px-3 py-2 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl text-slate-700 dark:text-slate-200 font-mono text-xs flex items-center justify-between select-none">
+              <span>Ishant &lt;{recipient}&gt;</span>
+              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">Direct Inbox</span>
+            </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Your Name <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Sarah Connor"
+                disabled={isSubmitting}
+                className="w-full px-3 py-2 bg-white/70 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 transition-all disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+                Your Email <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="email" 
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="sarah@company.com"
+                disabled={isSubmitting}
+                className="w-full px-3 py-2 bg-white/70 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 transition-all disabled:opacity-50"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-slate-500 font-medium mb-1">Subject:</label>
+            <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+              Subject <span className="text-red-500">*</span>
+            </label>
             <input 
               type="text" 
               required
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
               placeholder="Collaboration Inquiry / Project Discussion"
-              className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
+              disabled={isSubmitting}
+              className="w-full px-3 py-2 bg-white/70 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 transition-all disabled:opacity-50"
             />
           </div>
+
           <div>
-            <label className="block text-slate-500 font-medium mb-1">Message:</label>
+            <label className="block text-slate-600 dark:text-slate-300 font-medium mb-1">
+              Message <span className="text-red-500">*</span>
+            </label>
             <textarea 
               rows={4}
               required
-              placeholder="Hi Ishant, I checked out your MacBook OS portfolio..."
-              className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 resize-none"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Hi Ishant, I checked out your MacBook OS portfolio and would love to collaborate..."
+              disabled={isSubmitting}
+              className="w-full p-3 bg-white/70 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-none transition-all disabled:opacity-50 leading-relaxed"
             />
           </div>
-          <div className="flex justify-end pt-1">
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">
+              Replies will be sent to your email
+            </span>
             <button 
               type="submit" 
-              className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow transition-colors flex items-center gap-1.5 cursor-pointer"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-sky-600 hover:bg-sky-700 active:scale-95 disabled:opacity-60 text-white font-semibold rounded-xl shadow transition-all flex items-center gap-2 cursor-pointer ml-auto"
             >
-              <Send className="w-3.5 h-3.5" /> Send Message
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Sending Message...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Message</span>
+                </>
+              )}
             </button>
           </div>
         </form>
       )}
+    </>
+  );
+
+  if (isEmbedded) {
+    return (
+      <div className="p-4 sm:p-5 max-w-lg mx-auto pb-10">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <MacWindow title="New Message — macOS Mail" icon={Mail} onClose={onClose}>
+      {content}
     </MacWindow>
   );
 }

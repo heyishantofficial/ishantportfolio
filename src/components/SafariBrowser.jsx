@@ -12,6 +12,7 @@ import {
   Trash2, 
   FolderPlus
 } from 'lucide-react';
+import { trackEmailCopy, trackSocialClick } from '../lib/posthog';
 
 import './safari.css';
 
@@ -28,7 +29,7 @@ const DEFAULT_PORTFOLIO_LINKS = [
     id: 'link-brainjot',
     title: 'Brainjot AI Notes',
     category: 'apps',
-    url: 'https://heyishant.me',
+    url: 'https://heyishant.com',
     tag: 'LIVE APP',
     badgeColor: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
     iconBg: 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white',
@@ -40,7 +41,7 @@ const DEFAULT_PORTFOLIO_LINKS = [
     id: 'link-notchfinder',
     title: 'Notch Finder macOS',
     category: 'apps',
-    url: 'https://heyishant.me',
+    url: 'https://heyishant.com',
     tag: 'UTILITY',
     badgeColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     iconBg: 'bg-gradient-to-tr from-emerald-500 to-teal-600 text-white',
@@ -100,7 +101,7 @@ const DEFAULT_PORTFOLIO_LINKS = [
     id: 'link-email',
     title: 'Direct Inquiries & Email',
     category: 'social',
-    url: 'mailto:ishant.vibecode@gmail.com',
+    url: 'mailto:heyishant@gmail.com',
     tag: 'CONTACT',
     badgeColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     iconBg: 'bg-emerald-600 text-white',
@@ -204,6 +205,11 @@ export default function SafariBrowser({ onClose, onMinimize, socialLinks, dashbo
   const openInNewTab = (url, title = 'Link') => {
     if (!url) return;
     let target = url.trim();
+    if (target.startsWith('mailto:')) {
+      trackEmailCopy('safari_browser');
+    } else {
+      trackSocialClick(title, target);
+    }
     if (!/^https?:\/\//i.test(target) && !target.startsWith('mailto:')) {
       target = `https://${target}`;
     }
@@ -214,6 +220,9 @@ export default function SafariBrowser({ onClose, onMinimize, socialLinks, dashbo
   // Copy link URL
   const copyLink = (e, link) => {
     e.stopPropagation();
+    if (link.url && link.url.startsWith('mailto:')) {
+      trackEmailCopy('safari_browser_copy');
+    }
     navigator.clipboard?.writeText(link.url);
     setCopiedLinkId(link.id);
     showToast(`Copied ${link.title} URL to clipboard!`);

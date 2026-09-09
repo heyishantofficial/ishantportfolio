@@ -21,7 +21,7 @@ export const DEFAULT_SETTINGS = {
     dockMagnification: true,
     soundEffects: true,
     statusMessage: '',
-    contactEmail: 'ishant.vibecode@gmail.com'
+    contactEmail: 'heyishant@gmail.com'
   },
   folderIcons: {}
 };

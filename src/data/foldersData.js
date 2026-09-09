@@ -194,7 +194,7 @@ export const FOLDERS_DATA = [
 
 export const PROFILE_INFO = {
   name: 'Ishant Chauhan',
-  email: 'ishant.vibecode@gmail.com',
+  email: 'heyishant@gmail.com',
   handle: '@ishantchauhan',
   tagline: 'I build content systems, craft brand storytelling, scale personal branding, and vibecode apps that solve daily life.',
   socials: {

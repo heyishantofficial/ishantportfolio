@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { 
   Sliders, Image, Lock, Sun, Moon, Volume2, VolumeX, ShieldCheck, Check, Sparkles, Monitor, Key, Upload, ArrowRight, Globe, Loader2, Share2, ExternalLink, LayoutGrid, User, RotateCcw, CheckCircle2, Folder, Search, AlertCircle,
-  RefreshCw, Cloud, Download, UploadCloud, Database, CheckCheck, Server, Film, Play, Square, ChevronLeft, ChevronRight
+  RefreshCw, Cloud, Download, UploadCloud, Database, CheckCheck, Server, Film, Play, Square, ChevronLeft, ChevronRight, Activity
 } from "lucide-react";
+import AnalyticsDashboard from "./AnalyticsDashboard";
 import confetti from "canvas-confetti";
 import { MacWindow } from "./macDockModals";
 import { playMacClick } from "../utils/macAudioEngine";
@@ -92,7 +93,7 @@ export default function SystemSettingsModal({
     dockMagnification: true,
     soundEffects: true,
     statusMessage: '',
-    contactEmail: 'ishant.vibecode@gmail.com'
+    contactEmail: 'heyishant@gmail.com'
   });
 
   const [socialsSavedNotice, setSocialsSavedNotice] = useState(false);
@@ -762,6 +763,7 @@ export default function SystemSettingsModal({
                 <div className="space-y-1">
                   {[
                     { id: "master-sync", label: "Master Sync", icon: RefreshCw, badge: "Master" },
+                    { id: "analytics", label: "Visitor Analytics", icon: Activity, badge: "Live" },
                     { id: "socials", label: "Social & Links Hub", icon: Share2, badge: "Live" },
                     { id: "folder-icons", label: "Folder Icons", icon: Folder, badge: "Custom" },
                     { id: "dock", label: "Dock & Desktop", icon: LayoutGrid },
@@ -857,6 +859,7 @@ export default function SystemSettingsModal({
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[170px]">
                   {[
                     { id: "master-sync", label: "Master Sync" },
+                    { id: "analytics", label: "Visitor Analytics" },
                     { id: "socials", label: "Social & Links Hub" },
                     { id: "folder-icons", label: "Folder Icons" },
                     { id: "dock", label: "Dock & Desktop" },
@@ -1101,6 +1104,11 @@ export default function SystemSettingsModal({
                     </p>
                   </div>
                 </div>
+              )}
+
+              {/* TAB: Visitor Analytics & Tracking */}
+              {activeTab === "analytics" && (
+                <AnalyticsDashboard isMuted={isMuted} adminPassword={getAdminPassword()} />
               )}
 
               {/* TAB: Social & Links Hub */}
@@ -1814,7 +1822,7 @@ export default function SystemSettingsModal({
                         type="email"
                         value={localDashboard.contactEmail || ''}
                         onChange={(e) => handleDashboardChange('contactEmail', e.target.value)}
-                        placeholder="ishant.vibecode@gmail.com"
+                        placeholder="heyishant@gmail.com"
                         className="w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-slate-800 dark:text-slate-100"
                       />
                       <p className="text-[10px] text-slate-500">Destination for macOS Mail app composer and contact inquiries.</p>

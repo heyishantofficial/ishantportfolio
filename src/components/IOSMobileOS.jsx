@@ -23,6 +23,7 @@ import IOSMediaViewer from './IOSMediaViewer';
 import { getYouTubeEmbedUrl, isYouTubeUrl, isInstagramUrl } from '../utils/mediaHelpers';
 import { findPresetById, BADGE_ICONS } from '../data/folderIconsCatalog';
 import { getFolderIcon } from '../lib/siteSettings';
+import { trackAppLaunch, trackProjectView, trackSocialClick } from '../lib/posthog';
 
 const SafariBrowser = React.lazy(() => import('./SafariBrowser'));
 const SystemSettingsModal = React.lazy(() => import('./SystemSettingsModal'));
@@ -448,17 +449,21 @@ export default function IOSMobileOS({
   const handleAppLaunch = useCallback((appKey) => {
     playMacClick(isMuted);
     if (appKey === 'youtube') {
+      trackSocialClick('youtube', socialLinks?.youtube || 'https://youtube.com/@heyishant');
       window.open(socialLinks?.youtube || 'https://youtube.com/@heyishant', '_blank', 'noopener,noreferrer');
       return;
     }
     if (appKey === 'linkedin') {
+      trackSocialClick('linkedin', socialLinks?.linkedin || 'https://linkedin.com');
       window.open(socialLinks?.linkedin || 'https://linkedin.com', '_blank', 'noopener,noreferrer');
       return;
     }
     if (appKey === 'instagram') {
+      trackSocialClick('instagram', socialLinks?.instagram || 'https://instagram.com/heyishant');
       window.open(socialLinks?.instagram || 'https://instagram.com/heyishant', '_blank', 'noopener,noreferrer');
       return;
     }
+    trackAppLaunch(appKey, 'ios');
     setActiveSheet(appKey);
   }, [isMuted, socialLinks]);
 
@@ -472,6 +477,9 @@ export default function IOSMobileOS({
 
   const handleOpenProjectModal = useCallback((proj) => {
     playMacClick(isMuted);
+    if (proj) {
+      trackProjectView(proj.title || proj.name || 'Mobile Project', 'ios');
+    }
     setSelectedProject(proj);
     setActiveSheet('project-detail');
   }, [isMuted]);
@@ -1185,6 +1193,7 @@ export default function IOSMobileOS({
                   <MailModal 
                     onClose={handleCloseSheet}
                     contactEmail={dashboardConfig?.contactEmail}
+                    isEmbedded={true}
                   />
                 )}
 

@@ -21,6 +21,7 @@ const SRC_DATA_DIR = path.join(ROOT, 'src', 'data');
 const LOCAL_SRC_SNAPSHOT = path.join(SRC_DATA_DIR, 'masterSnapshot.json');
 const PUBLIC_SNAPSHOT = path.join(ROOT, 'public', 'master-snapshot.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
 
 // Wallpapers that every visitor can load. Uploaded wallpapers are deliberately
 // excluded: they are blob: URLs local to the admin's own browser, so they
@@ -45,7 +46,7 @@ const FALLBACK = {
     dockMagnification: true,
     soundEffects: true,
     statusMessage: '',
-    contactEmail: 'ishant.vibecode@gmail.com'
+    contactEmail: 'heyishant@gmail.com'
   },
   folderIcons: {}
 };
@@ -242,6 +243,73 @@ async function writeFilesystemState(state) {
   const tmp = `${FS_FILE}.tmp`;
   await fs.writeFile(tmp, JSON.stringify(state, null, 2), 'utf8');
   await fs.rename(tmp, FS_FILE);
+}
+
+const DEFAULT_ANALYTICS = {
+  totalVisits: 0,
+  appsLaunched: {},
+  projectsViewed: {},
+  conversions: {
+    resumeViews: 0,
+    emailCopies: 0,
+    socialClicks: {}
+  },
+  platforms: {
+    macos: 0,
+    ios: 0
+  },
+  recentEvents: [],
+  firstTrackedAt: null,
+  updatedAt: null
+};
+
+async function readAnalyticsState() {
+  try {
+    const raw = await fs.readFile(ANALYTICS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return {
+      totalVisits: typeof parsed.totalVisits === 'number' ? parsed.totalVisits : 0,
+      appsLaunched: parsed.appsLaunched && typeof parsed.appsLaunched === 'object' ? parsed.appsLaunched : {},
+      projectsViewed: parsed.projectsViewed && typeof parsed.projectsViewed === 'object' ? parsed.projectsViewed : {},
+      conversions: {
+        resumeViews: typeof parsed.conversions?.resumeViews === 'number' ? parsed.conversions.resumeViews : 0,
+        emailCopies: typeof parsed.conversions?.emailCopies === 'number' ? parsed.conversions.emailCopies : 0,
+        socialClicks: parsed.conversions?.socialClicks && typeof parsed.conversions?.socialClicks === 'object' ? parsed.conversions.socialClicks : {}
+      },
+      platforms: {
+        macos: typeof parsed.platforms?.macos === 'number' ? parsed.platforms.macos : 0,
+        ios: typeof parsed.platforms?.ios === 'number' ? parsed.platforms.ios : 0
+      },
+      recentEvents: Array.isArray(parsed.recentEvents) ? parsed.recentEvents : [],
+      firstTrackedAt: parsed.firstTrackedAt || null,
+      updatedAt: parsed.updatedAt || null
+    };
+  } catch {
+    return { ...DEFAULT_ANALYTICS };
+  }
+}
+
+let saveAnalyticsTimer = null;
+let pendingAnalyticsState = null;
+
+function scheduleAnalyticsSave(state) {
+  pendingAnalyticsState = state;
+  if (!saveAnalyticsTimer) {
+    saveAnalyticsTimer = setTimeout(async () => {
+      saveAnalyticsTimer = null;
+      if (!pendingAnalyticsState) return;
+      const dataToWrite = pendingAnalyticsState;
+      pendingAnalyticsState = null;
+      try {
+        await fs.mkdir(DATA_DIR, { recursive: true });
+        const tmp = `${ANALYTICS_FILE}.tmp`;
+        await fs.writeFile(tmp, JSON.stringify(dataToWrite, null, 2), 'utf8');
+        await fs.rename(tmp, ANALYTICS_FILE);
+      } catch (err) {
+        console.error('[analytics] write failed:', err.message);
+      }
+    }, 1500);
+  }
 }
 
 const app = express();
@@ -915,6 +983,94 @@ app.post('/api/settings/password', passwordChangeLimiter, async (req, res) => {
   } catch (err) {
     console.error('[settings] password write failed:', err);
     res.status(500).json({ error: 'Could not save the new password.' });
+  }
+});
+
+// Analytics endpoints
+const analyticsBeaconLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: 'Too many analytics events. Throttled.'
+});
+
+// Public: Get aggregate metrics for System Settings dashboard
+app.get('/api/analytics', async (_req, res) => {
+  try {
+    const data = await readAnalyticsState();
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, analytics: data });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Public: Post event beacon
+app.post('/api/analytics/event', analyticsBeaconLimiter, async (req, res) => {
+  try {
+    const { event, name, platform, meta } = req.body || {};
+    if (!event || typeof event !== 'string') {
+      return res.status(400).json({ error: 'Missing event name' });
+    }
+
+    const current = await readAnalyticsState();
+    const now = new Date().toISOString();
+    if (!current.firstTrackedAt) {
+      current.firstTrackedAt = now;
+    }
+    current.updatedAt = now;
+
+    // Sanitize values
+    const safeEvent = event.slice(0, 50);
+    const safeName = typeof name === 'string' ? name.slice(0, 80) : 'unknown';
+    const safePlatform = platform === 'ios' ? 'ios' : 'macos';
+
+    if (safeEvent === 'pageview' || safeEvent === 'session_start') {
+      current.totalVisits = (current.totalVisits || 0) + 1;
+      current.platforms[safePlatform] = (current.platforms[safePlatform] || 0) + 1;
+    } else if (safeEvent === 'app_launch') {
+      current.appsLaunched[safeName] = (current.appsLaunched[safeName] || 0) + 1;
+    } else if (safeEvent === 'project_view') {
+      current.projectsViewed[safeName] = (current.projectsViewed[safeName] || 0) + 1;
+    } else if (safeEvent === 'resume_view') {
+      current.conversions.resumeViews = (current.conversions.resumeViews || 0) + 1;
+    } else if (safeEvent === 'email_copy') {
+      current.conversions.emailCopies = (current.conversions.emailCopies || 0) + 1;
+    } else if (safeEvent === 'social_click') {
+      current.conversions.socialClicks[safeName] = (current.conversions.socialClicks[safeName] || 0) + 1;
+    }
+
+    // Keep the 30 most recent activity logs for live feed
+    current.recentEvents.unshift({
+      event: safeEvent,
+      name: safeName,
+      platform: safePlatform,
+      time: now,
+      meta: meta && typeof meta === 'object' ? meta : {}
+    });
+    if (current.recentEvents.length > 30) {
+      current.recentEvents.length = 30;
+    }
+
+    scheduleAnalyticsSave(current);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Admin: Reset analytics stats
+app.post('/api/analytics/reset', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+  try {
+    const fresh = {
+      ...DEFAULT_ANALYTICS,
+      firstTrackedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await fs.writeFile(ANALYTICS_FILE, JSON.stringify(fresh, null, 2), 'utf8');
+    res.json({ ok: true, message: 'Analytics reset successfully.' });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: 'Could not reset analytics.' });
   }
 });
 

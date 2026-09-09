@@ -359,7 +359,7 @@ export default function IOSFilesApp({
     {
       id: 's-mail',
       name: 'Direct Contact',
-      itemsText: 'hey@ishant.com',
+      itemsText: 'heyishant@gmail.com',
       badge: (
         <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white">
           <Mail className="w-4 h-4" />

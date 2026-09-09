@@ -173,7 +173,7 @@ export const PROFILE_INFO = {
   name: 'Ishant Chauhan',
   roleTitle: 'Content Producer • Strategist • Vibecoding Builder',
   tagline: 'I craft brand narratives, architect content systems, and vibecode apps that solve daily life.',
-  email: 'ishant.vibecode@gmail.com',
+  email: 'heyishant@gmail.com',
   location: 'India / Available Worldwide',
   status: '● Vibecoding live & open for creative collaborations',
   socials: {

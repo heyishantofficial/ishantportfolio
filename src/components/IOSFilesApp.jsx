@@ -282,7 +282,7 @@ export default function IOSFilesApp({
     const nodes = [...ordered, ...extra];
 
     return nodes.map((node) => {
-      if (node.id === 'resume' || node.kind === 'pdf') {
+      if (node.id === 'resume') {
         return {
           id: node.id,
           name: node.name || 'Resume.pdf',
@@ -291,6 +291,18 @@ export default function IOSFilesApp({
           kind: 'pdf',
           node,
           action: () => window.open(node.href || '/resume.pdf', '_blank')
+        };
+      }
+
+      if (node.kind === 'pdf') {
+        return {
+          id: node.id,
+          name: node.name || 'Document.pdf',
+          itemsText: node.description || 'PDF Document',
+          isDoc: true,
+          kind: 'pdf',
+          node,
+          action: () => setActiveReaderDoc(node)
         };
       }
 
@@ -446,8 +458,10 @@ export default function IOSFilesApp({
       } else {
         setActiveReaderDoc(child);
       }
-    } else if (child.id === 'resume' || (child.kind === 'pdf' && child.href)) {
+    } else if (child.id === 'resume') {
       window.open(child.href || '/resume.pdf', '_blank');
+    } else if (child.kind === 'pdf') {
+      setActiveReaderDoc(child);
     } else {
       setActiveReaderDoc(child);
     }

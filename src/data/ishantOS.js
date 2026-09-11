@@ -21,6 +21,7 @@ import { PROJECTS_DATA } from './projectsData';
 import { getStorageItem, setStorageItem } from '../utils/fsStorage';
 import { fetchServerFilesystem, saveServerFilesystem } from '../lib/filesystemApi';
 import { getAdminPassword } from '../utils/useAdminAuth';
+import { setSaveState } from '../utils/transferActivity';
 
 // ---------------------------------------------------------------------------
 // Case studies
@@ -1113,28 +1114,50 @@ export async function syncFSToServer() {
   notifySyncStatus({ status: 'syncing', message: 'Saving to cloud...' });
 
   try {
-    const res = await saveServerFilesystem({
+    const payload = {
       password,
       customNodes: pruneCustomNodes(customNodesCache),
       renames: renamesCache,
       deleted: deletedCache,
       edits: editsCache
-    });
+    };
+
+    // Measured after pruning, so the number shown in admin mode is what
+    // actually goes over the wire. This is the figure that reached 35 MB and
+    // started making saves fail.
+    const payloadBytes = (() => {
+      try { return new Blob([JSON.stringify(payload)]).size; } catch { return null; }
+    })();
+
+    setSaveState({ status: 'saving', message: 'Saving to server…', payloadBytes, lastError: null });
+
+    const res = await saveServerFilesystem(payload);
 
     // Adopt the server's own stamp for the copy we just pushed. Without this,
     // a browser clock running ahead of the server's would leave this browser
     // permanently "newer" and it would ignore the server on every boot.
     if (res.updatedAt) markLocalFSChange(res.updatedAt);
 
+    const savedAt = res.updatedAt || new Date().toISOString();
+    setSaveState({ status: 'saved', message: 'Saved for all visitors', lastSavedAt: savedAt, lastError: null });
+
     notifySyncStatus({
       status: 'synced',
       message: 'Saved to cloud for all visitors',
-      lastSynced: res.updatedAt || new Date().toISOString()
+      lastSynced: savedAt
     });
 
     return { ok: true, data: res };
   } catch (err) {
     console.warn('[ishantOS] Cloud sync failed:', err.message);
+    // A failed save is the dangerous state: the change exists in this browser
+    // only, and a reload will replace it with the server's older copy. Say so
+    // in plain terms rather than leaving a silent red dot.
+    setSaveState({
+      status: 'error',
+      message: 'Not saved to the server — this change exists only in this browser.',
+      lastError: err.message || 'Failed to sync to cloud'
+    });
     notifySyncStatus({
       status: 'error',
       message: err.message || 'Failed to sync to cloud'
@@ -1366,6 +1389,11 @@ export async function loadPersistedFS() {
         queueFSSync(400);
       } else if (!serverAnswered) {
         console.warn('[fs] Server unreachable — keeping local data, not publishing it over state we could not read.');
+        setSaveState({
+          status: 'error',
+          message: 'Could not reach the server — showing this browser\'s copy. Visitors may see something different.',
+          lastError: 'Server unreachable on load'
+        });
         notifySyncStatus({
           status: 'error',
           message: 'Could not reach the server — your changes are saved in this browser only.'

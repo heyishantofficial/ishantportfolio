@@ -5,6 +5,7 @@
  */
 
 import { getAdminPassword } from './useAdminAuth';
+import { startTransfer, updateTransfer, finishTransfer } from './transferActivity';
 
 const DB_NAME = 'ishant_os_db';
 const DB_VERSION = 1;
@@ -229,37 +230,83 @@ export function generateVideoThumbnail(file, maxWidth = 200, maxHeight = 120) {
  * Uploads original binary file to the Express server /api/upload
  */
 export async function uploadFileToServer(file) {
+  const transferId = `up-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const password = getAdminPassword();
+
   if (!password) {
+    // Surfaced rather than swallowed: without admin auth the file never
+    // reaches the server, it only ever exists in this browser, and the
+    // visitor-facing site will never show it.
+    startTransfer({ id: transferId, name: file.name, size: file.size });
+    finishTransfer(transferId, {
+      ok: false,
+      error: 'Not signed in as admin — this file was not saved to the server.'
+    });
     return { ok: false, error: 'Admin authentication required.' };
   }
 
+  startTransfer({ id: transferId, name: file.name, size: file.size });
+
   return new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            password,
-            filename: file.name,
-            dataBase64: reader.result,
-            mimeType: file.type
-          })
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          resolve({ ok: false, error: errData.error || 'Upload failed' });
+
+    reader.onload = () => {
+      // XMLHttpRequest rather than fetch: it is the only one that reports
+      // upload progress, and a long upload with no feedback is exactly the
+      // silence this is meant to remove.
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/upload');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.upload.onprogress = (e) => {
+        if (!e.lengthComputable) return;
+        // Report against the real file size so the number on screen matches
+        // the file the user picked, not the larger base64 envelope.
+        const ratio = e.total > 0 ? e.loaded / e.total : 0;
+        updateTransfer(transferId, Math.round(ratio * file.size));
+      };
+
+      xhr.onload = () => {
+        let data = {};
+        try { data = JSON.parse(xhr.responseText || '{}'); } catch { /* handled below */ }
+
+        if (xhr.status >= 200 && xhr.status < 300 && data.ok) {
+          finishTransfer(transferId, { ok: true, url: data.url });
+          resolve(data);
           return;
         }
-        const data = await res.json();
-        resolve(data);
-      } catch (err) {
-        resolve({ ok: false, error: err.message });
-      }
+
+        const error = data.error
+          || (xhr.status === 413 ? 'File is too large for the server to accept.' : `Upload failed (${xhr.status}).`);
+        finishTransfer(transferId, { ok: false, error });
+        resolve({ ok: false, error });
+      };
+
+      xhr.onerror = () => {
+        const error = 'Network error during upload.';
+        finishTransfer(transferId, { ok: false, error });
+        resolve({ ok: false, error });
+      };
+
+      xhr.ontimeout = () => {
+        const error = 'Upload timed out.';
+        finishTransfer(transferId, { ok: false, error });
+        resolve({ ok: false, error });
+      };
+
+      xhr.send(JSON.stringify({
+        password,
+        filename: file.name,
+        dataBase64: reader.result,
+        mimeType: file.type
+      }));
     };
-    reader.onerror = () => resolve({ ok: false, error: 'Could not read file.' });
+
+    reader.onerror = () => {
+      finishTransfer(transferId, { ok: false, error: 'Could not read file.' });
+      resolve({ ok: false, error: 'Could not read file.' });
+    };
+
     reader.readAsDataURL(file);
   });
 }
@@ -354,15 +401,18 @@ export async function readFileAsNode(file) {
   return {
     name: file.name,
     kind,
-    thumbnailUrl: thumbnailUrl || inlineCopy || null,
-    preview: thumbnailUrl || inlineCopy || fileUrl || null,
+    // A PDF has no image preview: pointing `preview` at the .pdf URL makes
+    // every <img> that renders it a broken image (with the resume's alt text).
+    // Leave it empty so viewers fall back to the real PDF embed instead.
+    thumbnailUrl: isPdf ? null : (thumbnailUrl || inlineCopy || null),
+    preview: isPdf ? null : (thumbnailUrl || inlineCopy || fileUrl || null),
     dataUrl: inlineCopy || (typeof fileUrl === 'string' && fileUrl.startsWith('data:') ? fileUrl : null),
     fileUrl,
     file: fileUrl,
-    description: `${formatBytes(file.size)} ${kind.toUpperCase()} file`,
+    description: isPdf ? `${formatBytes(file.size)} PDF Document` : `${formatBytes(file.size)} ${kind.toUpperCase()} file`,
     meta: {
       size: formatBytes(file.size),
-      type: file.type || 'application/octet-stream',
+      type: file.type || (isPdf ? 'application/pdf' : 'application/octet-stream'),
       owner: 'Ishant (Admin)'
     }
   };

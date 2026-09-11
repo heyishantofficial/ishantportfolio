@@ -7,6 +7,7 @@ import CommandPalette from './CommandPalette';
 import DesktopItems from './DesktopItems';
 import NodeIcon from './NodeIcon';
 import QuickLookPanel from './QuickLookPanel';
+import TransferActivityHUD from '../components/TransferActivityHUD';
 import { findNode } from '../data/ishantOS';
 import { playMacClick, playQuickLookSound } from '../utils/macAudioEngine';
 
@@ -338,6 +339,9 @@ const IshantOS = forwardRef(function IshantOS({ isMuted, onActiveTitleChange, so
       {paletteOpen && (
         <CommandPalette onClose={() => setPaletteOpen(false)} onOpenNode={openNode} />
       )}
+
+      {/* Admin-only: live upload progress and save state. Renders nothing for visitors. */}
+      <TransferActivityHUD />
     </>
   );
 });

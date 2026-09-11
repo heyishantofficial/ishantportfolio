@@ -790,9 +790,12 @@ export default function FinderWindow({
       onResize={onResize}
       toolbar={toolbar}
     >
+      {/* No onFocus here: OSWindow already raises the window on mousedown, and a
+          second raise on click lands *after* the click that opened another
+          window (the sidebar opening resume.pdf), burying it behind this one. */}
       <div
         className="h-full flex relative"
-        onClick={() => { onFocus?.(); setMenu(null); setShowAdminDropdown(false); }}
+        onClick={() => { setMenu(null); setShowAdminDropdown(false); }}
       >
         {/* Floating Sync Notice Toast */}
         {syncNotice && (

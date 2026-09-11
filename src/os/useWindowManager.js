@@ -31,48 +31,57 @@ export default function useWindowManager() {
   const topZ = useRef(10);
   const cascade = useRef(0);
 
+  // React only runs a state updater during render, so a handler that needs to
+  // know what it just did (which window it opened, what is on top now) cannot
+  // read it back out of one. This mirror keeps the current list available
+  // synchronously; every write below goes through `commit` to keep it honest.
+  const windowsRef = useRef([]);
+  const commit = useCallback((update) => {
+    const next = update(windowsRef.current);
+    windowsRef.current = next;
+    setWindows(next);
+    return next;
+  }, []);
+
   const focusWindow = useCallback((id) => {
     topZ.current += 1;
     const z = topZ.current;
-    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, z, minimized: false } : w)));
+    commit((prev) => prev.map((w) => (w.id === id ? { ...w, z, minimized: false } : w)));
     setActiveId(id);
-  }, []);
+  }, [commit]);
 
   const closeWindow = useCallback((id) => {
-    setWindows((prev) => {
-      const next = prev.filter((w) => w.id !== id);
-      setActiveId((current) => {
-        if (current !== id) return current;
-        // Focus falls to whatever is now visually on top.
-        const visible = next.filter((w) => !w.minimized);
-        return visible.length ? visible.reduce((a, b) => (a.z > b.z ? a : b)).id : null;
-      });
-      return next;
+    const next = commit((prev) => prev.filter((w) => w.id !== id));
+    setActiveId((current) => {
+      if (current !== id) return current;
+      // Focus falls to whatever is now visually on top.
+      const visible = next.filter((w) => !w.minimized);
+      return visible.length ? visible.reduce((a, b) => (a.z > b.z ? a : b)).id : null;
     });
-  }, []);
+  }, [commit]);
 
   const closeAll = useCallback(() => {
-    setWindows([]);
+    commit(() => []);
     setActiveId(null);
-  }, []);
+  }, [commit]);
 
   const minimizeWindow = useCallback((id) => {
-    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, minimized: true } : w)));
+    commit((prev) => prev.map((w) => (w.id === id ? { ...w, minimized: true } : w)));
     setActiveId((current) => (current === id ? null : current));
-  }, []);
+  }, [commit]);
 
   const toggleMaximize = useCallback((id) => {
-    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, maximized: !w.maximized } : w)));
+    commit((prev) => prev.map((w) => (w.id === id ? { ...w, maximized: !w.maximized } : w)));
     focusWindow(id);
-  }, [focusWindow]);
+  }, [commit, focusWindow]);
 
   const moveWindow = useCallback((id, x, y) => {
-    setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, x, y } : w)));
-  }, []);
+    commit((prev) => prev.map((w) => (w.id === id ? { ...w, x, y } : w)));
+  }, [commit]);
 
   const resizeWindow = useCallback((id, w, h) => {
-    setWindows((prev) => prev.map((win) => (win.id === id ? { ...win, w, h } : win)));
-  }, []);
+    commit((prev) => prev.map((win) => (win.id === id ? { ...win, w, h } : win)));
+  }, [commit]);
 
   /**
    * Open a window. Re-opening the same thing focuses the existing window
@@ -82,54 +91,50 @@ export default function useWindowManager() {
     const { type, nodeId = null, fresh = false, ...rest } = spec;
     const key = `${type}:${nodeId ?? 'root'}`;
 
-    let openedId = null;
-    setWindows((prev) => {
-      if (!fresh) {
-        const existing = prev.find((w) => w.key === key);
-        if (existing) {
-          openedId = existing.id;
-          topZ.current += 1;
-          return prev.map((w) => (w.id === existing.id ? { ...w, z: topZ.current, minimized: false } : w));
-        }
+    const existing = fresh ? null : windowsRef.current.find((w) => w.key === key);
+    topZ.current += 1;
+    const z = topZ.current;
+
+    if (existing) {
+      commit((prev) => prev.map((w) => (w.id === existing.id ? { ...w, z, minimized: false } : w)));
+      setActiveId(existing.id);
+      return existing.id;
+    }
+
+    const size = DEFAULT_SIZES[type] || DEFAULT_SIZES.finder;
+    const step = cascade.current % CASCADE_WRAP;
+    cascade.current += 1;
+
+    const id = nextId();
+
+    // Centre the window, then cascade off that so stacked windows stay
+    // reachable rather than landing exactly on top of each other.
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1440;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
+    const w = Math.min(size.w, vw - 40);
+    const h = Math.min(size.h, vh - 130);
+
+    commit((prev) => [
+      ...prev,
+      {
+        id,
+        key,
+        type,
+        nodeId,
+        z,
+        minimized: false,
+        maximized: false,
+        x: Math.max(12, Math.round((vw - w) / 2) + step * CASCADE_STEP - 60),
+        y: Math.max(40, Math.round((vh - h) / 2) + step * CASCADE_STEP - 60),
+        w,
+        h,
+        ...rest
       }
+    ]);
 
-      const size = DEFAULT_SIZES[type] || DEFAULT_SIZES.finder;
-      const step = cascade.current % CASCADE_WRAP;
-      cascade.current += 1;
-      topZ.current += 1;
-
-      const id = nextId();
-      openedId = id;
-
-      // Centre the window, then cascade off that so stacked windows stay
-      // reachable rather than landing exactly on top of each other.
-      const vw = typeof window !== 'undefined' ? window.innerWidth : 1440;
-      const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
-      const w = Math.min(size.w, vw - 40);
-      const h = Math.min(size.h, vh - 130);
-
-      return [
-        ...prev,
-        {
-          id,
-          key,
-          type,
-          nodeId,
-          z: topZ.current,
-          minimized: false,
-          maximized: false,
-          x: Math.max(12, Math.round((vw - w) / 2) + step * CASCADE_STEP - 60),
-          y: Math.max(40, Math.round((vh - h) / 2) + step * CASCADE_STEP - 60),
-          w,
-          h,
-          ...rest
-        }
-      ];
-    });
-
-    if (openedId) setActiveId(openedId);
-    return openedId;
-  }, []);
+    setActiveId(id);
+    return id;
+  }, [commit]);
 
   /** Open whatever kind of thing a filesystem node is. */
   const openNode = useCallback((node, options = {}) => {

@@ -1054,6 +1054,56 @@ function notifySyncStatus(update) {
   });
 }
 
+// Inline base64 above this size is never a thumbnail, it is a second full
+// copy of a file that already lives in /uploads.
+const MAX_INLINE_BYTES = 256 * 1024;
+
+function isHeavyInline(value) {
+  return typeof value === 'string' && value.startsWith('data:') && value.length > MAX_INLINE_BYTES;
+}
+
+/**
+ * Drops full-size base64 copies from nodes whose real bytes are already
+ * stored on the server under /uploads.
+ *
+ * These duplicates are why filesystem.json grew to 35 MB: a single 4 MB PDF
+ * was held three times over (dataUrl, preview, thumbnailUrl) in a node that
+ * appears twice in the tree. That whole payload is downloaded by every
+ * visitor on boot and re-uploaded in full on every rename, which makes saves
+ * slow and failure-prone — and a failed save is what silently loses work.
+ *
+ * Pruning only ever happens when fileUrl points at /uploads, so a file that
+ * exists nowhere else keeps its inline copy and is never destroyed.
+ */
+function pruneRedundantCopies(node) {
+  if (!node || typeof node !== 'object') return node;
+
+  const pruned = { ...node };
+  const served = typeof pruned.fileUrl === 'string' && pruned.fileUrl.startsWith('/uploads/')
+    ? pruned.fileUrl
+    : null;
+
+  if (served) {
+    const smallThumb = !isHeavyInline(pruned.thumbnailUrl) ? pruned.thumbnailUrl : null;
+    if (isHeavyInline(pruned.dataUrl)) pruned.dataUrl = null;
+    if (isHeavyInline(pruned.file)) pruned.file = served;
+    if (isHeavyInline(pruned.preview)) pruned.preview = smallThumb || served;
+    if (isHeavyInline(pruned.thumbnailUrl)) pruned.thumbnailUrl = smallThumb;
+  }
+
+  if (Array.isArray(pruned.children)) {
+    pruned.children = pruned.children.map(pruneRedundantCopies);
+  }
+  return pruned;
+}
+
+export function pruneCustomNodes(nodes) {
+  if (!Array.isArray(nodes)) return [];
+  return nodes.map((entry) =>
+    entry && entry.node ? { ...entry, node: pruneRedundantCopies(entry.node) } : entry
+  );
+}
+
 export async function syncFSToServer() {
   const password = getAdminPassword();
   if (!password) {
@@ -1065,7 +1115,7 @@ export async function syncFSToServer() {
   try {
     const res = await saveServerFilesystem({
       password,
-      customNodes: customNodesCache,
+      customNodes: pruneCustomNodes(customNodesCache),
       renames: renamesCache,
       deleted: deletedCache,
       edits: editsCache
@@ -1124,7 +1174,9 @@ export function getFSCacheState() {
     editsCache = window.__ISHANT_FS_EDITS__ || {};
   }
   return {
-    customNodes: Array.isArray(customNodesCache) ? [...customNodesCache] : [],
+    // Pruned here too, so a Master Sync snapshot (and the Backup .json the
+    // admin downloads) carries file references rather than duplicated base64.
+    customNodes: pruneCustomNodes(customNodesCache),
     renames: { ...renamesCache },
     deleted: Array.isArray(deletedCache) ? [...deletedCache] : [],
     edits: { ...editsCache },
@@ -1302,9 +1354,22 @@ export async function loadPersistedFS() {
       rebuildFSTree(customNodesCache, renamesCache, deletedCache, editsCache);
       setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache);
 
-      // If admin password is in session, queue background sync
-      if (getAdminPassword()) {
+      // Only push this browser's copy up when the server actually answered
+      // and was genuinely empty. fetchServerFilesystem() returns null when it
+      // could not read the server at all — a timeout on a large payload, a
+      // cold container right after a deploy — and pushing into that case
+      // would overwrite good server data with whatever stale tree this tab
+      // happened to be holding. That is a site-wide rollback for every
+      // visitor, so unreachable must never be treated as empty.
+      const serverAnswered = serverFS !== null && serverFS !== undefined;
+      if (serverAnswered && getAdminPassword()) {
         queueFSSync(400);
+      } else if (!serverAnswered) {
+        console.warn('[fs] Server unreachable — keeping local data, not publishing it over state we could not read.');
+        notifySyncStatus({
+          status: 'error',
+          message: 'Could not reach the server — your changes are saved in this browser only.'
+        });
       }
     } else {
       customNodesCache = [];

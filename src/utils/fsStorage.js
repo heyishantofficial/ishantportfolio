@@ -334,19 +334,29 @@ export async function readFileAsNode(file) {
   // Upload full file to server uploads directory if admin is authenticated
   const uploadRes = await uploadFileToServer(file);
   let fileUrl = null;
+  let uploadedToServer = false;
 
   if (uploadRes && uploadRes.ok && uploadRes.url) {
     fileUrl = uploadRes.url;
+    uploadedToServer = true;
   } else {
     fileUrl = dataUrl || URL.createObjectURL(file);
   }
 
+  // Once the file lives in /uploads on the server, keeping a second full copy
+  // inline as base64 is pure weight: it is ~33% larger than the original and
+  // it rides inside filesystem.json, which is fetched by every visitor on
+  // boot and re-POSTed in full on every single change. One 12 MB PDF kept
+  // this way accounted for 33 MB of a 35 MB payload. Keep the small generated
+  // thumbnail for previews and let the real bytes be served from /uploads.
+  const inlineCopy = uploadedToServer ? null : dataUrl;
+
   return {
     name: file.name,
     kind,
-    thumbnailUrl: thumbnailUrl || dataUrl || null,
-    preview: thumbnailUrl || dataUrl || null,
-    dataUrl: dataUrl || (typeof fileUrl === 'string' && fileUrl.startsWith('data:') ? fileUrl : null),
+    thumbnailUrl: thumbnailUrl || inlineCopy || null,
+    preview: thumbnailUrl || inlineCopy || fileUrl || null,
+    dataUrl: inlineCopy || (typeof fileUrl === 'string' && fileUrl.startsWith('data:') ? fileUrl : null),
     fileUrl,
     file: fileUrl,
     description: `${formatBytes(file.size)} ${kind.toUpperCase()} file`,

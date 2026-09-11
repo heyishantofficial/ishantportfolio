@@ -7,6 +7,7 @@ import {
 import confetti from 'canvas-confetti';
 import OSWindow from './OSWindow';
 import NodeIcon from './NodeIcon';
+import PdfDocumentView from './PdfDocumentView';
 import { findNode, getPath, itemCount, itemCountLabel, PROJECT_SEQUENCE, TRASH_ITEMS } from '../data/ishantOS';
 import { PROFILE_INFO } from '../data/projectsData';
 import { isYouTubeUrl, getYouTubeEmbedUrl, isInstagramUrl, getInstagramEmbedUrl, isYouTubeShortsUrl } from '../utils/mediaHelpers';
@@ -437,19 +438,9 @@ function Meta({ label, value }) {
 export function PdfWindow(props) {
   const node = findNode(props.win.nodeId);
   const [zoom, setZoom] = useState(1);
+  const [pageCount, setPageCount] = useState(null);
 
   const isResume = node?.id === 'resume' || (typeof node?.name === 'string' && node.name.toLowerCase() === 'resume.pdf');
-  const isImagePreview = Boolean(
-    node?.preview &&
-    typeof node.preview === 'string' &&
-    !node.preview.startsWith('data:application/pdf') &&
-    !/\.pdf($|\?)/i.test(node.preview) &&
-    (
-      node.preview.startsWith('data:image/') ||
-      /\.(jpe?g|png|webp|gif|svg|avif)($|\?)/i.test(node.preview) ||
-      node.preview === '/resume.jpg'
-    )
-  );
 
   const isBlobUrl = (url) => typeof url === 'string' && url.startsWith('blob:');
   const thumbPdf = typeof node?.preview === 'string' && node.preview.startsWith('data:application/pdf') ? node.preview : null;
@@ -462,15 +453,12 @@ export function PdfWindow(props) {
     node?.href ||
     (isResume ? '/resume.pdf' : null);
 
-  const [viewMode, setViewMode] = useState(isImagePreview ? 'image' : 'pdf');
   const [displayUrl, setDisplayUrl] = useState(null);
 
-  // A window can be pointed at a different document while it stays mounted,
-  // so the mode has to follow the node rather than only its first render.
   useEffect(() => {
-    setViewMode(isImagePreview ? 'image' : 'pdf');
     setZoom(1);
-  }, [node?.id, isImagePreview]);
+    setPageCount(null);
+  }, [node?.id]);
 
   useEffect(() => {
     let activeBlobUrl = null;
@@ -521,6 +509,8 @@ export function PdfWindow(props) {
     window.open(url, '_blank', 'noopener,noreferrer');
   }, [displayUrl, rawPdfUrl, isResume]);
 
+  const handleDocumentLoad = useCallback(({ numPages }) => setPageCount(numPages), []);
+
   if (!node) return null;
 
   const windowSubtitle = isResume ? PROFILE_INFO.name : (node.description || 'PDF Document');
@@ -529,48 +519,32 @@ export function PdfWindow(props) {
     <OSWindow {...chrome(props)} title={node.name} subtitle={windowSubtitle}>
       <div className="h-full flex flex-col bg-slate-200 dark:bg-slate-950">
         <div className="shrink-0 h-9 px-3 flex items-center gap-2 border-b border-black/10 dark:border-white/10 bg-white/70 dark:bg-slate-900/70">
-          {viewMode === 'image' && isImagePreview ? (
-            <>
-              <button
-                onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.15).toFixed(2)))}
-                aria-label="Zoom out"
-                className="w-6 h-6 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 cursor-pointer"
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-[10px] font-mono w-10 text-center text-slate-500">{Math.round(zoom * 100)}%</span>
-              <button
-                onClick={() => setZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)))}
-                aria-label="Zoom in"
-                className="w-6 h-6 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setZoom(1)}
-                className="px-2 py-0.5 rounded text-[10px] font-medium hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 cursor-pointer"
-              >
-                100%
-              </button>
-            </>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase tracking-wider bg-red-500/15 text-red-600 dark:text-red-400">
-                PDF
-              </span>
-              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate max-w-[200px] sm:max-w-[320px]">
-                {node.name}
-              </span>
-            </div>
-          )}
+          <button
+            onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.15).toFixed(2)))}
+            aria-label="Zoom out"
+            className="w-6 h-6 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 cursor-pointer"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-[10px] font-mono w-10 text-center text-slate-500">{Math.round(zoom * 100)}%</span>
+          <button
+            onClick={() => setZoom((z) => Math.min(2.5, +(z + 0.15).toFixed(2)))}
+            aria-label="Zoom in"
+            className="w-6 h-6 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setZoom(1)}
+            className="px-2 py-0.5 rounded text-[10px] font-medium hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 cursor-pointer"
+          >
+            Fit
+          </button>
 
-          {isImagePreview && rawPdfUrl && (
-            <button
-              onClick={() => setViewMode((m) => (m === 'image' ? 'pdf' : 'image'))}
-              className="ml-2 px-2 py-0.5 rounded text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 transition-colors cursor-pointer"
-            >
-              {viewMode === 'image' ? 'Interactive PDF' : 'Image View'}
-            </button>
+          {pageCount > 0 && (
+            <span className="ml-1 text-[10px] font-medium text-slate-400">
+              {pageCount} {pageCount === 1 ? 'page' : 'pages'}
+            </span>
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
@@ -589,36 +563,11 @@ export function PdfWindow(props) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden relative flex flex-col bg-slate-100 dark:bg-slate-900">
-          {viewMode === 'image' && isImagePreview ? (
-            <div className="flex-1 overflow-auto p-4 flex justify-center">
-              <img
-                src={node.preview}
-                alt={isResume ? `${PROFILE_INFO.name} resume` : (node.name || 'PDF Document')}
-                style={{ width: `${zoom * 100}%`, maxWidth: 'none' }}
-                className="h-fit shadow-2xl bg-white rounded-sm"
-              />
-            </div>
-          ) : displayUrl ? (
-            <iframe
-              src={displayUrl}
-              title={node.name || 'PDF Document'}
-              className="w-full h-full border-0 bg-white dark:bg-slate-900"
-            />
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500">
-              <FileText className="w-14 h-14 text-red-500 mb-3" />
-              <p className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-1">{node.name}</p>
-              <p className="text-xs text-slate-500 mb-4">{node.description || 'PDF Document'}</p>
-              <button
-                onClick={handleDownload}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" /> Download PDF
-              </button>
-            </div>
-          )}
-        </div>
+        <PdfDocumentView
+          url={displayUrl}
+          zoom={zoom}
+          onDocumentLoad={handleDocumentLoad}
+        />
       </div>
     </OSWindow>
   );

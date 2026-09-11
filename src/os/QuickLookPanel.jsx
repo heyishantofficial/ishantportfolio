@@ -5,6 +5,7 @@ import {
   Maximize2, Music, FileType2, Globe, Film, Image as ImageIcon
 } from 'lucide-react';
 import NodeIcon from './NodeIcon';
+import PdfDocumentView from './PdfDocumentView';
 import {
   isYouTubeUrl, getYouTubeEmbedUrl,
   isInstagramUrl, getInstagramEmbedUrl, isYouTubeShortsUrl, isReelMedia
@@ -116,6 +117,12 @@ export default function QuickLookPanel({
   }, [isPdf, node]);
 
   const [pdfDisplayUrl, setPdfDisplayUrl] = useState(null);
+  const [pdfPageCount, setPdfPageCount] = useState(null);
+  const handlePdfLoad = useCallback(({ numPages }) => setPdfPageCount(numPages), []);
+
+  useEffect(() => {
+    setPdfPageCount(null);
+  }, [node?.id]);
 
   useEffect(() => {
     let blobUrl = null;
@@ -743,29 +750,21 @@ export default function QuickLookPanel({
           {/* 5. PDF / RESUME */}
           {isPdf && (
             <div className="w-full h-full flex flex-col bg-slate-200 dark:bg-slate-950 overflow-hidden">
-              <div className="flex-1 overflow-auto flex items-center justify-center p-2">
-                {isPdfImagePreview ? (
-                  <img
-                    src={node.preview}
-                    alt={node.name}
-                    className="max-h-full max-w-full object-contain shadow-2xl rounded-sm bg-white"
-                  />
-                ) : pdfDisplayUrl ? (
-                  <iframe
-                    src={pdfDisplayUrl}
-                    title={node.name}
-                    className="w-full h-full border-0 bg-white dark:bg-slate-900 rounded"
-                  />
-                ) : (
+              {pdfDisplayUrl ? (
+                <PdfDocumentView url={pdfDisplayUrl} zoom={1} onDocumentLoad={handlePdfLoad} />
+              ) : (
+                <div className="flex-1 overflow-auto flex items-center justify-center p-2">
                   <div className="flex flex-col items-center gap-3 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl">
                     <FileType2 className="w-16 h-16 text-red-500" />
                     <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100">{node.name}</span>
                     <span className="text-[11px] text-slate-500">{node.description || 'PDF Document'}</span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
               <div className="shrink-0 h-10 px-4 flex items-center justify-between border-t border-black/10 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">PDF Document</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {pdfPageCount > 0 ? `PDF Document · ${pdfPageCount} ${pdfPageCount === 1 ? 'page' : 'pages'}` : 'PDF Document'}
+                </span>
                 <div className="flex items-center gap-2">
                   {onOpenNode && (
                     <button

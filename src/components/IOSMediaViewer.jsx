@@ -9,6 +9,7 @@ import {
 } from '../utils/mediaHelpers';
 import { getParentId, registerCustomNode } from '../data/ishantOS';
 import { readFileAsNode } from '../utils/fsStorage';
+import PdfDocumentView from '../os/PdfDocumentView';
 
 /**
  * IOSMediaViewer
@@ -139,6 +140,17 @@ export default function IOSMediaViewer({
   const isText = node?.kind === 'text' || (!isVideo && !isImage && !isAudio && !isPdf && typeof node?.body === 'string');
 
   const externalLink = node?.href || (isYt || isIg ? resolvedUrl : null);
+
+  // The PDF source has to be the document itself, never the thumbnail
+  // fallback `resolvedUrl` can degrade to.
+  const pdfUrl = useMemo(() => {
+    if (!isPdf) return null;
+    return (node?.dataUrl && node.dataUrl.startsWith('data:application/pdf') ? node.dataUrl : null) ||
+      node?.fileUrl ||
+      (typeof node?.file === 'string' && !isBlobUrl(node.file) ? node.file : null) ||
+      node?.href ||
+      (node?.id === 'resume' ? '/resume.pdf' : null);
+  }, [isPdf, node]);
 
   const handleToggleAudio = () => {
     if (!audioRef.current) return;
@@ -382,8 +394,26 @@ export default function IOSMediaViewer({
         </div>
       )}
 
-      {/* 5. PDF & Downloadable File Card */}
-      {(isPdf || (!isVideo && !isImage && !isAudio && !isText)) && (
+      {/* 5. PDF — rendered inline, the same way the desktop OS renders it */}
+      {isPdf && pdfUrl && (
+        <div className="space-y-3">
+          <div className="h-[68vh] rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 shadow-sm flex flex-col bg-slate-200 dark:bg-slate-950">
+            <PdfDocumentView url={pdfUrl} zoom={1} isDark={isDarkMode} />
+          </div>
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={node.name}
+            className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-95 transition-transform"
+          >
+            <Download className="w-4 h-4" /> Download PDF
+          </a>
+        </div>
+      )}
+
+      {/* 6. Files with nothing to render inline */}
+      {((isPdf && !pdfUrl) || (!isPdf && !isVideo && !isImage && !isAudio && !isText)) && (
         <div className="space-y-3">
           <div className="p-5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-black/10 dark:border-white/10 shadow-sm text-center flex flex-col items-center">
             <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-3">

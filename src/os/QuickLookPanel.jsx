@@ -92,58 +92,6 @@ export default function QuickLookPanel({
   const isPdf = node?.kind === 'pdf';
   const isFolder = node?.kind === 'folder';
 
-  const isPdfImagePreview = Boolean(
-    isPdf &&
-    node?.preview &&
-    typeof node.preview === 'string' &&
-    !node.preview.startsWith('data:application/pdf') &&
-    !/\.pdf($|\?)/i.test(node.preview) &&
-    (
-      node.preview.startsWith('data:image/') ||
-      /\.(jpe?g|png|webp|gif|svg|avif)($|\?)/i.test(node.preview) ||
-      node.preview === '/resume.jpg'
-    )
-  );
-
-  const rawPdfUrl = useMemo(() => {
-    if (!isPdf) return null;
-    return (node?.dataUrl && node.dataUrl.startsWith('data:application/pdf') ? node.dataUrl : null) ||
-      node?.fileUrl ||
-      node?.file ||
-      (typeof node?.preview === 'string' && node.preview.startsWith('data:application/pdf') ? node.preview : null) ||
-      node?.href ||
-      (node?.id === 'resume' ? '/resume.pdf' : null);
-  }, [isPdf, node]);
-
-  const [pdfDisplayUrl, setPdfDisplayUrl] = useState(null);
-
-  useEffect(() => {
-    let blobUrl = null;
-    if (isPdf && typeof rawPdfUrl === 'string' && rawPdfUrl.startsWith('data:application/pdf')) {
-      try {
-        const parts = rawPdfUrl.split(',');
-        const mimeMatch = parts[0].match(/:(.*?);/);
-        const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
-        const byteString = atob(parts[1]);
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i);
-        }
-        const blob = new Blob([ab], { type: mime });
-        blobUrl = URL.createObjectURL(blob);
-        setPdfDisplayUrl(blobUrl);
-      } catch {
-        setPdfDisplayUrl(rawPdfUrl);
-      }
-    } else {
-      setPdfDisplayUrl(rawPdfUrl);
-    }
-    return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
-  }, [isPdf, rawPdfUrl]);
-
   const [activeMediaSrc, setActiveMediaSrc] = useState(mediaUrl);
   const [mediaLoadError, setMediaLoadError] = useState(false);
 
@@ -187,7 +135,7 @@ export default function QuickLookPanel({
           height: img.naturalHeight
         });
       }
-    } else if (isPdf && isPdfImagePreview && (node?.preview || srcToMeasure)) {
+    } else if (isPdf && (node?.preview || srcToMeasure)) {
       const img = new Image();
       img.onload = () => {
         setNaturalDimensions({
@@ -202,13 +150,8 @@ export default function QuickLookPanel({
           height: img.naturalHeight
         });
       }
-    } else if (isPdf) {
-      setNaturalDimensions({
-        width: 680,
-        height: 880
-      });
     }
-  }, [isImage, isPdf, isPdfImagePreview, activeMediaSrc, mediaUrl, node?.preview, handleMediaError]);
+  }, [isImage, isPdf, activeMediaSrc, mediaUrl, node?.preview, handleMediaError]);
 
   // Calculate dynamic target window dimensions based on actual media size
   const windowDimensions = useMemo(() => {
@@ -743,59 +686,31 @@ export default function QuickLookPanel({
           {/* 5. PDF / RESUME */}
           {isPdf && (
             <div className="w-full h-full flex flex-col bg-slate-200 dark:bg-slate-950 overflow-hidden">
-              <div className="flex-1 overflow-auto flex items-center justify-center p-2">
-                {isPdfImagePreview ? (
+              <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
+                {node.preview ? (
                   <img
                     src={node.preview}
                     alt={node.name}
                     className="max-h-full max-w-full object-contain shadow-2xl rounded-sm bg-white"
                   />
-                ) : pdfDisplayUrl ? (
-                  <iframe
-                    src={pdfDisplayUrl}
-                    title={node.name}
-                    className="w-full h-full border-0 bg-white dark:bg-slate-900 rounded"
-                  />
                 ) : (
                   <div className="flex flex-col items-center gap-3 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl">
                     <FileType2 className="w-16 h-16 text-red-500" />
-                    <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100">{node.name}</span>
-                    <span className="text-[11px] text-slate-500">{node.description || 'PDF Document'}</span>
+                    <span className="text-[13px] font-bold">{node.name}</span>
                   </div>
                 )}
               </div>
               <div className="shrink-0 h-10 px-4 flex items-center justify-between border-t border-black/10 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">PDF Document</span>
-                <div className="flex items-center gap-2">
-                  {onOpenNode && (
-                    <button
-                      onClick={() => {
-                        onClose();
-                        onOpenNode(node);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/5 border border-black/10 dark:border-white/10 cursor-pointer"
-                    >
-                      <ExternalLink className="w-3 h-3" /> Open in Preview
-                    </button>
-                  )}
-                  {(pdfDisplayUrl || rawPdfUrl) && (
-                    <button
-                      onClick={() => {
-                        const url = pdfDisplayUrl || rawPdfUrl;
-                        const a = document.createElement('a');
-                        a.href = url;
-                        const fn = node.name?.toLowerCase().endsWith('.pdf') ? node.name : `${node.name || 'document'}.pdf`;
-                        a.download = fn;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold text-white bg-[#007aff] hover:bg-[#0069dc] cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Download PDF
-                    </button>
-                  )}
-                </div>
+                {node.file && (
+                  <a
+                    href={node.file}
+                    download={node.name}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold text-white bg-[#007aff] hover:bg-[#0069dc]"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download PDF
+                  </a>
+                )}
               </div>
             </div>
           )}

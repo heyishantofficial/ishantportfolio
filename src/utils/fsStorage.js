@@ -344,15 +344,15 @@ export async function readFileAsNode(file) {
   return {
     name: file.name,
     kind,
-    thumbnailUrl: isPdf ? null : (thumbnailUrl || dataUrl || null),
-    preview: isPdf ? null : (thumbnailUrl || dataUrl || null),
+    thumbnailUrl: thumbnailUrl || dataUrl || null,
+    preview: thumbnailUrl || dataUrl || null,
     dataUrl: dataUrl || (typeof fileUrl === 'string' && fileUrl.startsWith('data:') ? fileUrl : null),
     fileUrl,
     file: fileUrl,
-    description: isPdf ? `${formatBytes(file.size)} PDF Document` : `${formatBytes(file.size)} ${kind.toUpperCase()} file`,
+    description: `${formatBytes(file.size)} ${kind.toUpperCase()} file`,
     meta: {
       size: formatBytes(file.size),
-      type: file.type || (isPdf ? 'application/pdf' : 'application/octet-stream'),
+      type: file.type || 'application/octet-stream',
       owner: 'Ishant (Admin)'
     }
   };

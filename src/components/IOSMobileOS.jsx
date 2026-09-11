@@ -377,14 +377,8 @@ export default function IOSMobileOS({
     const node = findNode(nodeId);
     if (!node) return;
 
-    if (node.id === 'resume') {
+    if (node.id === 'resume' || node.kind === 'pdf') {
       window.open(node.href || '/resume.pdf', '_blank');
-      return;
-    }
-    if (node.kind === 'pdf') {
-      setActiveFolderStack([]);
-      setActiveFilePreview(node);
-      setActiveSheet('folder');
       return;
     }
 
@@ -517,12 +511,8 @@ export default function IOSMobileOS({
       type: node.kind,
       node,
       action: () => {
-        if (node.id === 'resume') {
+        if (node.id === 'resume' || node.kind === 'pdf') {
           window.open(node.href || '/resume.pdf', '_blank');
-        } else if (node.kind === 'pdf') {
-          setActiveFolderStack([]);
-          setActiveFilePreview(node);
-          setActiveSheet('folder');
         } else if (node.kind === 'folder') {
           handleOpenFolder(node.id);
         } else if (node.kind === 'project') {

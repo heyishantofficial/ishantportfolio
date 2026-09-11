@@ -965,11 +965,16 @@ const STORAGE_KEY_CUSTOM = 'custom_nodes';
 const STORAGE_KEY_RENAMES = 'renamed_nodes';
 const STORAGE_KEY_DELETED = 'deleted_nodes';
 const STORAGE_KEY_EDITS = 'edited_nodes_body';
+// Wall-clock stamp of the newest change this browser knows about. Compared
+// against the server's updatedAt on boot so that a server which has lost its
+// storage can never overwrite newer work still sitting in IndexedDB.
+const STORAGE_KEY_UPDATED_AT = 'fs_updated_at';
 
 let customNodesCache = isClient ? (window.__ISHANT_FS_CUSTOM__ = window.__ISHANT_FS_CUSTOM__ || []) : [];
 let renamesCache = isClient ? (window.__ISHANT_FS_RENAMES__ = window.__ISHANT_FS_RENAMES__ || {}) : {};
 let deletedCache = isClient ? (window.__ISHANT_FS_DELETED__ = window.__ISHANT_FS_DELETED__ || []) : [];
 let editsCache = isClient ? (window.__ISHANT_FS_EDITS__ = window.__ISHANT_FS_EDITS__ || {}) : {};
+let localUpdatedAt = null;
 
 function syncWindowCaches() {
   if (isClient) {
@@ -1066,6 +1071,11 @@ export async function syncFSToServer() {
       edits: editsCache
     });
 
+    // Adopt the server's own stamp for the copy we just pushed. Without this,
+    // a browser clock running ahead of the server's would leave this browser
+    // permanently "newer" and it would ignore the server on every boot.
+    if (res.updatedAt) markLocalFSChange(res.updatedAt);
+
     notifySyncStatus({
       status: 'synced',
       message: 'Saved to cloud for all visitors',
@@ -1083,7 +1093,19 @@ export async function syncFSToServer() {
   }
 }
 
+/**
+ * Records that this browser holds a change made at `stamp`. Every local
+ * mutation funnels through queueFSSync(), so stamping here covers adds,
+ * renames, deletes and note edits in one place.
+ */
+export function markLocalFSChange(stamp = new Date().toISOString()) {
+  localUpdatedAt = stamp;
+  setStorageItem(STORAGE_KEY_UPDATED_AT, stamp);
+  return stamp;
+}
+
 export function queueFSSync(delay = 600) {
+  markLocalFSChange();
   if (syncTimeout) clearTimeout(syncTimeout);
   syncTimeout = setTimeout(() => {
     syncFSToServer();
@@ -1205,11 +1227,16 @@ export async function applyFSSnapshot(fsSnapshot, persistLocally = true) {
   rebuildFSTree(customNodesCache, renamesCache, deletedCache, editsCache);
 
   if (persistLocally) {
+    // Adopt the snapshot's own timestamp, not "now" — otherwise every
+    // adoption would make this browser look newer than the server and the
+    // staleness check below could never let the server win again.
+    localUpdatedAt = fsSnapshot.updatedAt || new Date().toISOString();
     await Promise.all([
       setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache),
       setStorageItem(STORAGE_KEY_RENAMES, renamesCache),
       setStorageItem(STORAGE_KEY_DELETED, deletedCache),
-      setStorageItem(STORAGE_KEY_EDITS, editsCache)
+      setStorageItem(STORAGE_KEY_EDITS, editsCache),
+      setStorageItem(STORAGE_KEY_UPDATED_AT, localUpdatedAt)
     ]);
   }
 
@@ -1226,12 +1253,13 @@ export async function applyFSSnapshot(fsSnapshot, persistLocally = true) {
  */
 export async function loadPersistedFS() {
   try {
-    const [serverFS, savedCustom, savedRenames, savedDeleted, savedEdits] = await Promise.all([
+    const [serverFS, savedCustom, savedRenames, savedDeleted, savedEdits, savedUpdatedAt] = await Promise.all([
       fetchServerFilesystem(),
       getStorageItem(STORAGE_KEY_CUSTOM, []),
       getStorageItem(STORAGE_KEY_RENAMES, {}),
       getStorageItem(STORAGE_KEY_DELETED, []),
-      getStorageItem(STORAGE_KEY_EDITS, {})
+      getStorageItem(STORAGE_KEY_EDITS, {}),
+      getStorageItem(STORAGE_KEY_UPDATED_AT, null)
     ]);
 
     const hasRealServerData = serverFS && (
@@ -1243,7 +1271,27 @@ export async function loadPersistedFS() {
 
     const hasLocalData = Array.isArray(savedCustom) && savedCustom.length > 0;
 
-    if (hasRealServerData) {
+    localUpdatedAt = savedUpdatedAt || null;
+    const serverTime = Date.parse(serverFS?.updatedAt || '') || 0;
+    const localTime = Date.parse(savedUpdatedAt || '') || 0;
+
+    // Never let the server roll this browser backwards. If the server lost its
+    // storage — or was restored from an older snapshot — it can come back
+    // holding state that predates work still held here. Adopting it would
+    // overwrite IndexedDB and destroy the last surviving copy, which is
+    // precisely how a redeploy used to wipe everything irrecoverably.
+    const serverIsSeed = serverFS?.meta?.isInitialDefault === true;
+    const serverIsStale = hasLocalData && localTime > 0 && serverTime < localTime;
+
+    if (serverIsStale || (hasRealServerData && serverIsSeed && hasLocalData)) {
+      console.warn(
+        `[fs] Ignoring server state from ${serverFS?.updatedAt || 'unknown time'} — ` +
+        `this browser holds newer changes from ${savedUpdatedAt}. Keeping local data ` +
+        'and re-publishing it if you are signed in as admin.'
+      );
+    }
+
+    if (hasRealServerData && !serverIsStale && !(serverIsSeed && hasLocalData)) {
       await applyFSSnapshot(serverFS, true);
     } else if (hasLocalData) {
       // Server has no custom nodes yet, but local browser has existing custom nodes (e.g. Ishant's Ep01-Ep05)

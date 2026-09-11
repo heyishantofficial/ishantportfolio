@@ -17,10 +17,11 @@ const SETTINGS_FILE = path.join(DATA_DIR, 'site-settings.json');
 const FS_FILE = path.join(DATA_DIR, 'filesystem.json');
 const MASTER_FILE = path.join(DATA_DIR, 'master-snapshot.json');
 const SNAPSHOTS_DIR = path.join(DATA_DIR, 'snapshots');
-const SRC_DATA_DIR = path.join(ROOT, 'src', 'data');
-const LOCAL_SRC_SNAPSHOT = path.join(SRC_DATA_DIR, 'masterSnapshot.json');
-const PUBLIC_SNAPSHOT = path.join(ROOT, 'public', 'master-snapshot.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+// Written once per container start. If bootCount stops climbing across
+// deploys, DATA_DIR is not on a mounted volume and every redeploy is
+// silently destroying the admin's folders, uploads and settings.
+const BOOT_MARKER = path.join(DATA_DIR, 'boot-marker.json');
 const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
 
 // Wallpapers that every visitor can load. Uploaded wallpapers are deliberately
@@ -117,25 +118,14 @@ async function readMasterSnapshot() {
     }
   } catch {}
 
-  // 2. Try committed local source snapshot in src/data/masterSnapshot.json
-  try {
-    const raw = await fs.readFile(LOCAL_SRC_SNAPSHOT, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object' && (parsed.filesystem || parsed.settings)) {
-      return parsed;
-    }
-  } catch {}
-
-  // 3. Try public master-snapshot.json
-  try {
-    const raw = await fs.readFile(PUBLIC_SNAPSHOT, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object' && (parsed.filesystem || parsed.settings)) {
-      return parsed;
-    }
-  } catch {}
-
-  // 4. Fallback: synthesize from individual filesystem and settings files
+  // 2. Fallback: synthesize from individual filesystem and settings files.
+  //
+  // There is deliberately no fallback to a snapshot committed in the repo.
+  // Those files are baked into the image at build time, so reading them
+  // here meant an empty DATA_DIR resurrected whatever state happened to be
+  // committed — the site travelling back in time on every redeploy. An
+  // empty DATA_DIR must read as empty, so the loss is visible immediately
+  // instead of being masked by a months-old snapshot.
   const [fsState, settingsState] = await Promise.all([
     readFilesystemState(true),
     readState()
@@ -183,20 +173,10 @@ async function writeMasterSnapshot(snapshot) {
     console.warn('[master-sync] could not write backup snapshot:', err.message);
   }
 
-  // 4. Also mirror to src/data/masterSnapshot.json and public/master-snapshot.json if directories exist
-  try {
-    const srcExists = await fs.stat(SRC_DATA_DIR).then(() => true).catch(() => false);
-    if (srcExists) {
-      await fs.writeFile(LOCAL_SRC_SNAPSHOT, JSON.stringify(snapshot, null, 2), 'utf8');
-    }
-    const publicDir = path.join(ROOT, 'public');
-    const publicExists = await fs.stat(publicDir).then(() => true).catch(() => false);
-    if (publicExists) {
-      await fs.writeFile(PUBLIC_SNAPSHOT, JSON.stringify(snapshot, null, 2), 'utf8');
-    }
-  } catch (err) {
-    console.warn('[master-sync] could not mirror to repo files:', err.message);
-  }
+  // Nothing is mirrored back into src/ or public/ any more. Those writes
+  // landed inside the running container, never reached git, and were thrown
+  // away on the next deploy — while making the panel look like it had saved
+  // to the repo. DATA_DIR (on its mounted volume) is the only source of truth.
 }
 
 async function readFilesystemState(skipMasterLookup = false) {
@@ -212,9 +192,9 @@ async function readFilesystemState(skipMasterLookup = false) {
   } catch {
     if (!skipMasterLookup) {
       try {
-        const raw = await fs.readFile(MASTER_FILE, 'utf8')
-          .catch(() => fs.readFile(LOCAL_SRC_SNAPSHOT, 'utf8'))
-          .catch(() => fs.readFile(PUBLIC_SNAPSHOT, 'utf8'));
+        // Only the master snapshot on the persistent volume — never a
+        // snapshot baked into the image. See readMasterSnapshot().
+        const raw = await fs.readFile(MASTER_FILE, 'utf8');
         const parsed = JSON.parse(raw);
         if (parsed && parsed.filesystem) {
           return {
@@ -397,6 +377,12 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     server: 'Express Backend',
     storageFile: SETTINGS_FILE,
+    dataDir: DATA_DIR,
+    // bootCount > 1 proves DATA_DIR survived a container rebuild, i.e. the
+    // volume is really mounted. If it reads 1 after every deploy, it isn't.
+    storagePersistent: bootInfo.bootCount > 1,
+    bootCount: bootInfo.bootCount,
+    storageFirstSeen: bootInfo.firstBootAt,
     timestamp: new Date().toISOString()
   });
 });
@@ -1087,6 +1073,55 @@ app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(DIST, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Portfolio running on port ${PORT} — settings stored at ${SETTINGS_FILE}`);
+// Tracks whether DATA_DIR survived the last container rebuild. Populated by
+// recordBoot() before the server starts listening.
+const bootInfo = { bootCount: 0, firstBootAt: null };
+
+// Stamps a marker file inside DATA_DIR on every start. The marker can only
+// survive a redeploy if DATA_DIR is a mounted volume, so a bootCount that
+// never climbs past 1 is proof the mount is missing — which is exactly the
+// condition that silently wipes every folder, upload and setting.
+async function recordBoot() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    let previous = null;
+    try {
+      previous = JSON.parse(await fs.readFile(BOOT_MARKER, 'utf8'));
+    } catch {}
+
+    bootInfo.bootCount = Number(previous?.bootCount || 0) + 1;
+    bootInfo.firstBootAt = previous?.firstBootAt || new Date().toISOString();
+
+    await fs.writeFile(
+      BOOT_MARKER,
+      JSON.stringify({ ...bootInfo, lastBootAt: new Date().toISOString() }, null, 2),
+      'utf8'
+    );
+  } catch (err) {
+    console.warn('[storage] could not write boot marker:', err.message);
+    bootInfo.bootCount = 1;
+    bootInfo.firstBootAt = new Date().toISOString();
+  }
+
+  if (bootInfo.bootCount === 1) {
+    console.warn(
+      `[storage] ${DATA_DIR} was empty at startup. If this warning appears after ` +
+      'every deploy, no volume is mounted there and all admin data is being ' +
+      'destroyed on each rebuild. Mount a persistent volume at this path.'
+    );
+  } else {
+    console.log(`[storage] ${DATA_DIR} persisted across ${bootInfo.bootCount} starts since ${bootInfo.firstBootAt}.`);
+  }
+}
+
+// The boot marker is diagnostics, never a reason to fail a deploy. If the
+// volume is slow, hung or read-only, give up on it and listen anyway —
+// otherwise a bad mount would stop the server binding and take the whole
+// site down instead of just losing the bootCount reading.
+const bootMarkerTimeout = new Promise((resolve) => setTimeout(resolve, 3000));
+
+Promise.race([recordBoot(), bootMarkerTimeout]).finally(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Portfolio running on port ${PORT} — settings stored at ${SETTINGS_FILE}`);
+  });
 });

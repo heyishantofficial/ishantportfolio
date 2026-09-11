@@ -1100,7 +1100,7 @@ export default function SystemSettingsModal({
                       <span>Production Deployment Advice (Dokploy / Docker)</span>
                     </div>
                     <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Whenever you run <strong>Master Sync</strong>, the server writes directly to <code>/app/data/master-snapshot.json</code> and <code>filesystem.json</code>. To ensure your custom folders survive container rebuilds on Dokploy, mount a persistent volume at <code>/app/data</code>, or click <strong>Backup (.json)</strong> above to save a copy directly to your Mac.
+                      <strong>Master Sync</strong> writes to <code>/app/data</code> inside the container, and nowhere else — it does not write to the code repo. That directory only survives a redeploy if a persistent volume is mounted at <code>/app/data</code> in Dokploy. Check it at any time: <code>/api/health</code> reports <code>storagePersistent</code> and a <code>bootCount</code> that should keep climbing across deploys. If <code>bootCount</code> resets to 1 every time, the volume is missing and this data is being destroyed on each rebuild — click <strong>Backup (.json)</strong> above and fix the mount before publishing more.
                     </p>
                   </div>
                 </div>

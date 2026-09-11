@@ -27,10 +27,16 @@ export async function fetchServerFilesystem() {
     console.warn('[filesystemApi] Server endpoint unreachable, checking fallback snapshot:', err.message);
   }
 
-  // Fallback: try static /master-snapshot.json (essential for static deployments and new mobile visitors)
+  // Fallback: try static /master-snapshot.json, for genuinely static hosting
+  // where there is no Express backend at all. This file is deliberately no
+  // longer committed to the repo — a build-time snapshot here would let a
+  // redeploy serve stale state to every visitor. The SPA catch-all answers
+  // 200 with index.html for unknown paths, so the content-type check below
+  // is what stops HTML being parsed as a snapshot.
   try {
     const snapRes = await fetch('/master-snapshot.json', { cache: 'no-store' });
-    if (snapRes.ok) {
+    const snapType = snapRes.headers.get('content-type') || '';
+    if (snapRes.ok && snapType.includes('application/json')) {
       const snapData = await snapRes.json();
       if (snapData && snapData.filesystem) {
         return {

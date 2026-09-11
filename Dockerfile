@@ -30,8 +30,12 @@ COPY --from=builder /app/dist ./dist
 COPY server ./server
 COPY public ./public
 
-# Create data directory for persistent settings
+# Persistent admin data: settings, filesystem.json, master-snapshot.json,
+# snapshots/ and uploads/. This MUST be backed by a volume mounted at
+# /app/data in Dokploy — the declaration below documents the contract but
+# does not create the mount. Without it every redeploy destroys the lot.
 RUN mkdir -p /app/data
+VOLUME ["/app/data"]
 
 EXPOSE 3000
 

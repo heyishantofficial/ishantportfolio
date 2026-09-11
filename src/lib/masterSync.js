@@ -189,10 +189,13 @@ export async function fetchMasterSnapshot() {
     console.warn('[masterSync] Failed to fetch master snapshot from server:', err.message);
   }
 
-  // Fallback: fetch static /master-snapshot.json
+  // Fallback: fetch static /master-snapshot.json, for static hosting only.
+  // The SPA catch-all returns index.html for unknown paths, so the
+  // content-type check is what prevents HTML being parsed as a snapshot.
   try {
     const fallbackRes = await fetch('/master-snapshot.json', { cache: 'no-store' });
-    if (fallbackRes.ok) {
+    const fallbackType = fallbackRes.headers.get('content-type') || '';
+    if (fallbackRes.ok && fallbackType.includes('application/json')) {
       return await fallbackRes.json();
     }
   } catch {}

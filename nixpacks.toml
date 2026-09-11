@@ -1,6 +1,9 @@
 [variables]
 NIXPACKS_NODE_VERSION = "20"
 NIXPACKS_NO_CACHE = "1"
+# Must match the Dockerfile and the volume mounted in Dokploy, so admin data
+# lands in the same place whichever builder the service is configured to use.
+DATA_DIR = "/app/data"
 
 [phases.install]
 cmds = ["npm install --production=false"]

@@ -129,7 +129,8 @@ export async function fetchSiteSettings() {
     // Try static /master-snapshot.json before falling back to bare defaults
     try {
       const snapRes = await fetch('/master-snapshot.json', { cache: 'no-store' });
-      if (snapRes.ok) {
+      const snapType = snapRes.headers.get('content-type') || '';
+      if (snapRes.ok && snapType.includes('application/json')) {
         const snapData = await snapRes.json();
         if (snapData && snapData.settings) {
           const s = snapData.settings;

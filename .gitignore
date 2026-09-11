@@ -27,3 +27,10 @@ node_modules
 # Runtime site settings written by the server (repo root only —
 # an unanchored "data" would also ignore src/data/)
 /data/
+
+# Master Sync snapshots. These are runtime state, not source.
+# Committing one bakes it into the image, so an empty DATA_DIR would
+# resurrect it on every redeploy and roll the live site backwards.
+/public/master-snapshot.json
+/dist/master-snapshot.json
+/src/data/masterSnapshot.json

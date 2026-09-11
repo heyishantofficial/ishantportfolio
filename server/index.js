@@ -308,9 +308,17 @@ app.use(express.json({ limit: '50mb' }));
 // Serve static uploads with nosniff and restrictive CSP to prevent script execution (Stored XSS mitigation)
 app.use('/uploads', express.static(UPLOADS_DIR, {
   maxAge: '7d',
-  setHeaders: (res) => {
+  setHeaders: (res, filePath) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; media-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'");
+    if (/\.pdf$/i.test(filePath)) {
+      // PDFs are shown inside an <iframe> by the browser's own viewer, which
+      // needs to be allowed to embed the document itself. Scripts and remote
+      // fetches stay blocked, so the Stored-XSS mitigation is unchanged.
+      res.setHeader('Content-Security-Policy', "default-src 'none'; object-src 'self'; frame-ancestors 'self'");
+      res.setHeader('Content-Disposition', 'inline');
+    } else {
+      res.setHeader('Content-Security-Policy', "default-src 'none'; media-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'");
+    }
   }
 }));
 

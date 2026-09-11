@@ -465,6 +465,13 @@ export function PdfWindow(props) {
   const [viewMode, setViewMode] = useState(isImagePreview ? 'image' : 'pdf');
   const [displayUrl, setDisplayUrl] = useState(null);
 
+  // A window can be pointed at a different document while it stays mounted,
+  // so the mode has to follow the node rather than only its first render.
+  useEffect(() => {
+    setViewMode(isImagePreview ? 'image' : 'pdf');
+    setZoom(1);
+  }, [node?.id, isImagePreview]);
+
   useEffect(() => {
     let activeBlobUrl = null;
     if (typeof rawPdfUrl === 'string' && rawPdfUrl.startsWith('data:application/pdf')) {

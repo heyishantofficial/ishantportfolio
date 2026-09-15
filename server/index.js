@@ -100,7 +100,9 @@ async function currentPassword() {
 }
 
 async function requireAdmin(req, res) {
-  const supplied = (req.body || {}).password;
+  // Binary uploads carry no JSON body to hold the password, so the header is
+  // checked too. Everything else keeps sending it in the body as before.
+  const supplied = (req.body || {}).password || req.get('x-admin-password');
   if (!passwordMatches(supplied, await currentPassword())) {
     res.status(401).json({ error: '⚠️ Incorrect password. Access denied.' });
     return false;
@@ -303,7 +305,13 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '50mb' }));
+// /api/upload is skipped: its body is the raw file, which the route streams
+// straight to disk. Without this a .json or .csv upload would be swallowed
+// and parsed here as a request body, and the route would receive nothing.
+const jsonBodyParser = express.json({ limit: '50mb' });
+app.use((req, res, next) => (
+  req.path === '/api/upload' ? next() : jsonBodyParser(req, res, next)
+));
 
 // Serve static uploads with nosniff and restrictive CSP to prevent script execution (Stored XSS mitigation)
 app.use('/uploads', express.static(UPLOADS_DIR, {
@@ -815,45 +823,110 @@ const ALLOWED_UPLOAD_EXTS = new Set([
   '.pdf', '.txt', '.md', '.json', '.csv'
 ]);
 
-// Admin: Upload media/file to static uploads directory
+// Largest single file accepted by /api/upload. Raised well past the old 50 MB
+// JSON ceiling because the bytes now stream straight to disk instead of being
+// buffered in memory, so a big video costs the process almost nothing.
+const MAX_UPLOAD_BYTES = 512 * 1024 * 1024;
+
+function safeUploadName(filename, ext) {
+  const base = path.basename(filename, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${base}${ext}`;
+}
+
+// Admin: Upload media/file to static uploads directory.
+//
+// The body is the raw file, streamed to disk. It used to arrive as base64
+// inside a JSON envelope, which was the reason uploads failed: base64 is ~33%
+// larger than the file, and Express had to hold the whole encoded body in
+// memory and then parse it into a second copy before a single byte was
+// written. An 8 MB video cost roughly 45 MB of RSS, anything over the 50 MB
+// JSON limit was rejected outright, and the container was killed under load —
+// which is what the browser reported as a 502. Streaming keeps memory flat
+// regardless of file size.
 app.post('/api/upload', async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
 
+  // Sent percent-encoded: headers are latin-1 only, and these filenames carry
+  // spaces and non-ASCII characters.
+  let filename = req.get('x-upload-filename') || '';
+  try { filename = decodeURIComponent(filename); } catch { /* use as sent */ }
+  const mimeType = req.get('x-upload-mime') || 'application/octet-stream';
+
+  if (!filename) {
+    return res.status(400).json({ error: 'Missing filename' });
+  }
+
+  const ext = (path.extname(filename) || '').toLowerCase();
+  if (!ALLOWED_UPLOAD_EXTS.has(ext)) {
+    return res.status(400).json({
+      error: 'File type not permitted for upload. Allowed formats: images, videos, audio, PDF, and text documents.'
+    });
+  }
+
+  const declared = Number(req.get('content-length') || 0);
+  if (declared > MAX_UPLOAD_BYTES) {
+    return res.status(413).json({
+      error: `File is larger than the ${Math.round(MAX_UPLOAD_BYTES / (1024 * 1024))} MB upload limit.`
+    });
+  }
+
+  let filePath;
   try {
-    const { filename, dataBase64, mimeType } = req.body || {};
-    if (!filename || !dataBase64) {
-      return res.status(400).json({ error: 'Missing filename or data' });
-    }
-
-    const ext = (path.extname(filename) || '').toLowerCase();
-    if (!ALLOWED_UPLOAD_EXTS.has(ext)) {
-      return res.status(400).json({ 
-        error: 'File type not permitted for upload. Allowed formats: images, videos, audio, PDF, and text documents.' 
-      });
-    }
-
     await fs.mkdir(UPLOADS_DIR, { recursive: true });
 
-    const base = path.basename(filename, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
-    const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${base}${ext}`;
-    const filePath = path.join(UPLOADS_DIR, safeName);
+    const safeName = safeUploadName(filename, ext);
+    filePath = path.join(UPLOADS_DIR, safeName);
 
-    const base64Data = dataBase64.replace(/^data:[^;]+;base64,/, '');
-    const buffer = Buffer.from(base64Data, 'base64');
+    const written = await new Promise((resolve, reject) => {
+      const handleStream = async () => {
+        const handle = await fs.open(filePath, 'w');
+        const out = handle.createWriteStream();
+        let bytes = 0;
+        let aborted = false;
 
-    await fs.writeFile(filePath, buffer);
+        const fail = (err) => {
+          if (aborted) return;
+          aborted = true;
+          out.destroy();
+          reject(err);
+        };
 
-    const fileUrl = `/uploads/${safeName}`;
+        req.on('data', (chunk) => {
+          bytes += chunk.length;
+          // Guard against a body that lies about its Content-Length.
+          if (bytes > MAX_UPLOAD_BYTES) {
+            const err = new Error('Upload exceeds the maximum allowed size.');
+            err.status = 413;
+            fail(err);
+          }
+        });
+        req.on('aborted', () => fail(new Error('Upload aborted by the client.')));
+        out.on('error', fail);
+        out.on('finish', () => { if (!aborted) resolve(bytes); });
+
+        req.pipe(out);
+      };
+      handleStream().catch(reject);
+    });
+
+    if (written === 0) {
+      await fs.unlink(filePath).catch(() => {});
+      return res.status(400).json({ error: 'Upload contained no data.' });
+    }
+
     res.json({
       ok: true,
-      url: fileUrl,
-      filename: safeName,
-      size: buffer.length,
-      mimeType: mimeType || 'application/octet-stream'
+      url: `/uploads/${path.basename(filePath)}`,
+      filename: path.basename(filePath),
+      size: written,
+      mimeType
     });
   } catch (err) {
+    // A partial file on disk is worse than none: it would be served to
+    // visitors as a truncated, unplayable video.
+    if (filePath) await fs.unlink(filePath).catch(() => {});
     console.error('[upload] failed:', err);
-    res.status(500).json({ error: 'Failed to save uploaded file' });
+    res.status(err.status || 500).json({ error: err.status === 413 ? err.message : 'Failed to save uploaded file' });
   }
 });
 

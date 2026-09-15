@@ -248,67 +248,87 @@ export async function uploadFileToServer(file) {
   startTransfer({ id: transferId, name: file.name, size: file.size });
 
   return new Promise((resolve) => {
-    const reader = new FileReader();
+    // XMLHttpRequest rather than fetch: it is the only one that reports
+    // upload progress, and a long upload with no feedback is exactly the
+    // silence this is meant to remove.
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
+    // The file is sent as raw bytes. It used to be base64 inside a JSON
+    // envelope, which inflated every upload by ~33% and forced the server
+    // to buffer and parse the whole thing in memory before writing it —
+    // the cause of the failed uploads. Name and auth ride in headers so the
+    // body stays pure file content.
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.setRequestHeader('X-Admin-Password', password);
+    xhr.setRequestHeader('X-Upload-Filename', encodeURIComponent(file.name));
+    xhr.setRequestHeader('X-Upload-Mime', file.type || 'application/octet-stream');
 
-    reader.onload = () => {
-      // XMLHttpRequest rather than fetch: it is the only one that reports
-      // upload progress, and a long upload with no feedback is exactly the
-      // silence this is meant to remove.
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/upload');
-      xhr.setRequestHeader('Content-Type', 'application/json');
-
-      xhr.upload.onprogress = (e) => {
-        if (!e.lengthComputable) return;
-        // Report against the real file size so the number on screen matches
-        // the file the user picked, not the larger base64 envelope.
-        const ratio = e.total > 0 ? e.loaded / e.total : 0;
-        updateTransfer(transferId, Math.round(ratio * file.size));
-      };
-
-      xhr.onload = () => {
-        let data = {};
-        try { data = JSON.parse(xhr.responseText || '{}'); } catch { /* handled below */ }
-
-        if (xhr.status >= 200 && xhr.status < 300 && data.ok) {
-          finishTransfer(transferId, { ok: true, url: data.url });
-          resolve(data);
-          return;
-        }
-
-        const error = data.error
-          || (xhr.status === 413 ? 'File is too large for the server to accept.' : `Upload failed (${xhr.status}).`);
-        finishTransfer(transferId, { ok: false, error });
-        resolve({ ok: false, error });
-      };
-
-      xhr.onerror = () => {
-        const error = 'Network error during upload.';
-        finishTransfer(transferId, { ok: false, error });
-        resolve({ ok: false, error });
-      };
-
-      xhr.ontimeout = () => {
-        const error = 'Upload timed out.';
-        finishTransfer(transferId, { ok: false, error });
-        resolve({ ok: false, error });
-      };
-
-      xhr.send(JSON.stringify({
-        password,
-        filename: file.name,
-        dataBase64: reader.result,
-        mimeType: file.type
-      }));
+    xhr.upload.onprogress = (e) => {
+      if (!e.lengthComputable) return;
+      const ratio = e.total > 0 ? e.loaded / e.total : 0;
+      updateTransfer(transferId, Math.round(ratio * file.size));
     };
 
-    reader.onerror = () => {
-      finishTransfer(transferId, { ok: false, error: 'Could not read file.' });
-      resolve({ ok: false, error: 'Could not read file.' });
+    xhr.onload = () => {
+      let data = {};
+      try { data = JSON.parse(xhr.responseText || '{}'); } catch { /* handled below */ }
+
+      if (xhr.status >= 200 && xhr.status < 300 && data.ok) {
+        finishTransfer(transferId, { ok: true, url: data.url });
+        resolve(data);
+        return;
+      }
+
+      const error = data.error
+        || (xhr.status === 413 ? 'File is too large for the server to accept.' : `Upload failed (${xhr.status}).`);
+      finishTransfer(transferId, { ok: false, error });
+      resolve({ ok: false, error });
     };
 
-    reader.readAsDataURL(file);
+    xhr.onerror = () => {
+      const error = 'Network error during upload.';
+      finishTransfer(transferId, { ok: false, error });
+      resolve({ ok: false, error });
+    };
+
+    xhr.ontimeout = () => {
+      const error = 'Upload timed out.';
+      finishTransfer(transferId, { ok: false, error });
+      resolve({ ok: false, error });
+    };
+
+    // The File itself is the body — the browser streams it without ever
+    // holding a second encoded copy in memory.
+    xhr.send(file);
   });
+}
+
+/**
+ * Turns an inline `data:` URL back into a real file and uploads it.
+ *
+ * This is the escape hatch for files that were added while uploads were
+ * broken: their bytes only ever existed as base64 inside filesystem.json,
+ * which is why that payload grew past what the server would accept and why
+ * those files never appeared on any other device.
+ */
+export async function uploadDataUrlToServer(dataUrl, name, mimeType) {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+    return { ok: false, error: 'Not an inline file.' };
+  }
+
+  try {
+    const comma = dataUrl.indexOf(',');
+    const header = dataUrl.slice(5, comma);
+    const type = mimeType || header.split(';')[0] || 'application/octet-stream';
+    const binary = atob(dataUrl.slice(comma + 1));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+
+    const file = new File([bytes], name || 'file', { type });
+    return await uploadFileToServer(file);
+  } catch (err) {
+    return { ok: false, error: err.message || 'Could not decode inline file.' };
+  }
 }
 
 /**

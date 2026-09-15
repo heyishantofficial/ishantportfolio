@@ -18,7 +18,7 @@
 //   href         link only
 
 import { PROJECTS_DATA } from './projectsData';
-import { getStorageItem, setStorageItem } from '../utils/fsStorage';
+import { getStorageItem, setStorageItem, uploadDataUrlToServer } from '../utils/fsStorage';
 import { fetchServerFilesystem, saveServerFilesystem } from '../lib/filesystemApi';
 import { getAdminPassword } from '../utils/useAdminAuth';
 import { setSaveState } from '../utils/transferActivity';
@@ -1105,6 +1105,73 @@ export function pruneCustomNodes(nodes) {
   );
 }
 
+/**
+ * Re-uploads any file whose bytes exist only as inline base64.
+ *
+ * Pruning can only drop an inline copy once the real bytes are safe on the
+ * server, so a file whose upload failed keeps its full base64 inside the save
+ * payload for good. Several of those together pushed the payload past the
+ * server's limit, so every later save failed too — and because the bytes were
+ * never uploaded, none of those files showed up on any other device. Lifting
+ * them out to /uploads fixes both at once.
+ */
+async function rescueInlineNodes(node) {
+  if (!node || typeof node !== 'object') return node;
+
+  const next = { ...node };
+  const alreadyServed = typeof next.fileUrl === 'string' && next.fileUrl.startsWith('/uploads/');
+
+  if (!alreadyServed) {
+    const inline = [next.dataUrl, next.file, next.fileUrl, next.preview]
+      .find((v) => isHeavyInline(v));
+
+    if (inline) {
+      const res = await uploadDataUrlToServer(inline, next.name, next.meta?.type);
+      if (res && res.ok && res.url) {
+        next.fileUrl = res.url;
+        next.file = res.url;
+        next.dataUrl = null;
+        if (isHeavyInline(next.preview)) next.preview = isHeavyInline(next.thumbnailUrl) ? null : next.thumbnailUrl || res.url;
+        if (isHeavyInline(next.thumbnailUrl)) next.thumbnailUrl = null;
+      }
+    }
+  }
+
+  if (Array.isArray(next.children)) {
+    next.children = await Promise.all(next.children.map(rescueInlineNodes));
+  }
+  return next;
+}
+
+async function rescueCustomNodes(nodes) {
+  if (!Array.isArray(nodes)) return [];
+  const out = [];
+  // Sequential on purpose: these are large media files, and firing them all
+  // at once is what used to overwhelm the server.
+  for (const entry of nodes) {
+    out.push(entry && entry.node ? { ...entry, node: await rescueInlineNodes(entry.node) } : entry);
+  }
+  return out;
+}
+
+/**
+ * Uploads every file that still exists only as inline base64 and commits the
+ * rewritten nodes to the caches and IndexedDB.
+ *
+ * Both the ordinary save and Master Sync run this first. Master Sync needs it
+ * just as much: it builds its snapshot from the same cache, so without this
+ * it would publish the base64 copies too and fail on the same size limit.
+ */
+export async function rescueInlineUploads() {
+  if (!getAdminPassword()) return { ok: false, error: 'Admin authentication required.' };
+
+  const rescued = await rescueCustomNodes(customNodesCache);
+  customNodesCache = rescued;
+  if (isClient) window.__ISHANT_FS_CUSTOM__ = customNodesCache;
+  await setStorageItem(STORAGE_KEY_CUSTOM, customNodesCache);
+  return { ok: true };
+}
+
 export async function syncFSToServer() {
   const password = getAdminPassword();
   if (!password) {
@@ -1114,6 +1181,12 @@ export async function syncFSToServer() {
   notifySyncStatus({ status: 'syncing', message: 'Saving to cloud...' });
 
   try {
+    // Lift any file that still only exists as inline base64 up to /uploads
+    // first, so what goes over the wire is a list of URLs rather than the
+    // media itself. The rescued nodes are kept, otherwise the next save would
+    // have to redo the same uploads.
+    await rescueInlineUploads();
+
     const payload = {
       password,
       customNodes: pruneCustomNodes(customNodesCache),

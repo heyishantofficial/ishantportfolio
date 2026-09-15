@@ -5,7 +5,7 @@
  * into a single unified snapshot and publishes it as the global Master Version.
  */
 
-import { getFSCacheState, applyFSSnapshot } from '../data/ishantOS';
+import { getFSCacheState, applyFSSnapshot, rescueInlineUploads } from '../data/ishantOS';
 import { getAllFolderIcons, setLocalFolderIcons, DEFAULT_SETTINGS } from './siteSettings';
 import { getAdminPassword, setAdminStatus } from '../utils/useAdminAuth';
 
@@ -211,6 +211,13 @@ export async function runMasterSync(providedPassword = null, currentSettings = {
   if (!password) {
     throw new Error('Admin password required to publish Master Version.');
   }
+
+  // Publish the media before publishing the snapshot that references it.
+  // The snapshot is built from the same cache the ordinary save uses, so a
+  // file whose bytes never made it to /uploads would otherwise be inlined
+  // as base64 here and blow the same size limit — and visitors would get a
+  // master version pointing at files that exist in no browser but this one.
+  await rescueInlineUploads();
 
   const snapshot = getCurrentWebsiteSnapshot(currentSettings);
 

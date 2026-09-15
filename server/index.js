@@ -301,6 +301,12 @@ function scheduleAnalyticsSave(state) {
 
 const app = express();
 
+// Dokploy puts Traefik in front of this server, so the socket address is the
+// proxy's, not the visitor's. Trusting that one hop makes req.ip the real
+// client address, which every per-IP rate limiter below depends on. Set
+// TRUST_PROXY=0 if the server is ever exposed directly with no proxy.
+app.set('trust proxy', process.env.TRUST_PROXY === '0' ? false : 1);
+
 // Defensive HTTP security headers
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -314,7 +320,9 @@ app.use((_req, res, next) => {
 // straight to disk. Without this a .json or .csv upload would be swallowed
 // and parsed here as a request body, and the route would receive nothing.
 const jsonBodyParser = express.json({ limit: '50mb' });
-const RAW_BODY_ROUTES = new Set(['/api/upload', '/api/upload/chunk']);
+// /api/visitors is public and parses its own tiny body after its rate limit,
+// so a flood of large bodies is refused before any of it is read.
+const RAW_BODY_ROUTES = new Set(['/api/upload', '/api/upload/chunk', '/api/visitors']);
 app.use((req, res, next) => (
   RAW_BODY_ROUTES.has(req.path) ? next() : jsonBodyParser(req, res, next)
 ));
@@ -1296,9 +1304,10 @@ app.post('/api/analytics/event', analyticsBeaconLimiter, async (req, res) => {
   }
 });
 
-// Visitor names log. Held in memory and written through a promise chain, so
-// two visitors unlocking at the same moment cannot overwrite each other.
+// Visitor names log. Held in memory and flushed to disk at most once every
+// couple of seconds, so a flood of logins costs one file write, not thousands.
 let visitorsCache = null;
+let visitorsSaveTimer = null;
 let visitorsWriteChain = Promise.resolve();
 
 async function loadVisitors() {
@@ -1312,7 +1321,7 @@ async function loadVisitors() {
   return visitorsCache;
 }
 
-function persistVisitors() {
+function writeVisitorsNow() {
   const snapshot = JSON.stringify({ entries: visitorsCache }, null, 2);
   visitorsWriteChain = visitorsWriteChain.then(async () => {
     try {
@@ -1327,21 +1336,86 @@ function persistVisitors() {
   return visitorsWriteChain;
 }
 
+function scheduleVisitorsSave() {
+  if (visitorsSaveTimer) return;
+  visitorsSaveTimer = setTimeout(() => {
+    visitorsSaveTimer = null;
+    writeVisitorsNow();
+  }, 2000);
+}
+
+// Layered flood protection for the public login endpoint. A real visitor
+// logs in once, so every limit here sits far above normal use:
+//   - per IP: 10 requests per 10 minutes (rate limiter below)
+//   - per IP: the same name is stored once a day, repeats are ignored
+//   - everyone combined: 30 new names a minute and 500 a day
+// Past the combined budget, names are dropped but the reply is still
+// { ok: true }, so a flooder cannot tell when they have been cut off.
+// The daily cap also means a sustained flood cannot push out more than
+// 500 of the stored 5000 names per day.
+const VISITOR_BUDGET_PER_MINUTE = 30;
+const VISITOR_BUDGET_PER_DAY = 500;
+const VISITOR_REPEAT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_TRACKED_REPEATS = 20000;
+
+const visitorBudget = { minute: 0, minuteResetAt: 0, day: 0, dayResetAt: 0 };
+const recentVisitorLogins = new Map(); // `${ip}|${name}` -> expiry time
+
+function takeVisitorBudget() {
+  const now = Date.now();
+  if (now > visitorBudget.minuteResetAt) {
+    visitorBudget.minute = 0;
+    visitorBudget.minuteResetAt = now + 60 * 1000;
+  }
+  if (now > visitorBudget.dayResetAt) {
+    visitorBudget.day = 0;
+    visitorBudget.dayResetAt = now + 24 * 60 * 60 * 1000;
+  }
+  if (visitorBudget.minute >= VISITOR_BUDGET_PER_MINUTE || visitorBudget.day >= VISITOR_BUDGET_PER_DAY) {
+    return false;
+  }
+  visitorBudget.minute++;
+  visitorBudget.day++;
+  return true;
+}
+
+function isRepeatVisitorLogin(ip, name) {
+  const now = Date.now();
+  const key = `${ip}|${name.toLowerCase()}`;
+  const expiry = recentVisitorLogins.get(key);
+  if (expiry && expiry > now) return true;
+
+  // Keep the map bounded even if a flood comes from many addresses.
+  if (recentVisitorLogins.size >= MAX_TRACKED_REPEATS) {
+    for (const [k, exp] of recentVisitorLogins) {
+      if (exp <= now) recentVisitorLogins.delete(k);
+    }
+    if (recentVisitorLogins.size >= MAX_TRACKED_REPEATS) recentVisitorLogins.clear();
+  }
+  recentVisitorLogins.set(key, now + VISITOR_REPEAT_WINDOW_MS);
+  return false;
+}
+
 const visitorLoginLimiter = createRateLimiter({
-  windowMs: 60 * 1000,
+  windowMs: 10 * 60 * 1000,
   max: 10,
   message: 'Too many logins. Throttled.'
 });
 
-// Public: record the name a visitor typed on the lock screen
-app.post('/api/visitors', visitorLoginLimiter, async (req, res) => {
+// Public: record the name a visitor typed on the lock screen. The rate limit
+// runs before the body is read, and the body may be at most 1 KB.
+app.post('/api/visitors', visitorLoginLimiter, express.json({ limit: '1kb' }), async (req, res) => {
   const { name, platform } = req.body || {};
   // Collapse whitespace and strip control characters before storing.
   const safeName = typeof name === 'string'
-    ? name.replace(/[ -]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60)
+    ? name.replace(/[\x00-\x1f\x7f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60)
     : '';
   if (!safeName) {
     return res.status(400).json({ error: 'Missing name' });
+  }
+
+  if (isRepeatVisitorLogin(req.ip, safeName) || !takeVisitorBudget()) {
+    return res.json({ ok: true });
   }
 
   const entries = await loadVisitors();
@@ -1352,7 +1426,7 @@ app.post('/api/visitors', visitorLoginLimiter, async (req, res) => {
   });
   if (entries.length > MAX_VISITOR_ENTRIES) entries.length = MAX_VISITOR_ENTRIES;
 
-  persistVisitors();
+  scheduleVisitorsSave();
   res.json({ ok: true });
 });
 
@@ -1368,7 +1442,9 @@ app.post('/api/visitors/clear', async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
   await loadVisitors();
   visitorsCache = [];
-  await persistVisitors();
+  clearTimeout(visitorsSaveTimer);
+  visitorsSaveTimer = null;
+  await writeVisitorsNow();
   res.json({ ok: true });
 });
 

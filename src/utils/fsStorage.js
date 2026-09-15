@@ -226,8 +226,67 @@ export function generateVideoThumbnail(file, maxWidth = 200, maxHeight = 120) {
   });
 }
 
+// Pieces are sized to finish comfortably inside the ~60s window the proxy in
+// front of the server allows a single request. 3 MB still completes in about
+// half a minute on a slow uplink, and the whole file is no longer racing one
+// deadline — only each piece is.
+const CHUNK_BYTES = 3 * 1024 * 1024;
+const CHUNK_ATTEMPTS = 4;
+
+function postJson(url, body) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(async (res) => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Server returned ${res.status}`);
+    return data;
+  });
+}
+
 /**
- * Uploads original binary file to the Express server /api/upload
+ * Sends one slice, reporting progress. Resolves with the server's byte count.
+ */
+function sendChunk({ blob, uploadId, offset, password, onProgress }) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload/chunk');
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.setRequestHeader('X-Admin-Password', password);
+    xhr.setRequestHeader('X-Upload-Id', uploadId);
+    xhr.setRequestHeader('X-Chunk-Offset', String(offset));
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(offset + e.loaded);
+    };
+
+    xhr.onload = () => {
+      let data = {};
+      try { data = JSON.parse(xhr.responseText || '{}'); } catch { /* handled below */ }
+      if (xhr.status >= 200 && xhr.status < 300 && data.ok) return resolve(data.received);
+      const err = new Error(data.error || `Upload failed (${xhr.status}).`);
+      // A rejected file or an expired session will fail the same way on every
+      // retry, so those stop immediately instead of being attempted four times.
+      err.permanent = xhr.status === 401 || xhr.status === 413 || xhr.status === 404 || xhr.status === 400;
+      reject(err);
+    };
+    xhr.onerror = () => reject(new Error('Network error during upload.'));
+    xhr.ontimeout = () => reject(new Error('Upload timed out.'));
+
+    xhr.send(blob);
+  });
+}
+
+/**
+ * Uploads a file to the server in sequential chunks.
+ *
+ * It used to go up as one request carrying the whole file. Anything still
+ * transmitting after about 60 seconds was cut off by the proxy and surfaced
+ * as a 502, so whether a file made it depended on how fast the connection was
+ * that minute rather than on anything about the file. Sending it in pieces
+ * removes that deadline: no single request runs long enough to hit it, and a
+ * piece that does fail is retried on its own rather than losing the file.
  */
 export async function uploadFileToServer(file) {
   const transferId = `up-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -247,60 +306,65 @@ export async function uploadFileToServer(file) {
 
   startTransfer({ id: transferId, name: file.name, size: file.size });
 
-  return new Promise((resolve) => {
-    // XMLHttpRequest rather than fetch: it is the only one that reports
-    // upload progress, and a long upload with no feedback is exactly the
-    // silence this is meant to remove.
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/upload');
-    // The file is sent as raw bytes. It used to be base64 inside a JSON
-    // envelope, which inflated every upload by ~33% and forced the server
-    // to buffer and parse the whole thing in memory before writing it —
-    // the cause of the failed uploads. Name and auth ride in headers so the
-    // body stays pure file content.
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-    xhr.setRequestHeader('X-Admin-Password', password);
-    xhr.setRequestHeader('X-Upload-Filename', encodeURIComponent(file.name));
-    xhr.setRequestHeader('X-Upload-Mime', file.type || 'application/octet-stream');
+  try {
+    const { uploadId } = await postJson('/api/upload/init', {
+      password,
+      filename: file.name
+    });
 
-    xhr.upload.onprogress = (e) => {
-      if (!e.lengthComputable) return;
-      const ratio = e.total > 0 ? e.loaded / e.total : 0;
-      updateTransfer(transferId, Math.round(ratio * file.size));
-    };
+    let offset = 0;
+    while (offset < file.size) {
+      const end = Math.min(offset + CHUNK_BYTES, file.size);
+      const blob = file.slice(offset, end);
 
-    xhr.onload = () => {
-      let data = {};
-      try { data = JSON.parse(xhr.responseText || '{}'); } catch { /* handled below */ }
+      let sent = null;
+      let lastError = null;
 
-      if (xhr.status >= 200 && xhr.status < 300 && data.ok) {
-        finishTransfer(transferId, { ok: true, url: data.url });
-        resolve(data);
-        return;
+      for (let attempt = 1; attempt <= CHUNK_ATTEMPTS; attempt += 1) {
+        try {
+          sent = await sendChunk({
+            blob,
+            uploadId,
+            offset,
+            password,
+            onProgress: (loaded) => updateTransfer(transferId, Math.min(loaded, file.size))
+          });
+          break;
+        } catch (err) {
+          lastError = err;
+          if (err.permanent || attempt === CHUNK_ATTEMPTS) throw err;
+          // Back off before retrying: an overloaded or restarting server
+          // needs a moment, and hammering it is what turns a blip into a
+          // failed upload.
+          await new Promise((r) => setTimeout(r, 800 * attempt));
+          // Show the chunk as un-sent again rather than leaving a bar that
+          // crept forward on an attempt that did not land.
+          updateTransfer(transferId, offset);
+        }
       }
 
-      const error = data.error
-        || (xhr.status === 413 ? 'File is too large for the server to accept.' : `Upload failed (${xhr.status}).`);
-      finishTransfer(transferId, { ok: false, error });
-      resolve({ ok: false, error });
-    };
+      if (sent === null) throw lastError || new Error('Upload failed.');
 
-    xhr.onerror = () => {
-      const error = 'Network error during upload.';
-      finishTransfer(transferId, { ok: false, error });
-      resolve({ ok: false, error });
-    };
+      // Trust the server's count: on a retried chunk whose reply was lost it
+      // is already further along than this browser thinks.
+      offset = sent;
+    }
 
-    xhr.ontimeout = () => {
-      const error = 'Upload timed out.';
-      finishTransfer(transferId, { ok: false, error });
-      resolve({ ok: false, error });
-    };
+    const data = await postJson('/api/upload/complete', {
+      password,
+      uploadId,
+      filename: file.name,
+      mimeType: file.type,
+      size: file.size
+    });
 
-    // The File itself is the body — the browser streams it without ever
-    // holding a second encoded copy in memory.
-    xhr.send(file);
-  });
+    finishTransfer(transferId, { ok: true, url: data.url });
+    return data;
+  } catch (err) {
+    const error = err.message || 'Upload failed.';
+    finishTransfer(transferId, { ok: false, error });
+    return { ok: false, error };
+  }
 }
 
 /**

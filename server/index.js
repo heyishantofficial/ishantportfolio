@@ -1,6 +1,7 @@
 import express from 'express';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -309,8 +310,9 @@ app.use((_req, res, next) => {
 // straight to disk. Without this a .json or .csv upload would be swallowed
 // and parsed here as a request body, and the route would receive nothing.
 const jsonBodyParser = express.json({ limit: '50mb' });
+const RAW_BODY_ROUTES = new Set(['/api/upload', '/api/upload/chunk']);
 app.use((req, res, next) => (
-  req.path === '/api/upload' ? next() : jsonBodyParser(req, res, next)
+  RAW_BODY_ROUTES.has(req.path) ? next() : jsonBodyParser(req, res, next)
 ));
 
 // Serve static uploads with nosniff and restrictive CSP to prevent script execution (Stored XSS mitigation)
@@ -930,6 +932,171 @@ app.post('/api/upload', async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Chunked uploads
+//
+// A single request is not allowed to take as long as a whole video needs.
+// Measured against production: a request still transmitting at 60 seconds is
+// killed by the proxy in front of this app and the browser sees a 502. That
+// is a limit on DURATION, not size, so it hit small files on a slow uplink
+// just as readily as big ones — which is why uploads looked like they failed
+// at random.
+//
+// So the file is cut into pieces that each finish well inside that window and
+// appended back together here. Upload time is now unbounded no matter how
+// large the file or how slow the connection, and a piece that fails can be
+// retried on its own instead of losing the entire video.
+// ---------------------------------------------------------------------------
+const PARTS_DIR = path.join(DATA_DIR, 'tmp-uploads');
+const PART_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function partFileFor(uploadId) {
+  // uploadId reaches us from the client, so it must never be able to point
+  // anywhere but inside PARTS_DIR.
+  if (!/^[a-zA-Z0-9_-]{8,64}$/.test(uploadId || '')) return null;
+  return path.join(PARTS_DIR, `${uploadId}.part`);
+}
+
+// Sweep abandoned parts so a cancelled upload cannot slowly fill the volume.
+async function sweepStaleParts() {
+  try {
+    const entries = await fs.readdir(PARTS_DIR);
+    const now = Date.now();
+    for (const name of entries) {
+      const full = path.join(PARTS_DIR, name);
+      try {
+        const st = await fs.stat(full);
+        if (now - st.mtimeMs > PART_MAX_AGE_MS) await fs.unlink(full);
+      } catch {}
+    }
+  } catch {}
+}
+
+// Begin a chunked upload: validates the name up front so a rejected file
+// fails before the browser spends minutes sending it.
+app.post('/api/upload/init', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const { filename } = req.body || {};
+  if (!filename) return res.status(400).json({ error: 'Missing filename' });
+
+  const ext = (path.extname(filename) || '').toLowerCase();
+  if (!ALLOWED_UPLOAD_EXTS.has(ext)) {
+    return res.status(400).json({
+      error: 'File type not permitted for upload. Allowed formats: images, videos, audio, PDF, and text documents.'
+    });
+  }
+
+  try {
+    await fs.mkdir(PARTS_DIR, { recursive: true });
+    sweepStaleParts();
+
+    const uploadId = `${Date.now().toString(36)}${crypto.randomBytes(12).toString('hex')}`;
+    await fs.writeFile(partFileFor(uploadId), '');
+    res.json({ ok: true, uploadId });
+  } catch (err) {
+    console.error('[upload/init] failed:', err);
+    res.status(500).json({ error: 'Could not start the upload.' });
+  }
+});
+
+// Append one chunk. The body is raw bytes; the client sends chunks in order
+// and waits for each to be acknowledged before sending the next.
+app.post('/api/upload/chunk', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const partFile = partFileFor(req.get('x-upload-id'));
+  if (!partFile) return res.status(400).json({ error: 'Invalid upload id.' });
+
+  // The client resends a chunk it did not get an answer for, so it tells us
+  // where the chunk belongs. If that does not match what is already on disk
+  // the resend is a duplicate and appending it would corrupt the file.
+  const offset = Number(req.get('x-chunk-offset') || -1);
+
+  try {
+    let current;
+    try {
+      current = (await fs.stat(partFile)).size;
+    } catch {
+      return res.status(404).json({ error: 'Upload session expired. Start again.' });
+    }
+
+    if (offset === current) {
+      await new Promise((resolve, reject) => {
+        const out = createWriteStream(partFile, { flags: 'a' });
+        let failed = false;
+        const fail = (err) => { if (!failed) { failed = true; out.destroy(); reject(err); } };
+        req.on('aborted', () => fail(new Error('Chunk aborted by the client.')));
+        out.on('error', fail);
+        out.on('finish', () => { if (!failed) resolve(); });
+        req.pipe(out);
+      });
+      current = (await fs.stat(partFile)).size;
+    } else if (offset < current) {
+      // Already have this chunk: a retry of one whose reply was lost. Drain
+      // the body and report where we actually are.
+      req.resume();
+    } else {
+      return res.status(409).json({ error: 'Chunk out of order.', received: current });
+    }
+
+    if (current > MAX_UPLOAD_BYTES) {
+      await fs.unlink(partFile).catch(() => {});
+      return res.status(413).json({ error: 'File exceeds the upload size limit.' });
+    }
+
+    res.json({ ok: true, received: current });
+  } catch (err) {
+    console.error('[upload/chunk] failed:', err);
+    res.status(500).json({ error: 'Could not store that part of the file.' });
+  }
+});
+
+// Finish: move the assembled file into /uploads under its real name.
+app.post('/api/upload/complete', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const { uploadId, filename, mimeType, size } = req.body || {};
+  const partFile = partFileFor(uploadId);
+  if (!partFile) return res.status(400).json({ error: 'Invalid upload id.' });
+  if (!filename) return res.status(400).json({ error: 'Missing filename' });
+
+  const ext = (path.extname(filename) || '').toLowerCase();
+  if (!ALLOWED_UPLOAD_EXTS.has(ext)) {
+    await fs.unlink(partFile).catch(() => {});
+    return res.status(400).json({ error: 'File type not permitted for upload.' });
+  }
+
+  try {
+    const written = (await fs.stat(partFile)).size;
+
+    // Refuse a short file rather than publishing a truncated video that
+    // would look fine in the list and fail to play.
+    if (typeof size === 'number' && size > 0 && written !== size) {
+      await fs.unlink(partFile).catch(() => {});
+      return res.status(400).json({
+        error: `Upload incomplete (${written} of ${size} bytes). Please try again.`
+      });
+    }
+
+    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+    const safeName = safeUploadName(filename, ext);
+    await fs.rename(partFile, path.join(UPLOADS_DIR, safeName));
+
+    res.json({
+      ok: true,
+      url: `/uploads/${safeName}`,
+      filename: safeName,
+      size: written,
+      mimeType: mimeType || 'application/octet-stream'
+    });
+  } catch (err) {
+    await fs.unlink(partFile).catch(() => {});
+    console.error('[upload/complete] failed:', err);
+    res.status(500).json({ error: 'Could not finish saving the file.' });
+  }
+});
+
 // Public: every visitor reads the current global defaults on boot.
 // The stored password is never included in the response.
 app.get('/api/settings', async (_req, res) => {
@@ -1202,7 +1369,14 @@ async function recordBoot() {
 const bootMarkerTimeout = new Promise((resolve) => setTimeout(resolve, 3000));
 
 Promise.race([recordBoot(), bootMarkerTimeout]).finally(() => {
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Portfolio running on port ${PORT} — settings stored at ${SETTINGS_FILE}`);
   });
+
+  // A slow uplink can legitimately take minutes to push a video. Node's own
+  // defaults would cut that off well before the upload finished, which the
+  // browser then reports as a failed upload with no explanation.
+  server.requestTimeout = 0;
+  server.headersTimeout = 5 * 60 * 1000;
+  server.keepAliveTimeout = 75 * 1000;
 });

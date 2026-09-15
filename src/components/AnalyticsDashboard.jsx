@@ -29,9 +29,11 @@ import {
   Trophy,
   Zap,
   Layers,
-  Flame
+  Flame,
+  Users,
+  Search
 } from 'lucide-react';
-import { fetchAnalyticsSummary, resetAnalyticsData, localSessionMetrics } from '../lib/posthog';
+import { fetchAnalyticsSummary, resetAnalyticsData, localSessionMetrics, fetchVisitorNames, clearVisitorNames } from '../lib/posthog';
 import { playMacClick } from '../utils/macAudioEngine';
 
 // Defensive Error Boundary so the dashboard NEVER crashes the OS/page
@@ -79,6 +81,210 @@ class AnalyticsErrorBoundary extends Component {
     }
     return this.props.children;
   }
+}
+
+function formatVisitTime(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffMin < 24 * 60) return `${Math.floor(diffMin / 60)}h ago`;
+  return date.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Everyone who typed a name on the lock screen, newest first.
+function VisitorNamesPanel({ isMuted, adminPassword }) {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [query, setQuery] = useState('');
+  const [view, setView] = useState('people'); // 'people' | 'log'
+  const [isClearing, setIsClearing] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      setEntries(await fetchVisitorNames(adminPassword));
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminPassword]);
+
+  // Same name typed with different capitalisation counts as one person.
+  const people = useMemo(() => {
+    const byName = new Map();
+    for (const entry of entries) {
+      const key = entry.name.toLowerCase();
+      const person = byName.get(key);
+      if (person) {
+        person.visits += 1;
+        person.firstSeen = entry.time;
+        person.platforms.add(entry.platform);
+      } else {
+        byName.set(key, {
+          name: entry.name,
+          visits: 1,
+          lastSeen: entry.time,
+          firstSeen: entry.time,
+          platforms: new Set([entry.platform])
+        });
+      }
+    }
+    return [...byName.values()];
+  }, [entries]);
+
+  const needle = query.trim().toLowerCase();
+  const rows = (view === 'people' ? people : entries)
+    .filter(row => !needle || row.name.toLowerCase().includes(needle));
+
+  const handleClear = async () => {
+    if (!window.confirm('Delete every recorded visitor name? This cannot be undone.')) return;
+    setIsClearing(true);
+    const res = await clearVisitorNames(adminPassword);
+    if (res?.ok) {
+      setEntries([]);
+    } else {
+      setError(res?.error || 'Could not clear visitor names.');
+    }
+    setIsClearing(false);
+  };
+
+  return (
+    <div className="p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-sm space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-teal-500" />
+            <span>Visitor Names</span>
+          </h4>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+            {people.length} {people.length === 1 ? 'person' : 'people'} · {entries.length} {entries.length === 1 ? 'login' : 'logins'} from the lock screen
+          </p>
+        </div>
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-black/5 dark:bg-white/5 self-start sm:self-auto">
+          {[
+            { id: 'people', label: 'People' },
+            { id: 'log', label: 'Every login' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                playMacClick(isMuted);
+                setView(tab.id);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                view === tab.id
+                  ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search names…"
+            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/70 dark:bg-black/20 border border-black/10 dark:border-white/10 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-teal-500/60"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={load}
+          disabled={loading}
+          title="Refresh visitor names"
+          className="p-2 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-all cursor-pointer disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {error ? (
+        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="py-6 text-center text-xs text-slate-400">
+          {loading
+            ? 'Loading visitor names…'
+            : needle
+              ? `No names match “${query.trim()}”.`
+              : 'No one has logged in yet. Names appear here when visitors unlock the lock screen.'}
+        </div>
+      ) : (
+        <div className="max-h-72 overflow-y-auto pr-1 space-y-1">
+          {rows.map((row, idx) => {
+            const platforms = view === 'people' ? [...row.platforms] : [row.platform];
+            return (
+              <div
+                key={view === 'people' ? row.name.toLowerCase() : `${row.time}-${idx}`}
+                className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-black/[0.02] dark:bg-white/[0.03] text-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-6 h-6 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-300 flex items-center justify-center text-[11px] font-bold uppercase shrink-0">
+                    {row.name.charAt(0)}
+                  </span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100 truncate">{row.name}</span>
+                  {view === 'people' && row.visits > 1 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-slate-500 dark:text-slate-400 shrink-0">
+                      {row.visits}×
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {platforms.map(p => (
+                    <span key={p} title={p === 'ios' ? 'Mobile' : 'Desktop'} className="text-slate-400">
+                      {p === 'ios' ? <Smartphone className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
+                    </span>
+                  ))}
+                  <span
+                    className="text-[10px] text-slate-400 font-mono w-20 text-right"
+                    title={new Date(view === 'people' ? row.lastSeen : row.time).toLocaleString()}
+                  >
+                    {formatVisitTime(view === 'people' ? row.lastSeen : row.time)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {entries.length > 0 && (
+        <div className="pt-2 border-t border-black/5 dark:border-white/5 flex justify-end">
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={isClearing}
+            className="px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-500/10 active:scale-95 transition-all text-[11px] font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+          >
+            <Trash2 className="w-3 h-3" />
+            <span>Clear names</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AnalyticsDashboardContent({ isMuted, adminPassword }) {
@@ -446,6 +652,8 @@ function AnalyticsDashboardContent({ isMuted, adminPassword }) {
           </div>
         </div>
       </div>
+
+      <VisitorNamesPanel isMuted={isMuted} adminPassword={adminPassword} />
 
       {/* Visual Graphs Mode Segmented Control */}
       <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">

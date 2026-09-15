@@ -24,6 +24,10 @@ const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 // silently destroying the admin's folders, uploads and settings.
 const BOOT_MARKER = path.join(DATA_DIR, 'boot-marker.json');
 const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
+// Names typed on the lock screen. Kept apart from analytics.json because
+// /api/analytics is public and these are personal.
+const VISITORS_FILE = path.join(DATA_DIR, 'visitors.json');
+const MAX_VISITOR_ENTRIES = 5000;
 
 // Wallpapers that every visitor can load. Uploaded wallpapers are deliberately
 // excluded: they are blob: URLs local to the admin's own browser, so they
@@ -1290,6 +1294,82 @@ app.post('/api/analytics/event', analyticsBeaconLimiter, async (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+// Visitor names log. Held in memory and written through a promise chain, so
+// two visitors unlocking at the same moment cannot overwrite each other.
+let visitorsCache = null;
+let visitorsWriteChain = Promise.resolve();
+
+async function loadVisitors() {
+  if (visitorsCache) return visitorsCache;
+  try {
+    const parsed = JSON.parse(await fs.readFile(VISITORS_FILE, 'utf8'));
+    visitorsCache = Array.isArray(parsed.entries) ? parsed.entries : [];
+  } catch {
+    visitorsCache = [];
+  }
+  return visitorsCache;
+}
+
+function persistVisitors() {
+  const snapshot = JSON.stringify({ entries: visitorsCache }, null, 2);
+  visitorsWriteChain = visitorsWriteChain.then(async () => {
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      const tmp = `${VISITORS_FILE}.tmp`;
+      await fs.writeFile(tmp, snapshot, 'utf8');
+      await fs.rename(tmp, VISITORS_FILE);
+    } catch (err) {
+      console.error('[visitors] write failed:', err.message);
+    }
+  });
+  return visitorsWriteChain;
+}
+
+const visitorLoginLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: 'Too many logins. Throttled.'
+});
+
+// Public: record the name a visitor typed on the lock screen
+app.post('/api/visitors', visitorLoginLimiter, async (req, res) => {
+  const { name, platform } = req.body || {};
+  // Collapse whitespace and strip control characters before storing.
+  const safeName = typeof name === 'string'
+    ? name.replace(/[ -]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60)
+    : '';
+  if (!safeName) {
+    return res.status(400).json({ error: 'Missing name' });
+  }
+
+  const entries = await loadVisitors();
+  entries.unshift({
+    name: safeName,
+    platform: platform === 'ios' ? 'ios' : 'macos',
+    time: new Date().toISOString()
+  });
+  if (entries.length > MAX_VISITOR_ENTRIES) entries.length = MAX_VISITOR_ENTRIES;
+
+  persistVisitors();
+  res.json({ ok: true });
+});
+
+// Admin: list every recorded visitor name, newest first
+app.get('/api/visitors', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true, entries: await loadVisitors() });
+});
+
+// Admin: clear the visitor names log
+app.post('/api/visitors/clear', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+  await loadVisitors();
+  visitorsCache = [];
+  await persistVisitors();
+  res.json({ ok: true });
 });
 
 // Admin: Reset analytics stats

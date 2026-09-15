@@ -197,6 +197,57 @@ export function trackSocialClick(network, url) {
 }
 
 /**
+ * Record the name a visitor typed on the lock screen. Sent once per name per
+ * browser tab, so locking and unlocking again does not log a duplicate.
+ */
+export function trackVisitorLogin(name) {
+  const trimmed = typeof name === 'string' ? name.trim() : '';
+  if (!trimmed || typeof window === 'undefined') return;
+
+  const seenKey = `visitor_logged:${trimmed.toLowerCase()}`;
+  try {
+    if (sessionStorage.getItem(seenKey)) return;
+    sessionStorage.setItem(seenKey, '1');
+  } catch {}
+
+  fetch('/api/visitors', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: trimmed, platform: getActivePlatform() }),
+    keepalive: true
+  }).catch(() => {});
+}
+
+/**
+ * Fetch the visitor names log (admin only)
+ */
+export async function fetchVisitorNames(password) {
+  const res = await fetch('/api/visitors', {
+    headers: { 'x-admin-password': password || '' },
+    cache: 'no-store'
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not load visitor names.');
+  return data.entries || [];
+}
+
+/**
+ * Clear the visitor names log (admin only)
+ */
+export async function clearVisitorNames(password) {
+  try {
+    const res = await fetch('/api/visitors/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    return await res.json();
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+/**
  * Fetch analytics data from backend for System Settings
  */
 export async function fetchAnalyticsSummary() {

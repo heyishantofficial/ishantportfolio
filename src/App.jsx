@@ -18,7 +18,7 @@ import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
 import { useFileSystem } from './utils/useFileSystem';
 import { useAdminAuth } from './utils/useAdminAuth';
 import AdminAuthModal from './components/AdminAuthModal';
-import { trackAppLaunch, trackProjectView, trackResumeView, trackSocialClick } from './lib/posthog';
+import { trackAppLaunch, trackProjectView, trackResumeView, trackSocialClick, trackVisitorLogin } from './lib/posthog';
 
 const NexusCyberdeckPlayer = React.lazy(() => import('./components/NexusCyberdeckPlayer'));
 const IOSMobileOS = React.lazy(() => import('./components/IOSMobileOS'));
@@ -317,6 +317,7 @@ export default function App() {
 
     setLoginError('');
     setIsLoggingIn(true);
+    trackVisitorLogin(viewerName);
     playBootChime(isMuted);
     confetti({ particleCount: 90, spread: 75, origin: { y: 0.5 } });
 

@@ -697,6 +697,7 @@ export default function FinderWindow({
           {/* Admin Popover Dropdown when unlocked */}
           {showAdminDropdown && isAdmin && (
             <div
+              data-no-drag
               className="absolute right-0 top-full mt-1.5 w-52 py-1 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-black/10 dark:border-white/15 shadow-2xl text-[12px] z-[999] animate-in fade-in zoom-in-95 duration-100"
               onClick={(e) => e.stopPropagation()}
             >

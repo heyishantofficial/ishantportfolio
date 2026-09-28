@@ -577,7 +577,8 @@ export default function App() {
       photos: "Photos",
       mail: "Mail",
       arcade: "Games",
-      games: "Games"
+      games: "Games",
+      "system-info": "About This Mac"
     };
     setActiveAppTitle(titleMap[targetApp] || targetApp);
     setOpenApps(prev => ({
@@ -632,7 +633,7 @@ export default function App() {
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
           isMuted={isMuted}
-          onToggleMute={() => setIsMuted(!isMuted)}
+          onToggleMute={handleToggleMute}
           volume={volume}
           onChangeVolume={handleVolumeChange}
           socialLinks={socialLinks}
@@ -776,6 +777,7 @@ export default function App() {
             onToggleBgVideoSound={handleToggleBgVideoSound}
             bgVideoVolume={bgVideoVolume}
             onChangeBgVideoVolume={handleChangeBgVideoVolume}
+            viewerName={viewerName}
             onUpdatePassword={(newPass) => setSystemPassword(newPass)}
             customUploadDesktop={customUploadDesktop}
             onUploadDesktopWallpaper={(img) => setCustomUploadDesktop(img)}
@@ -798,7 +800,7 @@ export default function App() {
                 animate={{ opacity: 1, scale: 0.82, y: 0 }}
                 exit={{ opacity: 0, scale: 0.75, y: 20 }}
                 transition={{ type: 'spring', damping: 24, stiffness: 280 }}
-                className="fixed bottom-14 right-4 z-50 pointer-events-auto origin-bottom-right"
+                className="fixed bottom-14 right-4 z-[160] pointer-events-auto origin-bottom-right"
               >
                 <Suspense fallback={null}>
                   <NexusCyberdeckPlayer 

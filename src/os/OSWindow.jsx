@@ -6,6 +6,10 @@ const MENU_BAR_H = 28;   // windows must not slide under the menu bar
 const DOCK_GUARD = 72;   // ...or under the dock
 const MIN_W = 320;
 const MIN_H = 220;
+// Controls inside the titlebar keep their clicks; any other part of it is a
+// grab handle. Finder's toolbar fills the whole titlebar, so blocking the
+// toolbar wholesale left Finder windows with nothing to drag them by.
+const NO_DRAG = 'button, a, input, select, textarea, label, [role="button"], [data-no-drag]';
 
 /**
  * The chrome every IshantOS window shares: traffic lights, a draggable
@@ -43,7 +47,7 @@ export default function OSWindow({
 
   const handleTitlePointerDown = (e) => {
     if (isCompact || win.maximized) return;
-    if (e.target.closest('[data-no-drag]')) return;
+    if (e.target.closest(NO_DRAG)) return;
     onFocus();
     dragState.current = { startX: e.clientX, startY: e.clientY, originX: win.x, originY: win.y };
     setDragging(true);
@@ -131,7 +135,7 @@ export default function OSWindow({
       {/* Titlebar with specular top highlight */}
       <header
         onPointerDown={handleTitlePointerDown}
-        onDoubleClick={() => !isCompact && onToggleMaximize()}
+        onDoubleClick={(e) => !isCompact && !e.target.closest(NO_DRAG) && onToggleMaximize()}
         className={`shrink-0 h-11 px-3 flex items-center gap-3 border-b border-black/[0.08] dark:border-white/[0.08] border-t border-white/60 dark:border-white/10 bg-[var(--mac-glass-titlebar)]/50 ${
           isCompact || win.maximized ? '' : 'cursor-grab active:cursor-grabbing'
         }`}
@@ -161,7 +165,7 @@ export default function OSWindow({
         </div>
 
         {toolbar ? (
-          <div className="flex-1 min-w-0 flex items-center gap-3" data-no-drag>{toolbar}</div>
+          <div className="flex-1 min-w-0 flex items-center gap-3">{toolbar}</div>
         ) : (
           <div className="flex-1 min-w-0 flex items-center justify-center gap-2 pr-14">
             {icon}

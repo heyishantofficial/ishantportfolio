@@ -19,7 +19,10 @@ export default function RetroArcadeApp({
   volume = 30 
 }) {
   const [activeGame, setActiveGame] = useState(null); // null (hub) | 'pacman' | 'tetris' | 'mario' | 'roadrage'
-  const [showVirtualPad, setShowVirtualPad] = useState(false);
+  // Phones have no arrow keys, so the on-screen pad starts visible there.
+  const [showVirtualPad, setShowVirtualPad] = useState(
+    () => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
+  );
   const [virtualInput, setVirtualInput] = useState(null);
   const [isMaximized, setIsMaximized] = useState(false);
 

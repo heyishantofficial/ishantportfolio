@@ -68,7 +68,7 @@ export default function IOSNotesApp({ onClose }) {
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-neutral-300 font-medium">Official Document (2027)</span>
+              <span className="text-xs text-neutral-300 font-medium">Official Document ({new Date().getFullYear()})</span>
             </div>
             <button
               onClick={() => setIsZoomed(true)}
@@ -108,7 +108,7 @@ export default function IOSNotesApp({ onClose }) {
             onClick={() => setIsZoomed(false)}
           >
             <div className="flex items-center justify-between pb-3 shrink-0" onClick={(e) => e.stopPropagation()}>
-              <span className="text-xs text-neutral-300 font-semibold">Official Resume Document (2027)</span>
+              <span className="text-xs text-neutral-300 font-semibold">Official Resume Document ({new Date().getFullYear()})</span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleDownloadResume}

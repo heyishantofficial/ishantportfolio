@@ -28,6 +28,9 @@ const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
 // /api/analytics is public and these are personal.
 const VISITORS_FILE = path.join(DATA_DIR, 'visitors.json');
 const MAX_VISITOR_ENTRIES = 5000;
+// The Photos app's list. The image files themselves live in uploads/.
+const PHOTOS_FILE = path.join(DATA_DIR, 'photos.json');
+const MAX_PHOTOS = 500;
 
 // Wallpapers that every visitor can load: the built-in ones, plus photos the
 // admin uploaded through System Settings, referenced by the /uploads/ URL the
@@ -110,14 +113,43 @@ async function currentPassword() {
   return state.password || ADMIN_PASSWORD;
 }
 
+// Every admin route checks the password, not only /api/settings/verify, so
+// wrong guesses are counted here — otherwise the verify endpoint's limit could
+// be sidestepped by guessing against any other admin route. Only failures
+// count: a single upload sends hundreds of correctly authenticated requests.
+const FAILED_AUTH_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILED_AUTH = 15;
+const failedAuth = new Map(); // ip -> { count, resetTime }
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of failedAuth) {
+    if (now > record.resetTime) failedAuth.delete(ip);
+  }
+}, 5 * 60 * 1000).unref();
+
 async function requireAdmin(req, res) {
+  const ip = req.ip || 'unknown';
+  const now = Date.now();
+  const record = failedAuth.get(ip);
+  if (record && now <= record.resetTime && record.count >= MAX_FAILED_AUTH) {
+    res.setHeader('Retry-After', String(Math.ceil((record.resetTime - now) / 1000)));
+    res.status(429).json({ error: 'Too many incorrect passwords. Please wait 15 minutes and try again.' });
+    return false;
+  }
+
   // Binary uploads carry no JSON body to hold the password, so the header is
   // checked too. Everything else keeps sending it in the body as before.
   const supplied = (req.body || {}).password || req.get('x-admin-password');
   if (!passwordMatches(supplied, await currentPassword())) {
+    if (!record || now > record.resetTime) {
+      failedAuth.set(ip, { count: 1, resetTime: now + FAILED_AUTH_WINDOW_MS });
+    } else {
+      record.count++;
+    }
     res.status(401).json({ error: '⚠️ Incorrect password. Access denied.' });
     return false;
   }
+  failedAuth.delete(ip);
   return true;
 }
 
@@ -278,8 +310,29 @@ async function readAnalyticsState() {
       updatedAt: parsed.updatedAt || null
     };
   } catch {
-    return { ...DEFAULT_ANALYTICS };
+    // A deep copy: the nested counters are mutated in place, and a shallow
+    // copy would write them into DEFAULT_ANALYTICS itself.
+    return structuredClone(DEFAULT_ANALYTICS);
   }
+}
+
+// Analytics are held in memory and flushed to disk on a timer. Re-reading the
+// file for every event lost updates: every event that arrived before the
+// next flush started from the same stale copy on disk, and whichever finished
+// last overwrote the rest — a visit plus a couple of app launches in the same
+// second was recorded as a single launch.
+let analyticsCache = null;
+let analyticsLoading = null;
+
+function loadAnalytics() {
+  if (analyticsCache) return Promise.resolve(analyticsCache);
+  if (!analyticsLoading) {
+    analyticsLoading = readAnalyticsState().then((state) => {
+      analyticsCache = state;
+      return state;
+    });
+  }
+  return analyticsLoading;
 }
 
 let saveAnalyticsTimer = null;
@@ -326,9 +379,10 @@ app.use((_req, res, next) => {
 // straight to disk. Without this a .json or .csv upload would be swallowed
 // and parsed here as a request body, and the route would receive nothing.
 const jsonBodyParser = express.json({ limit: '50mb' });
-// /api/visitors is public and parses its own tiny body after its rate limit,
-// so a flood of large bodies is refused before any of it is read.
-const RAW_BODY_ROUTES = new Set(['/api/upload', '/api/upload/chunk', '/api/visitors']);
+// /api/visitors and /api/analytics/event are public and parse their own tiny
+// bodies after their rate limits, so a flood of large bodies is refused
+// before any of it is read.
+const RAW_BODY_ROUTES = new Set(['/api/upload', '/api/upload/chunk', '/api/visitors', '/api/analytics/event']);
 app.use((req, res, next) => (
   RAW_BODY_ROUTES.has(req.path) ? next() : jsonBodyParser(req, res, next)
 ));
@@ -349,6 +403,10 @@ app.use('/uploads', express.static(UPLOADS_DIR, {
     }
   }
 }));
+// A missing upload is a 404. Falling through to the SPA fallback answered
+// with index.html and a 200, so a lost photo or video "loaded" as an HTML
+// page and its Download button saved the site's HTML under the file's name.
+app.use('/uploads', (_req, res) => res.status(404).end());
 
 // In-memory sliding-window rate limiter (zero dependencies)
 function createRateLimiter({ windowMs, max, message }) {
@@ -1242,6 +1300,76 @@ app.post('/api/settings/password', passwordChangeLimiter, async (req, res) => {
   }
 });
 
+// Photos app. The list used to live only in the admin's own localStorage, so
+// every visitor saw an empty app no matter what had been added.
+async function readPhotos() {
+  try {
+    const parsed = JSON.parse(await fs.readFile(PHOTOS_FILE, 'utf8'));
+    return Array.isArray(parsed.photos) ? parsed.photos : [];
+  } catch {
+    return [];
+  }
+}
+
+// Only a URL /api/upload can produce is stored — the same shape as an
+// uploaded wallpaper — so an entry is always safe to drop into an <img src>.
+function sanitizePhoto(photo) {
+  if (!photo || typeof photo !== 'object' || !UPLOADED_WALLPAPER.test(photo.url || '')) return null;
+  const text = (value, max) => (typeof value === 'string' ? value.slice(0, max) : '');
+  return {
+    id: text(photo.id, 64) || `photo_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+    url: photo.url,
+    name: text(photo.name, 120),
+    size: text(photo.size, 20),
+    createdAt: text(photo.createdAt, 40)
+  };
+}
+
+// Edits are applied one at a time, so two quick deletes cannot both start
+// from the same list and have the second undo the first.
+let photosWriteChain = Promise.resolve();
+
+app.get('/api/photos', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true, photos: await readPhotos() });
+});
+
+// Admin: add and/or remove photos. Sent as changes rather than the whole
+// list, so a tab holding an out-of-date list cannot wipe newer photos.
+app.post('/api/photos', async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const { add, remove } = req.body || {};
+  const additions = Array.isArray(add) ? add.map(sanitizePhoto).filter(Boolean) : [];
+  const removals = new Set(Array.isArray(remove) ? remove.filter((id) => typeof id === 'string') : []);
+  if (additions.length === 0 && removals.size === 0) {
+    return res.status(400).json({ error: 'Nothing to add or remove.' });
+  }
+
+  const job = photosWriteChain.then(async () => {
+    const current = await readPhotos();
+    const addedIds = new Set(additions.map((p) => p.id));
+    const next = [
+      ...additions,
+      ...current.filter((p) => !addedIds.has(p.id) && !removals.has(p.id))
+    ].slice(0, MAX_PHOTOS);
+
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    const tmp = `${PHOTOS_FILE}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify({ photos: next, updatedAt: new Date().toISOString() }, null, 2), 'utf8');
+    await fs.rename(tmp, PHOTOS_FILE);
+    return next;
+  });
+  photosWriteChain = job.catch(() => {});
+
+  try {
+    res.json({ ok: true, photos: await job });
+  } catch (err) {
+    console.error('[photos] write failed:', err);
+    res.status(500).json({ error: 'Could not save photos.' });
+  }
+});
+
 // Analytics endpoints
 const analyticsBeaconLimiter = createRateLimiter({
   windowMs: 60 * 1000,
@@ -1252,7 +1380,7 @@ const analyticsBeaconLimiter = createRateLimiter({
 // Public: Get aggregate metrics for System Settings dashboard
 app.get('/api/analytics', async (_req, res) => {
   try {
-    const data = await readAnalyticsState();
+    const data = await loadAnalytics();
     res.set('Cache-Control', 'no-store');
     res.json({ ok: true, analytics: data });
   } catch (err) {
@@ -1261,14 +1389,14 @@ app.get('/api/analytics', async (_req, res) => {
 });
 
 // Public: Post event beacon
-app.post('/api/analytics/event', analyticsBeaconLimiter, async (req, res) => {
+app.post('/api/analytics/event', analyticsBeaconLimiter, express.json({ limit: '8kb' }), async (req, res) => {
   try {
     const { event, name, platform, meta } = req.body || {};
     if (!event || typeof event !== 'string') {
       return res.status(400).json({ error: 'Missing event name' });
     }
 
-    const current = await readAnalyticsState();
+    const current = await loadAnalytics();
     const now = new Date().toISOString();
     if (!current.firstTrackedAt) {
       current.firstTrackedAt = now;
@@ -1279,6 +1407,12 @@ app.post('/api/analytics/event', analyticsBeaconLimiter, async (req, res) => {
     const safeEvent = event.slice(0, 50);
     const safeName = typeof name === 'string' ? name.slice(0, 80) : 'unknown';
     const safePlatform = platform === 'ios' ? 'ios' : 'macos';
+    // meta is served back by the public GET /api/analytics, so an oversized
+    // one is dropped rather than stored.
+    let safeMeta = {};
+    if (meta && typeof meta === 'object' && !Array.isArray(meta) && JSON.stringify(meta).length <= 2000) {
+      safeMeta = meta;
+    }
 
     if (safeEvent === 'pageview' || safeEvent === 'session_start') {
       current.totalVisits = (current.totalVisits || 0) + 1;
@@ -1301,7 +1435,7 @@ app.post('/api/analytics/event', analyticsBeaconLimiter, async (req, res) => {
       name: safeName,
       platform: safePlatform,
       time: now,
-      meta: meta && typeof meta === 'object' ? meta : {}
+      meta: safeMeta
     });
     if (current.recentEvents.length > 30) {
       current.recentEvents.length = 30;
@@ -1463,10 +1597,15 @@ app.post('/api/analytics/reset', async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
   try {
     const fresh = {
-      ...DEFAULT_ANALYTICS,
+      ...structuredClone(DEFAULT_ANALYTICS),
       firstTrackedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    await loadAnalytics();
+    analyticsCache = fresh;
+    // Replace anything still waiting to be flushed, so a save scheduled
+    // before the reset cannot write the old numbers back over it.
+    pendingAnalyticsState = null;
     await fs.writeFile(ANALYTICS_FILE, JSON.stringify(fresh, null, 2), 'utf8');
     res.json({ ok: true, message: 'Analytics reset successfully.' });
   } catch (err) {

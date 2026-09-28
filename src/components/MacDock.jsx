@@ -53,7 +53,8 @@ export default function MacDock({
   bgVideoSound,
   onToggleBgVideoSound,
   bgVideoVolume,
-  onChangeBgVideoVolume
+  onChangeBgVideoVolume,
+  viewerName
 }) {
   const [mouseX, setMouseX] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
@@ -300,7 +301,7 @@ export default function MacDock({
         <DiagnosticsModal onClose={() => onCloseApp('warning')} />
       )}
       {(openApps.notes || openApps.resume) && (
-        <QuickNotesModal onClose={() => onCloseApp('notes')} />
+        <QuickNotesModal onClose={() => onCloseApp('notes')} viewerName={viewerName} />
       )}
       {openApps.photos && (
         <PhotosModal onClose={() => onCloseApp('photos')} />

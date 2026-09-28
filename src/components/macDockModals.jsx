@@ -1,12 +1,15 @@
 import React, { useState, useEffect, Suspense, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import confetti from 'canvas-confetti';
 import { 
   AlertTriangle, FileText, Image as ImageIcon, Download, 
   Mail, Trash2, Layers, CheckCircle2, Send, RefreshCw, Sparkles, ExternalLink,
-  Globe, Cpu, Search, X, Maximize2, UploadCloud, Plus, Loader2
+  Globe, Cpu, Search, X, Maximize2, UploadCloud, Plus, Loader2, Lock, Unlock
 } from 'lucide-react';
 import { PROJECTS_DATA, PROFILE_INFO } from '../data/projectsData';
-import { useAdminAuth } from '../utils/useAdminAuth';
+import { useAdminAuth, getAdminPassword } from '../utils/useAdminAuth';
+import AdminAuthModal from './AdminAuthModal';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { uploadFileToServer } from '../utils/fsStorage';
 import { sendContactEmail } from '../lib/emailService';
 
@@ -551,11 +554,13 @@ export function DiagnosticsModal({ onClose }) {
 }
 
 // 7. Quick Notes & Glass Workspace Modal (Official Resume Document)
-export function QuickNotesModal({ onClose }) {
+export function QuickNotesModal({ onClose, viewerName }) {
   const [isZoomed, setIsZoomed] = useState(false);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  // Greets whoever logged in on the lock screen, not the site's owner.
+  const visitorName = viewerName?.trim() || 'there';
 
   const handleDownloadResume = () => {
     const link = document.createElement("a");
@@ -572,17 +577,17 @@ export function QuickNotesModal({ onClose }) {
         <div className="flex flex-col h-[560px] max-h-[80vh] select-none overflow-hidden text-slate-100 p-2 sm:p-4">
           
           {/* Top Header Bar */}
-          <div className="flex items-center justify-between mb-3 px-2 shrink-0 border-b border-white/10 pb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-bold">
+          <div className="flex items-center justify-between gap-3 mb-3 px-2 shrink-0 border-b border-white/10 pb-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 shrink-0 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-bold">
                 <FileText className="w-5 h-5" />
               </div>
-              <div>
-                <h1 className="font-sans font-extrabold text-lg sm:text-xl text-slate-100 tracking-tight">
-                  {greeting}, Ishant
+              <div className="min-w-0">
+                <h1 className="font-sans font-extrabold text-lg sm:text-xl text-slate-100 tracking-tight truncate">
+                  {greeting}, {visitorName}
                 </h1>
                 <p className="text-[11px] text-slate-400 font-mono">
-                  Official Portfolio Resume & Thought Architecture Document (2027)
+                  Official Portfolio Resume & Thought Architecture Document ({new Date().getFullYear()})
                 </p>
               </div>
             </div>
@@ -667,84 +672,106 @@ export function QuickNotesModal({ onClose }) {
   );
 }
 
-export function PhotosModal({ onClose }) {
-  const { isAdmin } = useAdminAuth();
-  const [photos, setPhotos] = useState(() => {
-    try {
-      const saved = localStorage.getItem('ishant_photo_dump');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+// Only formats the upload endpoint accepts and every browser can show.
+const PHOTO_EXT = /\.(png|jpe?g|webp|gif)$/i;
 
+export function PhotosModal({ onClose, isEmbedded = false }) {
+  const { isAdmin, lock } = useAdminAuth();
+  // The list lives on the server so every visitor sees the same photos. It
+  // used to live in the admin's localStorage, which nobody else could see.
+  const [photos, setPhotos] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notice, setNotice] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Sync photo dump to persistent storage
   useEffect(() => {
-    try {
-      localStorage.setItem('ishant_photo_dump', JSON.stringify(photos));
-    } catch (e) {
-      console.error('Failed to save photos to storage:', e);
-    }
-  }, [photos]);
+    let cancelled = false;
+    fetch('/api/photos', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((data) => {
+        if (!cancelled) setPhotos(Array.isArray(data.photos) ? data.photos : []);
+      })
+      .catch(() => {
+        if (!cancelled) setNotice('Could not load photos right now. Please try again later.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const savePhotoChanges = async (changes) => {
+    const res = await fetch('/api/photos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: getAdminPassword(), ...changes })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Server returned ${res.status}`);
+    setPhotos(Array.isArray(data.photos) ? data.photos : []);
+  };
 
   const handleFiles = async (fileList) => {
     if (!isAdmin || !fileList || fileList.length === 0) return;
     setIsUploading(true);
-    const newPhotos = [];
+    setNotice(null);
+    const added = [];
+    const problems = [];
 
     for (const file of Array.from(fileList)) {
-      if (!file.type.startsWith('image/')) continue;
-
-      let savedUrl = null;
-      try {
-        const res = await uploadFileToServer(file);
-        if (res && res.ok && res.url) {
-          savedUrl = res.url;
-        }
-      } catch {}
-
-      if (!savedUrl) {
-        savedUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => resolve(null);
-          reader.readAsDataURL(file);
-        });
+      if (!PHOTO_EXT.test(file.name)) {
+        problems.push(`${file.name} is not a JPG, PNG, WebP or GIF`);
+        continue;
       }
-
-      if (savedUrl) {
-        newPhotos.push({
+      // No inline data: URL fallback: a photo that is not on the server
+      // would only ever show up in this browser.
+      const res = await uploadFileToServer(file);
+      if (res && res.ok && res.url) {
+        added.push({
           id: `photo_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          url: savedUrl,
+          url: res.url,
           name: file.name.replace(/\.[^/.]+$/, ''),
           size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
           createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         });
+      } else {
+        problems.push(`${file.name}: ${res?.error || 'upload failed'}`);
       }
     }
 
-    if (newPhotos.length > 0) {
-      setPhotos((prev) => [...newPhotos, ...prev]);
+    if (added.length > 0) {
+      try {
+        await savePhotoChanges({ add: added });
+      } catch (err) {
+        problems.push(`Uploaded, but the photo list could not be saved: ${err.message}`);
+      }
     }
+
+    setNotice(problems.length > 0 ? problems.join(' · ') : null);
     setIsUploading(false);
+    // Lets the same file be picked again after a failure.
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleDeletePhoto = (e, id) => {
-    e.stopPropagation();
-    if (!isAdmin) return;
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
-    if (selectedPhoto?.id === id) {
-      setSelectedPhoto(null);
+  const handleConfirmDelete = async () => {
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    if (!target) return;
+    try {
+      await savePhotoChanges({ remove: [target.id] });
+      if (selectedPhoto?.id === target.id) setSelectedPhoto(null);
+    } catch (err) {
+      setNotice(`Could not delete the photo: ${err.message}`);
     }
   };
 
-  return (
-    <MacWindow title="Photos" icon={ImageIcon} onClose={onClose} width="max-w-2xl">
+  const content = (
+    <>
       <div className="space-y-4">
         {/* Header Bar */}
         <div className="flex justify-between items-center pb-2 border-b border-slate-200/60 dark:border-slate-800">
@@ -754,17 +781,39 @@ export function PhotosModal({ onClose }) {
               {photos.length} {photos.length === 1 ? 'Photo' : 'Photos'}
             </span>
           </div>
-          {isAdmin && (
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-60 text-white flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                title="Upload Photos"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Add Photos</span>
+              </button>
+            )}
+            {/* Admin access, the same lock Finder uses */}
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center gap-1 shadow-sm transition-all cursor-pointer"
-              title="Upload Photos"
+              onClick={() => (isAdmin ? lock() : setShowAuthModal(true))}
+              aria-label={isAdmin ? 'Admin Mode Active' : 'Admin Access Locked'}
+              title={isAdmin ? 'Admin Mode Active (click to lock)' : 'Admin Access (locked — click to add photos)'}
+              className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
+                isAdmin
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 ring-1 ring-amber-500/30'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/10'
+              }`}
             >
-              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Add Photos</span>
+              {isAdmin ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
             </button>
-          )}
+          </div>
         </div>
+
+        {notice && (
+          <p className="text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+            {notice}
+          </p>
+        )}
 
         {/* Drag & Drop Upload Zone (Admin Mode Only) */}
         {isAdmin && (
@@ -776,7 +825,7 @@ export function PhotosModal({ onClose }) {
               setIsDragging(false);
               handleFiles(e.dataTransfer.files);
             }}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => !isUploading && fileInputRef.current?.click()}
             className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer select-none ${
               isDragging
                 ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
@@ -787,25 +836,30 @@ export function PhotosModal({ onClose }) {
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp,image/gif"
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
             <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <UploadCloud className="w-5 h-5" />
+              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
             </div>
             <p className="font-semibold text-xs text-slate-800 dark:text-slate-200">
               {isUploading ? 'Uploading photos...' : 'Drop photos here or click to upload'}
             </p>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-              Admin Mode Active • Drop photos to add them to your photo dump
+              Admin Mode Active • Photos are published to every visitor
             </p>
           </div>
         )}
 
         {/* Photo Dump Grid */}
-        {photos.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[55vh] overflow-y-auto pr-1">
+        {isLoading ? (
+          <div className="py-14 flex flex-col items-center justify-center gap-2 text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <p className="text-xs font-medium">Loading photos...</p>
+          </div>
+        ) : photos.length > 0 ? (
+          <div className={`grid grid-cols-2 sm:grid-cols-3 gap-3 pr-1 ${isEmbedded ? '' : 'max-h-[55vh] overflow-y-auto'}`}>
             {photos.map((photo) => (
               <div
                 key={photo.id}
@@ -824,8 +878,13 @@ export function PhotosModal({ onClose }) {
                 </div>
                 {isAdmin && (
                   <button
-                    onClick={(e) => handleDeletePhoto(e, photo.id)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-sm active:scale-90 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget({ id: photo.id, name: photo.name || 'this photo', kind: 'image' });
+                    }}
+                    className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-sm active:scale-90 cursor-pointer ${
+                      isEmbedded ? '' : 'opacity-0 group-hover:opacity-100'
+                    }`}
                     title="Delete Photo"
                     aria-label="Delete Photo"
                   >
@@ -850,13 +909,14 @@ export function PhotosModal({ onClose }) {
         )}
       </div>
 
-      {/* Lightbox Full Preview Modal */}
-      {selectedPhoto && (
-        <div 
+      {/* Overlays go to <body>: the window's backdrop blur and the mobile
+          sheet's transform would otherwise trap a fixed overlay inside them. */}
+      {selectedPhoto && createPortal(
+        <div
           className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
           onClick={() => setSelectedPhoto(null)}
         >
-          <div 
+          <div
             className="relative max-w-4xl max-h-[90vh] flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
@@ -879,8 +939,35 @@ export function PhotosModal({ onClose }) {
               </p>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+      {createPortal(
+        <>
+          <AdminAuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            initialPrompt="Enter admin password to add or remove photos."
+          />
+          <ConfirmDeleteModal
+            isOpen={!!deleteTarget}
+            target={deleteTarget}
+            onConfirm={handleConfirmDelete}
+            onClose={() => setDeleteTarget(null)}
+          />
+        </>,
+        document.body
+      )}
+    </>
+  );
+
+  if (isEmbedded) {
+    return <div className="p-4 sm:p-5 pb-10">{content}</div>;
+  }
+
+  return (
+    <MacWindow title="Photos" icon={ImageIcon} onClose={onClose} width="max-w-2xl">
+      {content}
     </MacWindow>
   );
 }

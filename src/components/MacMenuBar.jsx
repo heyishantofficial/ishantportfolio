@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { PROFILE_INFO } from '../data/projectsData';
 import { playMacClick } from '../utils/macAudioEngine';
+import { findNode } from '../data/ishantOS';
 import { useClipboard } from '../utils/fsClipboard';
 
 export default function MacMenuBar({ 
@@ -98,6 +99,9 @@ export default function MacMenuBar({
     if (onOpenPath) onOpenPath(nodeId);
   };
 
+  // Folders can be renamed from the admin panel, so read the live name.
+  const nodeName = (nodeId, fallback) => findNode(nodeId)?.name || fallback;
+
   const handleUnlock = (e) => {
     e.preventDefault();
     setIsLocked(false);
@@ -186,7 +190,7 @@ export default function MacMenuBar({
           </div>
 
           {/* Active Application Name */}
-          <span className="font-extrabold tracking-tight text-xs capitalize">
+          <span className="font-extrabold tracking-tight text-xs">
             {activeAppTitle}
           </span>
 
@@ -200,11 +204,11 @@ export default function MacMenuBar({
               items={[
                 { label: 'New Finder Window', shortcut: '\u2318N', action: () => onNewFinderWindow && onNewFinderWindow() },
                 { separator: true },
-                { label: 'Open About Me', action: () => openFromMenu('about-me') },
-                { label: 'Open The Journey', action: () => openFromMenu('experience') },
-                { label: 'Open Work', action: () => openFromMenu('work') },
-                { label: 'Open side projects', action: () => openFromMenu('ai-lab') },
-                { label: 'Open Resume', action: () => openFromMenu('resume') },
+                { label: `Open ${nodeName('about-me', 'About Me')}`, action: () => openFromMenu('about-me') },
+                { label: `Open ${nodeName('experience', 'The Journey')}`, action: () => openFromMenu('experience') },
+                { label: `Open ${nodeName('work', 'Work')}`, action: () => openFromMenu('work') },
+                { label: `Open ${nodeName('ai-lab', 'side projects')}`, action: () => openFromMenu('ai-lab') },
+                { label: `Open ${nodeName('resume', 'Resume')}`, action: () => openFromMenu('resume') },
                 { separator: true },
                 { label: 'Close Window', shortcut: '⌘W', action: () => onCloseWindow && onCloseWindow() }
               ]}
@@ -271,13 +275,13 @@ export default function MacMenuBar({
               items={[
                 { label: 'Home', shortcut: '⇧⌘H', action: () => openFromMenu('home') },
                 { separator: true },
-                { label: 'About Me', action: () => openFromMenu('about-me') },
-                { label: 'The Journey', action: () => openFromMenu('experience') },
-                { label: 'Work', action: () => openFromMenu('work') },
-                { label: 'side projects', action: () => openFromMenu('ai-lab') },
-                { label: 'Random', action: () => openFromMenu('random') },
-                { label: 'Resume.pdf', action: () => openFromMenu('resume') },
-                { label: 'Contact', action: () => openFromMenu('contact') }
+                { label: nodeName('about-me', 'About Me'), action: () => openFromMenu('about-me') },
+                { label: nodeName('experience', 'The Journey'), action: () => openFromMenu('experience') },
+                { label: nodeName('work', 'Work'), action: () => openFromMenu('work') },
+                { label: nodeName('ai-lab', 'side projects'), action: () => openFromMenu('ai-lab') },
+                { label: nodeName('random', 'Random'), action: () => openFromMenu('random') },
+                { label: nodeName('resume', 'Resume.pdf'), action: () => openFromMenu('resume') },
+                { label: nodeName('contact', 'Contact'), action: () => openFromMenu('contact') }
               ]}
             />
             <MenuBarMenu

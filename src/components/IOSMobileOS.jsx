@@ -1026,7 +1026,7 @@ export default function IOSMobileOS({
                       </button>
                     ) : null}
 
-                    <span className="font-bold text-sm tracking-tight capitalize truncate max-w-[170px] sm:max-w-[220px]">
+                    <span className="font-bold text-sm tracking-tight truncate max-w-[170px] sm:max-w-[220px]">
                       {activeSheet === 'folder' ? (activeFilePreview?.name || currentFolder?.name || 'Folder') :
                        activeSheet === 'work' ? 'Featured Work' :
                        activeSheet === 'arcade' ? 'Retro Arcade' :
@@ -1035,7 +1035,7 @@ export default function IOSMobileOS({
                        activeSheet === 'music' ? 'Music' :
                        activeSheet === 'mail' ? 'Contact Ishant' :
                        activeSheet === 'project-detail' ? selectedProject?.title || 'Case Study' :
-                       activeSheet}
+                       activeSheet.charAt(0).toUpperCase() + activeSheet.slice(1)}
                     </span>
                     {activeSheet === 'folder' && currentFolder && !activeFilePreview && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 shrink-0">
@@ -1163,7 +1163,7 @@ export default function IOSMobileOS({
 
                 {/* 6. Photos Library Sheet */}
                 {activeSheet === 'photos' && (
-                  <PhotosModal onClose={handleCloseSheet} />
+                  <PhotosModal onClose={handleCloseSheet} isEmbedded={true} />
                 )}
 
                 {/* 7. System Settings Sheet */}

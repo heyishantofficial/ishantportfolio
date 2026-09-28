@@ -13,7 +13,7 @@ import ProjectModal from './components/ProjectModal';
 import AnimatedQuoteHeading from './components/AnimatedQuoteHeading';
 import { CircularProgressCombined } from './components/CircularProgress';
 import { playBootChime, playMacClick, setSystemVolume } from './utils/macAudioEngine';
-import { DEFAULT_SETTINGS } from './lib/siteSettings';
+import { DEFAULT_SETTINGS, isPhotoWallpaper } from './lib/siteSettings';
 import { preloadBootAssets, preloadDeferredAssets } from './lib/bootPreloader';
 import { useFileSystem } from './utils/useFileSystem';
 import { useAdminAuth } from './utils/useAdminAuth';
@@ -175,12 +175,12 @@ export default function App() {
   const [isDesktopEntering, setIsDesktopEntering] = useState(false);
 
   useEffect(() => {
-    if (lockWallpaper !== 'custom' && lockWallpaper !== 'uploaded_lock' && lockWallpaper !== 'video') {
+    if (lockWallpaper !== 'custom' && !isPhotoWallpaper(lockWallpaper) && lockWallpaper !== 'video') {
       setIsLockWallpaperLoaded(true);
     } else {
       setIsLockWallpaperLoaded(false);
     }
-  }, [lockWallpaper, customUploadLock]);
+  }, [lockWallpaper]);
 
   // Boot the workspace for real: hold on the loader until fonts, the published
   // settings, every dock/desktop icon, the lock wallpaper and the first decoded
@@ -662,10 +662,10 @@ export default function App() {
         <div 
           onContextMenu={handleDesktopContextMenu}
           style={{
-            ...(wallpaper === 'uploaded_desktop' && customUploadDesktop ? { backgroundImage: `url(${customUploadDesktop})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}),
+            ...(isPhotoWallpaper(wallpaper) ? { backgroundImage: `url(${wallpaper})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}),
             visibility: isBootLoading ? 'hidden' : 'visible'
           }}
-          className={`w-full h-full max-h-full ${isDesktopEntering ? 'mac-boot-enter' : ''} ${wallpaper === 'uploaded_desktop' ? '' : (wallpaperClasses[wallpaper] || 'wallpaper-video')} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}
+          className={`w-full h-full max-h-full ${isDesktopEntering ? 'mac-boot-enter' : ''} ${isPhotoWallpaper(wallpaper) ? '' : (wallpaperClasses[wallpaper] || 'wallpaper-video')} text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-600 selection:text-white relative overflow-hidden flex flex-col justify-between`}
         >
           
           {/* Background Video element */}
@@ -682,8 +682,8 @@ export default function App() {
           )}
 
           {/* Uploaded Desktop Wallpaper Image */}
-          {wallpaper === 'uploaded_desktop' && customUploadDesktop && (
-            <img src={customUploadDesktop} alt="Desktop Custom Wallpaper" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" />
+          {isPhotoWallpaper(wallpaper) && (
+            <img src={wallpaper} alt="Desktop Custom Wallpaper" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" />
           )}
           
           {/* Top macOS Translucent Menu Bar */}
@@ -914,9 +914,9 @@ export default function App() {
                 }`}
               />
             )}
-            {lockWallpaper === 'uploaded_lock' && customUploadLock && (
+            {isPhotoWallpaper(lockWallpaper) && (
               <img
-                src={customUploadLock}
+                src={lockWallpaper}
                 alt="Lock Screen Uploaded Photo"
                 onLoad={() => setIsLockWallpaperLoaded(true)}
                 ref={(el) => { if (el?.complete && !isLockWallpaperLoaded) setIsLockWallpaperLoaded(true); }}
@@ -938,7 +938,7 @@ export default function App() {
                 }`}
               />
             )}
-            {lockWallpaper !== 'custom' && lockWallpaper !== 'uploaded_lock' && lockWallpaper !== 'video' && (
+            {lockWallpaper !== 'custom' && !isPhotoWallpaper(lockWallpaper) && lockWallpaper !== 'video' && (
               <div className={`absolute inset-0 z-0 pointer-events-none ${wallpaperClasses[lockWallpaper] || 'wallpaper-custom'}`} />
             )}
             

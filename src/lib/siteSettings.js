@@ -57,12 +57,21 @@ export function setLocalFolderIcons(icons) {
   }
 }
 
-// Wallpapers that can be published globally. Uploaded wallpapers are blob: URLs
-// scoped to the admin's own browser, so they can never be shown to a visitor.
+// Wallpapers that can be published globally: the built-in ones, plus photos
+// uploaded to the server, which are stored by their /uploads/ URL. Mirrors the
+// server's check in server/index.js.
 export const PUBLISHABLE_WALLPAPERS = ['video', 'custom', 'sequoia', 'sonoma', 'neon', 'aurora'];
+const UPLOADED_WALLPAPER = /^\/uploads\/[A-Za-z0-9_-]+\.(png|jpe?g|webp|gif)$/i;
 
 export function isPublishable(id) {
-  return PUBLISHABLE_WALLPAPERS.includes(id);
+  return PUBLISHABLE_WALLPAPERS.includes(id) || (typeof id === 'string' && UPLOADED_WALLPAPER.test(id));
+}
+
+// A wallpaper that is a photo URL rather than a built-in id: either a server
+// upload, or a blob: preview of one that never reached the server and so only
+// shows in this browser.
+export function isPhotoWallpaper(id) {
+  return typeof id === 'string' && (UPLOADED_WALLPAPER.test(id) || id.startsWith('blob:'));
 }
 
 function getStoredPassword() {

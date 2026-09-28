@@ -29,10 +29,16 @@ const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
 const VISITORS_FILE = path.join(DATA_DIR, 'visitors.json');
 const MAX_VISITOR_ENTRIES = 5000;
 
-// Wallpapers that every visitor can load. Uploaded wallpapers are deliberately
-// excluded: they are blob: URLs local to the admin's own browser, so they
-// cannot be served to anyone else.
+// Wallpapers that every visitor can load: the built-in ones, plus photos the
+// admin uploaded through System Settings, referenced by the /uploads/ URL the
+// upload returned. The pattern only matches names safeUploadName can produce,
+// so the value is safe to drop into an <img src> or a CSS url().
 const VALID_WALLPAPERS = ['video', 'custom', 'sequoia', 'sonoma', 'neon', 'aurora'];
+const UPLOADED_WALLPAPER = /^\/uploads\/[A-Za-z0-9_-]+\.(png|jpe?g|webp|gif)$/i;
+
+function isValidWallpaper(value) {
+  return VALID_WALLPAPERS.includes(value) || (typeof value === 'string' && UPLOADED_WALLPAPER.test(value));
+}
 const FALLBACK = { 
   wallpaper: 'video', 
   lockWallpaper: 'custom',
@@ -74,8 +80,8 @@ async function readState() {
   try {
     const parsed = JSON.parse(await fs.readFile(SETTINGS_FILE, 'utf8'));
     return {
-      wallpaper: VALID_WALLPAPERS.includes(parsed.wallpaper) ? parsed.wallpaper : FALLBACK.wallpaper,
-      lockWallpaper: VALID_WALLPAPERS.includes(parsed.lockWallpaper) ? parsed.lockWallpaper : FALLBACK.lockWallpaper,
+      wallpaper: isValidWallpaper(parsed.wallpaper) ? parsed.wallpaper : FALLBACK.wallpaper,
+      lockWallpaper: isValidWallpaper(parsed.lockWallpaper) ? parsed.lockWallpaper : FALLBACK.lockWallpaper,
       volume: typeof parsed.volume === 'number' && !isNaN(parsed.volume) ? Math.max(0, Math.min(100, parsed.volume)) : FALLBACK.volume,
       isMuted: typeof parsed.isMuted === 'boolean' ? parsed.isMuted : FALLBACK.isMuted,
       bgVideoSound: typeof parsed.bgVideoSound === 'boolean' ? parsed.bgVideoSound : FALLBACK.bgVideoSound,
@@ -757,8 +763,8 @@ app.post('/api/master-sync', async (req, res) => {
       updatedAt
     },
     settings: {
-      wallpaper: VALID_WALLPAPERS.includes(snapshot.settings?.wallpaper) ? snapshot.settings.wallpaper : FALLBACK.wallpaper,
-      lockWallpaper: VALID_WALLPAPERS.includes(snapshot.settings?.lockWallpaper) ? snapshot.settings.lockWallpaper : FALLBACK.lockWallpaper,
+      wallpaper: isValidWallpaper(snapshot.settings?.wallpaper) ? snapshot.settings.wallpaper : FALLBACK.wallpaper,
+      lockWallpaper: isValidWallpaper(snapshot.settings?.lockWallpaper) ? snapshot.settings.lockWallpaper : FALLBACK.lockWallpaper,
       volume: typeof snapshot.settings?.volume === 'number' && !isNaN(snapshot.settings.volume) ? Math.max(0, Math.min(100, snapshot.settings.volume)) : FALLBACK.volume,
       isMuted: typeof snapshot.settings?.isMuted === 'boolean' ? snapshot.settings.isMuted : FALLBACK.isMuted,
       bgVideoSound: typeof snapshot.settings?.bgVideoSound === 'boolean' ? snapshot.settings.bgVideoSound : FALLBACK.bgVideoSound,
@@ -1140,15 +1146,19 @@ app.post('/api/settings', async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
 
   const { wallpaper, lockWallpaper, socialLinks, dashboardConfig, folderIcons, volume, isMuted, bgVideoSound, bgVideoVolume } = req.body || {};
-  if (wallpaper && !VALID_WALLPAPERS.includes(wallpaper)) {
-    return res.status(400).json({
-      error: 'Uploaded wallpapers only exist in your own browser, so they cannot be published to visitors. Pick one of the built-in wallpapers.'
-    });
-  }
-  if (lockWallpaper && !VALID_WALLPAPERS.includes(lockWallpaper)) {
-    return res.status(400).json({
-      error: 'Uploaded lock wallpapers only exist in your own browser, so they cannot be published to visitors. Pick one of the built-in wallpapers.'
-    });
+  for (const value of [wallpaper, lockWallpaper]) {
+    if (!value) continue;
+    const onServer = VALID_WALLPAPERS.includes(value) || (
+      isValidWallpaper(value) &&
+      await fs.access(path.join(UPLOADS_DIR, path.basename(value))).then(() => true, () => false)
+    );
+    // Publishing a photo that is not on disk would give every visitor a
+    // broken wallpaper, so it is refused here rather than discovered later.
+    if (!onServer) {
+      return res.status(400).json({
+        error: 'That wallpaper is not saved on the server, so visitors cannot load it. Upload the photo again, then publish.'
+      });
+    }
   }
 
   const state = await readState();

@@ -22,7 +22,7 @@ import IOSNotesApp from './IOSNotesApp';
 import IOSMediaViewer from './IOSMediaViewer';
 import { getYouTubeEmbedUrl, isYouTubeUrl, isInstagramUrl } from '../utils/mediaHelpers';
 import { findPresetById, BADGE_ICONS } from '../data/folderIconsCatalog';
-import { getFolderIcon } from '../lib/siteSettings';
+import { getFolderIcon, isPhotoWallpaper } from '../lib/siteSettings';
 import { trackAppLaunch, trackProjectView, trackSocialClick } from '../lib/posthog';
 
 const SafariBrowser = React.lazy(() => import('./SafariBrowser'));
@@ -640,9 +640,9 @@ export default function IOSMobileOS({
       {/* Dynamic Background */}
       <div 
         className={`absolute inset-0 w-full h-full -z-10 ${
-          wallpaper === 'uploaded_desktop' && customUploadDesktop ? '' : (wallpaperClasses[wallpaper] || 'wallpaper-video')
+          isPhotoWallpaper(wallpaper) ? '' : (wallpaperClasses[wallpaper] || 'wallpaper-video')
         }`}
-        style={wallpaper === 'uploaded_desktop' && customUploadDesktop ? { backgroundImage: `url(${customUploadDesktop})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+        style={isPhotoWallpaper(wallpaper) ? { backgroundImage: `url(${wallpaper})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
       >
         {wallpaper === 'video' && (
           <video
@@ -693,9 +693,9 @@ export default function IOSMobileOS({
                 className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
               />
             )}
-            {lockWallpaper === 'uploaded_lock' && customUploadLock && (
+            {isPhotoWallpaper(lockWallpaper) && (
               <img
-                src={customUploadLock}
+                src={lockWallpaper}
                 alt="Uploaded Lock Screen Wallpaper"
                 className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
               />
@@ -710,7 +710,7 @@ export default function IOSMobileOS({
                 className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-80"
               />
             )}
-            {lockWallpaper !== 'custom' && lockWallpaper !== 'uploaded_lock' && lockWallpaper !== 'video' && (
+            {lockWallpaper !== 'custom' && !isPhotoWallpaper(lockWallpaper) && lockWallpaper !== 'video' && (
               <div className={`absolute inset-0 z-0 pointer-events-none ${wallpaperClasses[lockWallpaper] || 'wallpaper-custom'}`} />
             )}
             <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px] z-0 pointer-events-none" />

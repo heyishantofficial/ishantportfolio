@@ -7,7 +7,7 @@ import AnalyticsDashboard from "./AnalyticsDashboard";
 import confetti from "canvas-confetti";
 import { MacWindow } from "./macDockModals";
 import { playMacClick } from "../utils/macAudioEngine";
-import { verifyAdminPassword, saveSiteSettings, saveFolderIcons, changeAdminPassword, isPublishable, checkServerHealth, getAllFolderIcons, setLocalFolderIcons } from "../lib/siteSettings";
+import { verifyAdminPassword, saveSiteSettings, saveFolderIcons, changeAdminPassword, isPublishable, isPhotoWallpaper, checkServerHealth, getAllFolderIcons, setLocalFolderIcons } from "../lib/siteSettings";
 import { 
   runMasterSync, fetchMasterSnapshot, applyMasterSnapshotToWindow, exportMasterSnapshotJson, importMasterSnapshotJson, getCurrentWebsiteSnapshot 
 } from "../lib/masterSync";
@@ -17,6 +17,7 @@ import {
 import { processIconFile, fileToBase64 } from "../utils/icnsParser";
 import { allNodes } from "../data/ishantOS";
 import { getAdminPassword, setAdminStatus } from "../utils/useAdminAuth";
+import { uploadFileToServer } from "../utils/fsStorage";
 
 export default function SystemSettingsModal({ 
   onClose,
@@ -258,6 +259,8 @@ export default function SystemSettingsModal({
   const [publishState, setPublishState] = useState("idle"); // idle | saving | saved | error
   const [publishError, setPublishError] = useState("");
   const [serverHealth, setServerHealth] = useState({ checked: false, online: false });
+  const [uploadingWallpaper, setUploadingWallpaper] = useState(null); // null | "desktop" | "lock"
+  const [wallpaperUploadError, setWallpaperUploadError] = useState("");
 
   useEffect(() => {
     if (isSettingsUnlocked) {
@@ -267,10 +270,15 @@ export default function SystemSettingsModal({
     }
   }, [isSettingsUnlocked]);
 
+  // An uploaded photo is selected by its URL. It stays in the grid after switching
+  // away, and a published one shows up here on a fresh load too.
+  const uploadedDesktop = customUploadDesktop || (isPhotoWallpaper(wallpaper) ? wallpaper : null);
+  const uploadedLock = customUploadLock || (isPhotoWallpaper(lockWallpaper) ? lockWallpaper : null);
+
   const desktopWallpaperOptions = [
     { id: "video", name: "Dynamic Live Video", type: "video", preview: "/bg-video.mp4" },
     { id: "custom", name: "Ishant Custom Photo", type: "image", preview: "/bg-poc.jpg" },
-    ...(customUploadDesktop ? [{ id: "uploaded_desktop", name: "My Uploaded Photo", type: "image", preview: customUploadDesktop }] : []),
+    ...(uploadedDesktop ? [{ id: uploadedDesktop, name: "My Uploaded Photo", type: "image", preview: uploadedDesktop }] : []),
     { id: "sequoia", name: "macOS Sequoia Dusk", type: "gradient", bgClass: "bg-gradient-to-br from-indigo-900 via-sky-800 to-slate-900" },
     { id: "sonoma", name: "macOS Sonoma Sunrise", type: "gradient", bgClass: "bg-gradient-to-br from-amber-600 via-rose-700 to-purple-900" },
     { id: "neon", name: "Cyberpunk Neon Glow", type: "gradient", bgClass: "bg-gradient-to-br from-slate-950 via-purple-950 to-blue-950" },
@@ -280,7 +288,7 @@ export default function SystemSettingsModal({
   const lockWallpaperOptions = [
     { id: "custom", name: "Ishant Custom Photo", type: "image", preview: "/bg-poc.jpg" },
     { id: "video", name: "Dynamic Lock Video", type: "video", preview: "/lock-video.mp4" },
-    ...(customUploadLock ? [{ id: "uploaded_lock", name: "My Uploaded Lock Photo", type: "image", preview: customUploadLock }] : []),
+    ...(uploadedLock ? [{ id: uploadedLock, name: "My Uploaded Lock Photo", type: "image", preview: uploadedLock }] : []),
     { id: "sequoia", name: "macOS Sequoia Dusk", type: "gradient", bgClass: "bg-gradient-to-br from-indigo-900 via-sky-800 to-slate-900" },
     { id: "sonoma", name: "macOS Sonoma Sunrise", type: "gradient", bgClass: "bg-gradient-to-br from-amber-600 via-rose-700 to-purple-900" },
     { id: "neon", name: "Cyberpunk Neon Glow", type: "gradient", bgClass: "bg-gradient-to-br from-slate-950 via-purple-950 to-blue-950" },
@@ -624,27 +632,34 @@ export default function SystemSettingsModal({
     }
   };
 
-  const handleDesktopFileUpload = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      if (onUploadDesktopWallpaper) {
-        onUploadDesktopWallpaper(imageUrl);
+  // Sends the photo to the server so it can be published to every visitor.
+  // If that fails it is still shown as a blob: preview in this browser only.
+  const uploadWallpaper = async (e, target, onUpload, onChange) => {
+    const input = e.target;
+    const file = input.files && input.files[0];
+    if (!file) return;
+    setUploadingWallpaper(target);
+    setWallpaperUploadError("");
+    try {
+      const res = await uploadFileToServer(file);
+      let imageUrl = res.ok && isPublishable(res.url) ? res.url : null;
+      if (!imageUrl) {
+        imageUrl = URL.createObjectURL(file);
+        setWallpaperUploadError(res.ok
+          ? "Only PNG, JPG, WebP or GIF photos can be published. This one shows in your browser only."
+          : `Not saved to the server, so only you can see it: ${res.error || "upload failed."}`);
       }
-      onChangeWallpaper("uploaded_desktop");
+      if (onUpload) onUpload(imageUrl);
+      onChange(imageUrl);
+    } finally {
+      setUploadingWallpaper(null);
+      // Allows picking the same file again after a failed upload.
+      input.value = "";
     }
   };
 
-  const handleLockFileUpload = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      if (onUploadLockWallpaper) {
-        onUploadLockWallpaper(imageUrl);
-      }
-      onChangeLockWallpaper("uploaded_lock");
-    }
-  };
+  const handleDesktopFileUpload = (e) => uploadWallpaper(e, "desktop", onUploadDesktopWallpaper, onChangeWallpaper);
+  const handleLockFileUpload = (e) => uploadWallpaper(e, "lock", onUploadLockWallpaper, onChangeLockWallpaper);
 
   const handleSavePassword = async (e) => {
     e.preventDefault();
@@ -681,7 +696,7 @@ export default function SystemSettingsModal({
     setConfirmPassword("");
   };
 
-  // Uploaded wallpapers are blob: URLs local to this browser — they cannot become a global default.
+  // A photo that never reached the server is a blob: URL local to this browser — it cannot become a global default.
   const canPublish = isPublishable(wallpaper) && isPublishable(lockWallpaper);
 
   return (
@@ -1842,16 +1857,20 @@ export default function SystemSettingsModal({
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         Select or upload your active wallpaper background for the primary macOS desktop canvas.
                       </p>
+                      {wallpaperUploadError && (
+                        <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{wallpaperUploadError}</p>
+                      )}
                     </div>
 
                     {/* Upload Wallpaper Button */}
-                    <label className="cursor-pointer px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md transition-all shrink-0 border border-white/30">
-                      <Upload className="w-4 h-4" />
-                      <span>Upload Image</span>
+                    <label className={`px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md transition-all shrink-0 border border-white/30 ${uploadingWallpaper ? "opacity-60 cursor-wait" : "cursor-pointer"}`}>
+                      {uploadingWallpaper === "desktop" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      <span>{uploadingWallpaper === "desktop" ? "Uploading..." : "Upload Image"}</span>
                       <input 
                         type="file" 
-                        accept="image/*" 
+                        accept="image/png,image/jpeg,image/webp,image/gif" 
                         className="hidden" 
+                        disabled={!!uploadingWallpaper}
                         onChange={handleDesktopFileUpload} 
                       />
                     </label>
@@ -1913,16 +1932,20 @@ export default function SystemSettingsModal({
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         Select or upload your active wallpaper background for the macOS unlock login screen.
                       </p>
+                      {wallpaperUploadError && (
+                        <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{wallpaperUploadError}</p>
+                      )}
                     </div>
 
                     {/* Upload Lock Wallpaper Button */}
-                    <label className="cursor-pointer px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md transition-all shrink-0 border border-white/30">
-                      <Upload className="w-4 h-4" />
-                      <span>Upload Lock Image</span>
+                    <label className={`px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md transition-all shrink-0 border border-white/30 ${uploadingWallpaper ? "opacity-60 cursor-wait" : "cursor-pointer"}`}>
+                      {uploadingWallpaper === "lock" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      <span>{uploadingWallpaper === "lock" ? "Uploading..." : "Upload Lock Image"}</span>
                       <input 
                         type="file" 
-                        accept="image/*" 
+                        accept="image/png,image/jpeg,image/webp,image/gif" 
                         className="hidden" 
+                        disabled={!!uploadingWallpaper}
                         onChange={handleLockFileUpload} 
                       />
                     </label>
@@ -2429,7 +2452,7 @@ export default function SystemSettingsModal({
                   : publishState === "saved"
                   ? "Saved — all future visitors will now load these wallpapers, sound settings, custom folder icons, social links, and dashboard settings."
                   : !canPublish
-                  ? "Uploaded wallpapers live only in your browser and can't be published. Pick a built-in one."
+                  ? "The selected photo didn't reach the server, so it only shows in your browser. Upload it again to publish it."
                   : "Saves current wallpapers, sound & volume preferences, custom folder icons, social links, and dashboard preferences for all future visitors."}
               </p>
             </div>

@@ -10,7 +10,7 @@
 // progress; the weighted sum drives the ring. When it resolves, the critical
 // set is genuinely in the browser's cache and the desktop can paint in one shot.
 
-import { fetchSiteSettings, DEFAULT_SETTINGS } from './siteSettings';
+import { fetchSiteSettings, DEFAULT_SETTINGS, isPhotoWallpaper } from './siteSettings';
 
 // Icons for the dock and the desktop grid. Small, but there are nine of them —
 // enough to visibly stipple in one by one if they aren't waited for.
@@ -200,10 +200,13 @@ export function preloadBootAssets(onProgress) {
   // Resolved before first paint so the wallpaper the admin published is the one
   // that paints — no post-boot swap in front of the visitor.
   let settings = DEFAULT_SETTINGS;
+  // A published uploaded photo is only known once settings arrive, so it is
+  // decoded as part of that step rather than popping in after the lock screen.
   const settingsDone = fetchSiteSettings().then((resolved) => {
     settings = resolved;
-    report('settings')(1);
-  });
+    const photos = [resolved.wallpaper, resolved.lockWallpaper].filter(isPhotoWallpaper);
+    return Promise.all(photos.map(decodeImage));
+  }).then(() => report('settings')(1));
 
   // Icons are tiny, so a plain decode is enough granularity for nine of them.
   const iconsDone = loadAll(ICON_ASSETS, (src) => decodeImage(src), report('icons'));

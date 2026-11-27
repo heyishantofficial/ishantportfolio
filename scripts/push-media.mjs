@@ -43,20 +43,24 @@ const total = local.reduce((s, f) => s + f.size, 0);
 console.log(`${local.length} files to upload (${(total / 1e6).toFixed(0)} MB).`);
 
 let done = 0;
-let failed = 0;
-async function upload({ dir, name, size }) {
-  const body = Readable.toWeb(fs.createReadStream(path.join(ROOT, 'data/media', dir, name)));
-  const r = await fetch(`${base}/api/media/${dir}/${encodeURIComponent(name)}`, {
-    method: 'PUT',
-    headers: { ...headers, 'content-type': 'application/octet-stream', 'content-length': String(size) },
-    body,
-    duplex: 'half',
-  });
-  done += 1;
-  if (!r.ok) {
-    failed += 1;
-    console.error(`  ✗ ${dir}/${name}: ${r.status} ${await r.text()}`);
-  } else console.log(`  [${done}/${local.length}] ${dir}/${name} (${(size / 1e6).toFixed(1)} MB)`);
+const failed = [];
+async function upload(file) {
+  const { dir, name, size } = file;
+  try {
+    const body = Readable.toWeb(fs.createReadStream(path.join(ROOT, 'data/media', dir, name)));
+    const r = await fetch(`${base}/api/media/${dir}/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      headers: { ...headers, 'content-type': 'application/octet-stream', 'content-length': String(size) },
+      body,
+      duplex: 'half',
+    });
+    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 160)}`);
+    done += 1;
+    console.log(`  [${done}/${local.length}] ${dir}/${name} (${(size / 1e6).toFixed(1)} MB)`);
+  } catch (err) {
+    failed.push(file);
+    console.error(`  ✗ ${dir}/${name}: ${err.message}`);
+  }
 }
 
 const queue = [...local];
@@ -65,5 +69,13 @@ await Promise.all(
     while (queue.length) await upload(queue.shift());
   }),
 );
-console.log(failed ? `Finished with ${failed} failures.` : 'All media is on the server.');
-process.exit(failed ? 1 : 0);
+
+// Big files sharing the connection can outlast the proxy's timeout in front of
+// the server (it answers 499 or 504). Alone they get the full upload speed.
+if (failed.length) {
+  const again = failed.splice(0);
+  console.log(`Retrying ${again.length} one at a time…`);
+  for (const file of again) await upload(file);
+}
+console.log(failed.length ? `Finished with ${failed.length} failures. Run it again to retry them.` : 'All media is on the server.');
+process.exit(failed.length ? 1 : 0);

@@ -1,38 +1,39 @@
 {
-  "name": "portfolio",
+  "name": "heyishant",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "oxlint src",
-    "preview": "vite preview",
-    "start": "node server/index.js"
+    "dev": "next dev",
+    "build": "next build",
+    "postbuild": "node scripts/postbuild.mjs",
+    "start": "node server/index.js",
+    "lint": "oxlint app components lib content server scripts",
+    "typecheck": "tsc --noEmit",
+    "media:encode": "node scripts/encode-media.mjs",
+    "media:push": "node scripts/push-media.mjs"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@vitejs/plugin-react": "^6.0.3",
-    "canvas-confetti": "^1.9.4",
-    "clsx": "^2.1.1",
-    "express": "^5.2.1",
-    "framer-motion": "^12.43.0",
-    "lucide-react": "^1.27.0",
-    "pdfjs-dist": "^6.3.289",
-    "posthog-js": "^1.428.11",
-    "radix-ui": "^1.6.7",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "tailwind-merge": "^3.6.0",
-    "tailwindcss": "^4.3.3",
-    "vite": "^8.1.1"
+    "compression": "^1.8.2",
+    "express": "^5.3.0"
   },
   "devDependencies": {
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "oxlint": "^1.71.0"
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^22.20.7",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "canvas-confetti": "^1.9.4",
+    "next": "16.4.6",
+    "oxlint": "^1.95.0",
+    "postcss": "^8.5.33",
+    "posthog-js": "^1.455.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwindcss": "^4.3.5",
+    "typescript": "~5.9.3"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.9.0"
   }
 }

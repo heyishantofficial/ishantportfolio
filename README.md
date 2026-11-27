@@ -88,7 +88,8 @@ git ignores, so keep a copy in your password manager. The server only knows its 
 - On a new computer, put the key back in `.media-key`.
 - If the key is lost or leaked, run `npm run media:key -- --new`, commit `server/media-key.sha256` and deploy.
 
-An `ADMIN_PASSWORD` env var on the server works too: `ADMIN_PASSWORD=... npm run media:push -- <site>`.
+There's no password option on purpose: the old site's password is in this public repo's history. If Dokploy
+still has an `ADMIN_PASSWORD` env var from the old site, delete it, as nothing uses it.
 
 Case-study text (brief, idea, results, behind-the-scenes photos) goes in `content/cases.ts`.
 Journey text goes in `content/episodes.ts`.
@@ -100,7 +101,6 @@ The `Dockerfile` builds the site and runs `node server/index.js` on port 3000.
 | Setting | Value |
 |---|---|
 | Volume | mount at `/app/data` (videos go in `/app/data/media`, old `/uploads` links keep working) |
-| Env `ADMIN_PASSWORD` | optional: a password `media:push` can use instead of the media key |
 | Build arg `NEXT_PUBLIC_DRAFT` | `1` for the preview site (draft notes, no indexing), unset for the live site |
 | Health check | `GET /health` (also reports how many videos are on the volume) |
 

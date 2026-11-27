@@ -8,7 +8,7 @@
 //   /uploads/...           files from the old site, kept so old links still work
 //
 // Media gets onto the volume with `npm run media:push` (scripts/push-media.mjs),
-// which uses the protected PUT /api/media/... below (media key or ADMIN_PASSWORD).
+// which uses the PUT /api/media/... below, protected by the media key.
 
 import compression from 'compression';
 import crypto from 'node:crypto';
@@ -25,7 +25,6 @@ const OUT = path.join(ROOT, 'out');
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(ROOT, 'data'));
 const MEDIA_DIR = path.join(DATA_DIR, 'media');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const MAX_UPLOAD = 800 * 1024 * 1024;
 const MEDIA_DIRS = new Set(['v', 'p', 'files']);
 const SAFE_NAME = /^[a-z0-9][a-z0-9._-]{0,120}\.(mp4|pdf)$/i;
@@ -53,9 +52,11 @@ app.get(['/health', '/api/health'], async (_req, res) => {
 
 // ---------- media upload (admin only) ----------
 
-// Two ways in: the ADMIN_PASSWORD env var, or the media key that
-// `npm run media:key` keeps on the owner's computer. Only the key's SHA-256 is
-// in the (public) repo, which reveals nothing about the key itself.
+// The only way in is the media key that `npm run media:key` keeps on the
+// owner's computer. Only its SHA-256 is in the (public) repo, which reveals
+// nothing about the key itself. There is deliberately no password option: the
+// old site's password is in this public repo's history, and Dokploy still had
+// it set as ADMIN_PASSWORD.
 const MEDIA_KEY_HASH = (() => {
   try {
     const hex = fs.readFileSync(path.join(ROOT, 'server/media-key.sha256'), 'utf8').trim();
@@ -67,11 +68,9 @@ const MEDIA_KEY_HASH = (() => {
 const sha256 = (value) => crypto.createHash('sha256').update(String(value)).digest();
 
 // Compares hashes, so neither the time taken nor a length check leaks anything.
-function credentialOk(req) {
+function keyOk(req) {
   const key = req.get('x-media-key');
-  if (key && MEDIA_KEY_HASH && crypto.timingSafeEqual(sha256(key), MEDIA_KEY_HASH)) return true;
-  const given = req.get('x-admin-password');
-  return Boolean(given && ADMIN_PASSWORD && crypto.timingSafeEqual(sha256(given), sha256(ADMIN_PASSWORD)));
+  return Boolean(key && MEDIA_KEY_HASH && crypto.timingSafeEqual(sha256(key), MEDIA_KEY_HASH));
 }
 
 const failures = new Map();
@@ -79,18 +78,18 @@ function allowed(req, res) {
   const ip = req.ip || 'unknown';
   const entry = failures.get(ip);
   if (entry && entry.count >= 10 && Date.now() - entry.first < 15 * 60 * 1000) {
-    res.status(429).json({ error: 'Too many wrong passwords. Try again in 15 minutes.' });
+    res.status(429).json({ error: 'Too many failed attempts. Try again in 15 minutes.' });
     return false;
   }
-  if (!ADMIN_PASSWORD && !MEDIA_KEY_HASH) {
-    res.status(503).json({ error: 'Uploads are off: set ADMIN_PASSWORD on the server, or add a media key.' });
+  if (!MEDIA_KEY_HASH) {
+    res.status(503).json({ error: 'Uploads are off: server/media-key.sha256 is missing (npm run media:key).' });
     return false;
   }
-  if (!credentialOk(req)) {
+  if (!keyOk(req)) {
     const e = entry && Date.now() - entry.first < 15 * 60 * 1000 ? entry : { count: 0, first: Date.now() };
     e.count += 1;
     failures.set(ip, e);
-    res.status(401).json({ error: 'Wrong password.' });
+    res.status(401).json({ error: 'Wrong or missing media key.' });
     return false;
   }
   failures.delete(ip);
@@ -200,6 +199,6 @@ app.use((_req, res) => {
 app.listen(PORT, '0.0.0.0', async () => {
   const videos = (await fsp.readdir(path.join(MEDIA_DIR, 'v')).catch(() => [])).length;
   console.log(`heyishant.com on :${PORT} · site ${fs.existsSync(OUT) ? 'ready' : 'MISSING (run npm run build)'} · ${videos} videos in ${MEDIA_DIR}`);
-  const ways = [ADMIN_PASSWORD && 'ADMIN_PASSWORD', MEDIA_KEY_HASH && 'media key'].filter(Boolean);
-  console.log(ways.length ? `Media uploads accept: ${ways.join(', ')}.` : 'Media uploads are off (no ADMIN_PASSWORD, no media key).');
+  console.log(MEDIA_KEY_HASH ? 'Media uploads: on, with the media key.' : 'Media uploads: off (no server/media-key.sha256).');
+  if (process.env.ADMIN_PASSWORD) console.log('ADMIN_PASSWORD is set but unused; it can be deleted from the server settings.');
 });

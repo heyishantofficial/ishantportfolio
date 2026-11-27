@@ -25,6 +25,7 @@
     "@types/react": "^19.3.3",
     "@types/react-dom": "^19.3.0",
     "canvas-confetti": "^1.9.4",
+    "marked": "^18.3.0",
     "next": "16.4.6",
     "oxlint": "^1.95.0",
     "postcss": "^8.5.33",

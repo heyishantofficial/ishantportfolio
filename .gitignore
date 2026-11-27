@@ -12,6 +12,7 @@ node_modules
 .env
 .env.*
 .env.local
+!.env.development
 
 # Editor directories and files
 .vscode/*
@@ -24,13 +25,18 @@ node_modules
 *.sln
 *.sw?
 
-# Runtime site settings written by the server (repo root only —
-# an unanchored "data" would also ignore src/data/)
+# Local copy of the server volume: encoded media and old-site data (never commit)
 /data/
 
-# Master Sync snapshots. These are runtime state, not source.
-# Committing one bakes it into the image, so an empty DATA_DIR would
-# resurrect it on every redeploy and roll the live site backwards.
-/public/master-snapshot.json
-/dist/master-snapshot.json
-/src/data/masterSnapshot.json
+# The private key for uploading media (only its SHA-256 in server/ is committed)
+.media-key
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Encoded videos live on the server volume, not in git (see scripts/encode-media.mjs).
+# public/media is a local symlink to data/media so `next dev` can play them.
+/public/media

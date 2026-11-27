@@ -1,0 +1,658 @@
+{
+  "videos": {
+    "ck-001": {
+      "w": 720,
+      "h": 1280,
+      "duration": 18.8,
+      "bytes": 3264425,
+      "audio": true,
+      "v": "32f1cde4"
+    },
+    "ck-002": {
+      "w": 720,
+      "h": 1280,
+      "duration": 37.5,
+      "bytes": 5084904,
+      "audio": true,
+      "v": "c88ed260"
+    },
+    "ck-003": {
+      "w": 720,
+      "h": 1280,
+      "duration": 31.1,
+      "bytes": 4359237,
+      "audio": true,
+      "v": "5a9592c7"
+    },
+    "ck-004": {
+      "w": 1280,
+      "h": 720,
+      "duration": 15.1,
+      "bytes": 2233280,
+      "audio": true,
+      "v": "4e33b7b4"
+    },
+    "ck-005": {
+      "w": 720,
+      "h": 1280,
+      "duration": 27.9,
+      "bytes": 3975502,
+      "audio": true,
+      "v": "688506d5"
+    },
+    "ck-006": {
+      "w": 720,
+      "h": 1280,
+      "duration": 25.3,
+      "bytes": 4109007,
+      "audio": true,
+      "v": "d89f522c"
+    },
+    "ck-ai-ai-rohan-video-with-reaction": {
+      "w": 1080,
+      "h": 1920,
+      "duration": 183.3,
+      "bytes": 24965254,
+      "audio": true,
+      "v": "2616845f",
+      "original": true
+    },
+    "ck-meta-001": {
+      "w": 720,
+      "h": 1280,
+      "duration": 37.8,
+      "bytes": 6025643,
+      "audio": true,
+      "v": "9912e56c"
+    },
+    "ck-meta-002": {
+      "w": 720,
+      "h": 1280,
+      "duration": 35.3,
+      "bytes": 5040046,
+      "audio": true,
+      "v": "dc161819"
+    },
+    "ck-meta-003": {
+      "w": 720,
+      "h": 1280,
+      "duration": 20.4,
+      "bytes": 2348995,
+      "audio": true,
+      "v": "67df62cf"
+    },
+    "ck-meta-cashkaro": {
+      "w": 716,
+      "h": 1280,
+      "duration": 43.7,
+      "bytes": 7080757,
+      "audio": true,
+      "v": "ef3182b2"
+    },
+    "ck-meta-cashkaro-2": {
+      "w": 720,
+      "h": 1280,
+      "duration": 37.5,
+      "bytes": 3362604,
+      "audio": true,
+      "v": "fddfc4e1",
+      "original": true
+    },
+    "ck-meta-cid-cid": {
+      "w": 720,
+      "h": 1280,
+      "duration": 25.5,
+      "bytes": 4067066,
+      "audio": true,
+      "v": "01c520a2"
+    },
+    "ck-meta-credit-card-travel": {
+      "w": 720,
+      "h": 1280,
+      "duration": 25.8,
+      "bytes": 4146413,
+      "audio": true,
+      "v": "0b73641d"
+    },
+    "ck-meta-hidden-cashback-app": {
+      "w": 720,
+      "h": 1280,
+      "duration": 20.2,
+      "bytes": 5016598,
+      "audio": true,
+      "v": "8055b930"
+    },
+    "ck-meta-mocumentry-style": {
+      "w": 720,
+      "h": 1280,
+      "duration": 17.5,
+      "bytes": 2978217,
+      "audio": true,
+      "v": "3aa85e06"
+    },
+    "ck-meta-stop-coupon-hunting": {
+      "w": 720,
+      "h": 1280,
+      "duration": 20,
+      "bytes": 3637622,
+      "audio": true,
+      "v": "f288a77d"
+    },
+    "ck-travel-hack": {
+      "w": 720,
+      "h": 1280,
+      "duration": 29.4,
+      "bytes": 4997299,
+      "audio": true,
+      "v": "5c360ce3"
+    },
+    "ck-wallet-mein-paise": {
+      "w": 720,
+      "h": 1280,
+      "duration": 12.2,
+      "bytes": 1989457,
+      "audio": true,
+      "v": "3e3a8dde"
+    },
+    "ek-004": {
+      "w": 1280,
+      "h": 720,
+      "duration": 40.9,
+      "bytes": 5659572,
+      "audio": true,
+      "v": "c52d8074"
+    },
+    "ek-axis": {
+      "w": 1280,
+      "h": 720,
+      "duration": 40.9,
+      "bytes": 5686295,
+      "audio": true,
+      "v": "e0619363"
+    },
+    "emami-ai-moms-adapt": {
+      "w": 720,
+      "h": 1280,
+      "duration": 26.7,
+      "bytes": 3132443,
+      "audio": true,
+      "v": "7efc6c97"
+    },
+    "emami-ai-office": {
+      "w": 1280,
+      "h": 720,
+      "duration": 26.9,
+      "bytes": 2464188,
+      "audio": true,
+      "v": "94728d58"
+    },
+    "emami-ai-office-2": {
+      "w": 1280,
+      "h": 720,
+      "duration": 19.6,
+      "bytes": 2174516,
+      "audio": true,
+      "v": "c4fc9bd6"
+    },
+    "emami-ai-office-portrait": {
+      "w": 720,
+      "h": 1280,
+      "duration": 23.3,
+      "bytes": 2348111,
+      "audio": true,
+      "v": "1abba818"
+    },
+    "emami-ai-office-portrait-2": {
+      "w": 720,
+      "h": 1280,
+      "duration": 19.6,
+      "bytes": 2254104,
+      "audio": true,
+      "v": "a8eca139"
+    },
+    "ep01-dp-clip": {
+      "w": 1080,
+      "h": 1920,
+      "duration": 76.2,
+      "bytes": 13473766,
+      "audio": true,
+      "v": "003faf7d",
+      "original": true
+    },
+    "ep02-bd-times": {
+      "w": 1080,
+      "h": 1920,
+      "duration": 51.9,
+      "bytes": 9502835,
+      "audio": true,
+      "v": "4b8d6ffe",
+      "original": true
+    },
+    "fifth-its-fifth-sense-01": {
+      "w": 720,
+      "h": 1280,
+      "duration": 63.4,
+      "bytes": 6543110,
+      "audio": true,
+      "v": "954e4f64",
+      "original": true
+    },
+    "fifth-its-fifth-sense-02": {
+      "w": 720,
+      "h": 1280,
+      "duration": 49.9,
+      "bytes": 6768235,
+      "audio": true,
+      "v": "b8d679b2",
+      "original": true
+    },
+    "fifth-its-fifth-sense-03": {
+      "w": 720,
+      "h": 1280,
+      "duration": 59,
+      "bytes": 5960100,
+      "audio": true,
+      "v": "3eaced5a",
+      "original": true
+    },
+    "nooe-reservenooe-01": {
+      "w": 720,
+      "h": 1280,
+      "duration": 39.4,
+      "bytes": 4961522,
+      "audio": true,
+      "v": "470d13d4",
+      "original": true
+    },
+    "nooe-reservenooe-02": {
+      "w": 720,
+      "h": 1280,
+      "duration": 17.1,
+      "bytes": 2172598,
+      "audio": true,
+      "v": "cb1ee1a6"
+    },
+    "nooe-reservenooe-03": {
+      "w": 720,
+      "h": 1280,
+      "duration": 23.8,
+      "bytes": 3426640,
+      "audio": true,
+      "v": "bc861a21",
+      "original": true
+    },
+    "nooe-reservenooe-04": {
+      "w": 720,
+      "h": 1280,
+      "duration": 66.2,
+      "bytes": 9886583,
+      "audio": true,
+      "v": "14f9956e",
+      "original": true
+    },
+    "set-10": {
+      "w": 1280,
+      "h": 720,
+      "duration": 4,
+      "bytes": 540824,
+      "audio": true,
+      "v": "5c3a6ee1"
+    },
+    "set-12": {
+      "w": 1280,
+      "h": 720,
+      "duration": 2.3,
+      "bytes": 295861,
+      "audio": true,
+      "v": "c97edaef"
+    },
+    "set-13": {
+      "w": 1280,
+      "h": 720,
+      "duration": 3,
+      "bytes": 343720,
+      "audio": true,
+      "v": "c430b363"
+    },
+    "set-14": {
+      "w": 1280,
+      "h": 720,
+      "duration": 3.6,
+      "bytes": 519014,
+      "audio": true,
+      "v": "576b4cb6"
+    },
+    "set-4": {
+      "w": 1280,
+      "h": 720,
+      "duration": 4.1,
+      "bytes": 338557,
+      "audio": true,
+      "v": "a8f36380"
+    },
+    "set-6": {
+      "w": 1280,
+      "h": 720,
+      "duration": 5.2,
+      "bytes": 246151,
+      "audio": true,
+      "v": "2b51666c"
+    },
+    "set-6-1": {
+      "w": 1280,
+      "h": 720,
+      "duration": 3.4,
+      "bytes": 234756,
+      "audio": true,
+      "v": "b8a27ded"
+    },
+    "set-7": {
+      "w": 1280,
+      "h": 720,
+      "duration": 2.8,
+      "bytes": 260412,
+      "audio": true,
+      "v": "30002afe"
+    },
+    "set-9": {
+      "w": 1280,
+      "h": 720,
+      "duration": 5.4,
+      "bytes": 881367,
+      "audio": true,
+      "v": "8103ed6f"
+    },
+    "set-main": {
+      "w": 1280,
+      "h": 720,
+      "duration": 3.2,
+      "bytes": 458308,
+      "audio": true,
+      "v": "f9de1917"
+    },
+    "set-main-2": {
+      "w": 1280,
+      "h": 720,
+      "duration": 5.1,
+      "bytes": 386203,
+      "audio": true,
+      "v": "5148bdcc"
+    }
+  },
+  "images": {
+    "ai-me-retro": {
+      "w": 1086,
+      "h": 1448,
+      "v": "4044a146"
+    },
+    "ai-me-sleep": {
+      "w": 1280,
+      "h": 1147,
+      "v": "3c25151d"
+    },
+    "ai-me-street": {
+      "w": 1122,
+      "h": 1402,
+      "v": "dd5fbb48"
+    },
+    "ep01-2018": {
+      "w": 768,
+      "h": 1280,
+      "v": "4d3e2bef"
+    },
+    "ep01-dp": {
+      "w": 397,
+      "h": 620,
+      "v": "c4c6c09d"
+    },
+    "ep02-200k": {
+      "w": 1280,
+      "h": 1600,
+      "v": "8a6e01cb"
+    },
+    "ep02-desk": {
+      "w": 1280,
+      "h": 1600,
+      "v": "35d6cdbe"
+    },
+    "ep02-edit": {
+      "w": 1020,
+      "h": 1275,
+      "v": "c1ffeea4"
+    },
+    "ep02-hoa-profile": {
+      "w": 540,
+      "h": 960,
+      "v": "2e9ea05e"
+    },
+    "ep02-hog-profile": {
+      "w": 540,
+      "h": 960,
+      "v": "e80bfedf"
+    },
+    "ep02-play-button": {
+      "w": 1280,
+      "h": 1600,
+      "v": "12517ed7"
+    },
+    "ep02-tb-profile": {
+      "w": 540,
+      "h": 960,
+      "v": "2136be7d"
+    },
+    "ep02-team": {
+      "w": 1280,
+      "h": 1600,
+      "v": "00385f73"
+    },
+    "ep02-wave": {
+      "w": 1280,
+      "h": 1600,
+      "v": "fea215df"
+    },
+    "me-bw": {
+      "w": 1080,
+      "h": 1080,
+      "v": "e8c113fc"
+    },
+    "me-cat": {
+      "w": 1126,
+      "h": 1397,
+      "v": "c93bf1cb"
+    },
+    "set-gc": {
+      "w": 1280,
+      "h": 720,
+      "v": "b2b3b404"
+    },
+    "set-gc-2": {
+      "w": 1280,
+      "h": 720,
+      "v": "dc9ab26e"
+    },
+    "set-gc-3": {
+      "w": 1280,
+      "h": 720,
+      "v": "405a7c0c"
+    },
+    "set-hoa": {
+      "w": 1280,
+      "h": 720,
+      "v": "dec878c1"
+    },
+    "set-hog": {
+      "w": 1280,
+      "h": 720,
+      "v": "6cc65f73"
+    }
+  },
+  "files": {
+    "roadmapp-overview": {
+      "ext": ".pdf",
+      "bytes": 4112018,
+      "v": "3babb9ba"
+    }
+  },
+  "youtube": {
+    "-6hMuKsg81I": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "-DL5DYg8La4": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "-Zivb5HvCsk": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "3i5-LfPSLiQ": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "4ys_Tyxy-Ac": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "959-Iel1qac": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "9tuzXWW8FLw": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "b1IalWaJ2C8": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "bnJw9v0YN34": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "BS8kUgRMnYk": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "C-9EFrFh63I": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "CBkV9dk9a2Y": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "cR-6XkRdyMI": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "dx_a9uduzQ0": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "flOaXia8SBA": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "fMDqcUzjFhQ": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "h_JcE0yHkDo": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "Hn1rlQy8iiw": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "HX2aTeIVbRA": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "jKdQxwVXZ_E": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "jor71EpSufc": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "MJXMCwwNoTg": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "NXQiEDvogE4": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "PqqwTBKYusU": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "QnEpgOsk-6U": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "tfwfkmtfO4g": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "u_i5sRaE6Rk": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "UDHQpluCwEQ": {
+      "w": 540,
+      "h": 963,
+      "short": true
+    },
+    "udVU2cNjEIs": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "urm9mbWdqmo": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "vyZxS83BF8g": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    },
+    "xlfwW3FDNYM": {
+      "w": 960,
+      "h": 540,
+      "short": false
+    }
+  }
+}

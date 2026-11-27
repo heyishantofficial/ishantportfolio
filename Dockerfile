@@ -2,7 +2,8 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+# --include=dev: the build needs Next and Tailwind even if NODE_ENV=production is set.
+RUN npm ci --include=dev
 COPY . .
 # Preview builds pass NEXT_PUBLIC_DRAFT=1 to show "needs from you" notes.
 ARG NEXT_PUBLIC_DRAFT=0

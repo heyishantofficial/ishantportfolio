@@ -6,7 +6,7 @@ NEXT_TELEMETRY_DISABLED = "1"
 DATA_DIR = "/app/data"
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci --include=dev"]
 
 [phases.build]
 cmds = ["npm run build"]

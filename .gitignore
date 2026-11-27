@@ -28,6 +28,9 @@ node_modules
 # Local copy of the server volume: encoded media and old-site data (never commit)
 /data/
 
+# The private key for uploading media (only its SHA-256 in server/ is committed)
+.media-key
+
 # Next.js
 /.next/
 /out/

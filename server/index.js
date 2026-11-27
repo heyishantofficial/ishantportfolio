@@ -8,7 +8,7 @@
 //   /uploads/...           files from the old site, kept so old links still work
 //
 // Media gets onto the volume with `npm run media:push` (scripts/push-media.mjs),
-// which uses the password-protected PUT /api/media/... below.
+// which uses the protected PUT /api/media/... below (media key or ADMIN_PASSWORD).
 
 import compression from 'compression';
 import crypto from 'node:crypto';
@@ -53,6 +53,27 @@ app.get(['/health', '/api/health'], async (_req, res) => {
 
 // ---------- media upload (admin only) ----------
 
+// Two ways in: the ADMIN_PASSWORD env var, or the media key that
+// `npm run media:key` keeps on the owner's computer. Only the key's SHA-256 is
+// in the (public) repo, which reveals nothing about the key itself.
+const MEDIA_KEY_HASH = (() => {
+  try {
+    const hex = fs.readFileSync(path.join(ROOT, 'server/media-key.sha256'), 'utf8').trim();
+    return /^[a-f0-9]{64}$/.test(hex) ? Buffer.from(hex, 'hex') : null;
+  } catch {
+    return null;
+  }
+})();
+const sha256 = (value) => crypto.createHash('sha256').update(String(value)).digest();
+
+// Compares hashes, so neither the time taken nor a length check leaks anything.
+function credentialOk(req) {
+  const key = req.get('x-media-key');
+  if (key && MEDIA_KEY_HASH && crypto.timingSafeEqual(sha256(key), MEDIA_KEY_HASH)) return true;
+  const given = req.get('x-admin-password');
+  return Boolean(given && ADMIN_PASSWORD && crypto.timingSafeEqual(sha256(given), sha256(ADMIN_PASSWORD)));
+}
+
 const failures = new Map();
 function allowed(req, res) {
   const ip = req.ip || 'unknown';
@@ -61,13 +82,11 @@ function allowed(req, res) {
     res.status(429).json({ error: 'Too many wrong passwords. Try again in 15 minutes.' });
     return false;
   }
-  if (!ADMIN_PASSWORD) {
-    res.status(503).json({ error: 'Uploads are off: set ADMIN_PASSWORD on the server.' });
+  if (!ADMIN_PASSWORD && !MEDIA_KEY_HASH) {
+    res.status(503).json({ error: 'Uploads are off: set ADMIN_PASSWORD on the server, or add a media key.' });
     return false;
   }
-  const given = Buffer.from(String(req.get('x-admin-password') || ''));
-  const want = Buffer.from(ADMIN_PASSWORD);
-  if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) {
+  if (!credentialOk(req)) {
     const e = entry && Date.now() - entry.first < 15 * 60 * 1000 ? entry : { count: 0, first: Date.now() };
     e.count += 1;
     failures.set(ip, e);
@@ -181,5 +200,6 @@ app.use((_req, res) => {
 app.listen(PORT, '0.0.0.0', async () => {
   const videos = (await fsp.readdir(path.join(MEDIA_DIR, 'v')).catch(() => [])).length;
   console.log(`heyishant.com on :${PORT} · site ${fs.existsSync(OUT) ? 'ready' : 'MISSING (run npm run build)'} · ${videos} videos in ${MEDIA_DIR}`);
-  if (!ADMIN_PASSWORD) console.log('ADMIN_PASSWORD is not set, so media uploads are off.');
+  const ways = [ADMIN_PASSWORD && 'ADMIN_PASSWORD', MEDIA_KEY_HASH && 'media key'].filter(Boolean);
+  console.log(ways.length ? `Media uploads accept: ${ways.join(', ')}.` : 'Media uploads are off (no ADMIN_PASSWORD, no media key).');
 });

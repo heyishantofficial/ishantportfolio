@@ -11,7 +11,8 @@
     "lint": "oxlint app components lib content server scripts",
     "typecheck": "tsc --noEmit",
     "media:encode": "node scripts/encode-media.mjs",
-    "media:push": "node scripts/push-media.mjs"
+    "media:push": "node scripts/push-media.mjs",
+    "media:key": "node scripts/media-key.mjs"
   },
   "dependencies": {
     "compression": "^1.8.2",

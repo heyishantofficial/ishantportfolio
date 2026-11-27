@@ -5,3 +5,5 @@ data
 public/media
 .git
 *.log
+.media-key
+.env*.local

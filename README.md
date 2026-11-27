@@ -75,9 +75,20 @@ not to index the site.
    loop and a poster. Photos become WebP at 640 and 1280 px.
 5. Commit (`content/`, `public/img/`) and upload the video files to the server:
    ```bash
-   ADMIN_PASSWORD=... npm run media:push -- https://heyishant.com
+   npm run media:push -- https://heyishant.com
    ```
    This only sends files the server doesn't have yet, or that changed.
+
+### The media key
+
+`media:push` proves it's you with the key in `.media-key`. It's a private file on this computer that
+git ignores, so keep a copy in your password manager. The server only knows its SHA-256, in
+`server/media-key.sha256`, which is safe to have in this public repo.
+
+- On a new computer, put the key back in `.media-key`.
+- If the key is lost or leaked, run `npm run media:key -- --new`, commit `server/media-key.sha256` and deploy.
+
+An `ADMIN_PASSWORD` env var on the server works too: `ADMIN_PASSWORD=... npm run media:push -- <site>`.
 
 Case-study text (brief, idea, results, behind-the-scenes photos) goes in `content/cases.ts`.
 Journey text goes in `content/episodes.ts`.
@@ -89,19 +100,16 @@ The `Dockerfile` builds the site and runs `node server/index.js` on port 3000.
 | Setting | Value |
 |---|---|
 | Volume | mount at `/app/data` (videos go in `/app/data/media`, old `/uploads` links keep working) |
-| Env `ADMIN_PASSWORD` | turns on `media:push` uploads. Without it uploads are refused |
+| Env `ADMIN_PASSWORD` | optional: a password `media:push` can use instead of the media key |
 | Build arg `NEXT_PUBLIC_DRAFT` | `1` for the preview site (draft notes, no indexing), unset for the live site |
 | Health check | `GET /health` (also reports how many videos are on the volume) |
 
-**Preview first.** Create a second Dokploy app from the `revamp` branch at `new.heyishant.com`, with its
-own volume, `ADMIN_PASSWORD` set and build arg `NEXT_PUBLIC_DRAFT=1`. After the first deploy:
+**A preview** (optional): create a second Dokploy app from a branch at `new.heyishant.com`, with its own
+volume and build arg `NEXT_PUBLIC_DRAFT=1`. After the first deploy run
+`npm run media:push -- https://new.heyishant.com`.
 
-```bash
-ADMIN_PASSWORD=... npm run media:push -- https://new.heyishant.com
-```
-
-**Going live** is merging `revamp` into `main`. The live app rebuilds, then run `media:push` against
-`https://heyishant.com`.
+**Going live** is pushing to `main`: the live app rebuilds. If videos were added, run
+`npm run media:push -- https://heyishant.com` afterwards.
 
 **Rolling back** is pointing the live app at the `v1-live` tag again, or reverting the merge. The new
 server only ever writes to `/app/data/media`, so the old site's data on the volume (`filesystem.json`,

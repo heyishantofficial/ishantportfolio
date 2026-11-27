@@ -1,43 +1,25 @@
-# Production Dockerfile for Ishant's Portfolio Backend & Frontend
-FROM node:20-alpine AS builder
-
+# heyishant.com: Next.js static export served by a small Express server.
+FROM node:22-alpine AS builder
 WORKDIR /app
-
-# Copy dependency manifests
 COPY package*.json ./
 RUN npm ci
-
-# Copy full application code and build Vite static bundle
 COPY . .
-ARG BUILD_DATE=2026-09-03T10:34:00Z
+# Preview builds pass NEXT_PUBLIC_DRAFT=1 to show "needs from you" notes.
+ARG NEXT_PUBLIC_DRAFT=0
+ENV NEXT_PUBLIC_DRAFT=$NEXT_PUBLIC_DRAFT NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Production runtime container
-FROM node:20-alpine AS runner
-
+FROM node:22-alpine AS runner
 WORKDIR /app
-
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV DATA_DIR=/app/data
-
-# Install production dependencies only
+ENV NODE_ENV=production PORT=3000 DATA_DIR=/app/data
 COPY package*.json ./
 RUN npm ci --omit=dev
-
-# Copy compiled frontend and server
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/out ./out
 COPY server ./server
-COPY public ./public
-
-# Persistent admin data: settings, filesystem.json, master-snapshot.json,
-# snapshots/ and uploads/. This MUST be backed by a volume mounted at
-# /app/data in Dokploy — the declaration below documents the contract but
-# does not create the mount. Without it every redeploy destroys the lot.
-RUN mkdir -p /app/data
+# Videos (media/) and the old site's files (uploads/) live here. In Dokploy this
+# MUST be a mounted volume, or every redeploy loses the media.
+RUN mkdir -p /app/data/media
 VOLUME ["/app/data"]
-
 EXPOSE 3000
-
-# Run Express server that handles /api/settings and serves the web app
+HEALTHCHECK --interval=30s --timeout=5s CMD wget -qO- http://127.0.0.1:3000/health || exit 1
 CMD ["node", "server/index.js"]

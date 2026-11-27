@@ -7,9 +7,14 @@
 // layered on top from /api/filesystem. This loads that same module through
 // Vite and replays the same rebuildFSTree() the browser runs, so the export
 // matches what visitors see. Re-running skips files already downloaded.
+//
+// It needs the old site's code (src/ and Vite), which the new site no longer
+// has, so run it from a checkout of the v1-live tag:
+//
+//   git worktree add ../v1 v1-live && cd ../v1 && npm ci
+//   node scripts/export-live-site.mjs https://heyishant.com ../heyishant-live-export
 
-import { createServer } from 'vite';
-import { createWriteStream } from 'node:fs';
+import { createWriteStream, existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
@@ -37,6 +42,8 @@ async function getJson(route) {
 
 function safeName(name) {
   const cleaned = String(name || '')
+    // Control characters are not allowed in file names, so matching them is the point.
+    // oxlint-disable-next-line no-control-regex
     .replace(/[/\\:*?"<>|\u0000-\u001f]/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
@@ -262,7 +269,21 @@ async function runPool(tasks) {
   return tally;
 }
 
+// Fails early, before any downloads, when run from the new site's checkout.
+async function loadVite() {
+  const how = 'Run this from a checkout of the old site: git worktree add ../v1 v1-live && cd ../v1 && npm ci';
+  if (!existsSync(path.join(ROOT, 'src/data/ishantOS.js'))) {
+    throw new Error(`src/data/ishantOS.js is not in this checkout. ${how}`);
+  }
+  try {
+    return (await import('vite')).createServer;
+  } catch {
+    throw new Error(`Vite is not installed here. ${how}`);
+  }
+}
+
 async function main() {
+  const createServer = await loadVite();
   console.log(`Reading ${BASE} …`);
   const [filesystem, master, settings, photos] = await Promise.all([
     getJson('/api/filesystem'),

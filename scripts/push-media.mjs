@@ -1,8 +1,8 @@
 // Uploads the encoded media in data/media to a running server's volume.
 //
-//   npm run media:push -- https://heyishant.com                    uses .media-key
-//   ADMIN_PASSWORD=... npm run media:push -- https://heyishant.com  uses the password
+//   npm run media:push -- https://heyishant.com
 //
+// It proves it's you with the key in .media-key (see scripts/media-key.mjs).
 // Only files that are missing on the server, or a different size, are sent.
 
 import fs from 'node:fs';
@@ -12,16 +12,15 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const base = (process.argv[2] || '').replace(/\/+$/, '');
-const password = process.env.ADMIN_PASSWORD;
 const keyFile = path.join(ROOT, '.media-key');
-const key = !password && fs.existsSync(keyFile) ? fs.readFileSync(keyFile, 'utf8').trim() : '';
-if (!base || (!password && !key)) {
+const key = fs.existsSync(keyFile) ? fs.readFileSync(keyFile, 'utf8').trim() : '';
+if (!base || !key) {
   console.error('Usage: npm run media:push -- https://your-site');
-  console.error('Needs .media-key (npm run media:key) or ADMIN_PASSWORD=... in front.');
+  if (!key) console.error('.media-key is missing: restore it from your backup, or run npm run media:key -- --new, then commit and deploy.');
   process.exit(1);
 }
 
-const headers = password ? { 'x-admin-password': password } : { 'x-media-key': key };
+const headers = { 'x-media-key': key };
 const res = await fetch(`${base}/api/media`, { headers });
 if (!res.ok) {
   console.error(`Server said ${res.status}: ${await res.text()}`);

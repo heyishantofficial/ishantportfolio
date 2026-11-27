@@ -10,6 +10,7 @@ import { SOCIAL_BG, SmileyFace, socialIcon } from './ui';
 const TABS = [
   { href: '/', label: 'Home', icon: '★' },
   { href: '/work', label: 'Work', icon: '▶' },
+  { href: '/writing', label: 'Writing', icon: '¶' },
   { href: '/journey', label: 'Journey', icon: '✎' },
   { href: '/playground', label: 'Playground', icon: '◆' },
 ];

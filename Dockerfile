@@ -12,6 +12,8 @@ RUN npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
+# The CMS (/admin) encodes uploaded videos and photos on the server.
+RUN apk add --no-cache ffmpeg libwebp-tools
 ENV NODE_ENV=production PORT=3000 DATA_DIR=/app/data
 COPY package*.json ./
 RUN npm ci --omit=dev

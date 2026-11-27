@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit",
     "media:encode": "node scripts/encode-media.mjs",
     "media:push": "node scripts/push-media.mjs",
-    "media:key": "node scripts/media-key.mjs"
+    "media:key": "node scripts/media-key.mjs",
+    "cms:password": "node scripts/cms-password.mjs",
+    "cms:local": "CMS_LOCAL_REPO=. node server/index.js"
   },
   "dependencies": {
     "compression": "^1.8.2",
@@ -25,6 +27,7 @@
     "@types/react": "^19.3.3",
     "@types/react-dom": "^19.3.0",
     "canvas-confetti": "^1.9.4",
+    "marked": "^18.3.0",
     "next": "16.4.6",
     "oxlint": "^1.95.0",
     "postcss": "^8.5.33",

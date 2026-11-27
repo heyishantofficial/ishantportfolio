@@ -22,27 +22,50 @@ function Clip({ id, caption, r }: { id: string; caption: string; r: number }) {
 }
 
 export default function PlaygroundPage() {
+  // The collage has three spots for stupid ideas and three for side projects.
   const [idea1, idea2, idea3] = SITE.stupidIdeas;
   const [brainjot, notch, roadmapp] = SITE.sideProjects;
-  const roadmappHref = fileSrc('roadmapp-overview');
+  const idea = (key: string, it: typeof idea1 | undefined, x: number, y: number, r: number, bg?: string): Piece[] =>
+    it ? [{ key, x, y, node: <div className="note-card" style={{ ['--r' as string]: `${r}deg`, ...(bg ? { background: bg } : {}) }}><span className="label">stupid idea {it.n}</span>{it.text}</div> }] : [];
+  const project = (key: string, p: typeof brainjot | undefined, x: number, y: number, r: number): Piece[] => {
+    if (!p) return [];
+    const doc = p.file ? fileSrc(p.file) : undefined;
+    const href = doc ?? p.href;
+    if (!href) return [];
+    return [
+      {
+        key,
+        x,
+        y,
+        node: (
+          <div className="project-card" style={{ ['--r' as string]: `${r}deg` }}>
+            <span className="label muted">{doc ? 'overview deck' : 'things I build with AI'}</span>
+            <span className="px">{p.name}</span>
+            <span>{p.note}</span>
+            <a className="link-underline label" href={href} target="_blank" rel={doc ? 'noopener' : 'noopener noreferrer'}>
+              {doc ? 'open the PDF ↗' : 'open ↗'}
+            </a>
+          </div>
+        ),
+      },
+    ];
+  };
 
   const pieces: Piece[] = [
     { key: 'ai-street', x: 3, y: 4, node: <div style={{ width: 200 }}><Polaroid id="ai-me-street" alt="AI-made picture of Ishant in the street with a coffee" caption="AI me, on a coffee run" r={-6} tape="pink" /></div> },
-    { key: 'note-1', x: 30, y: 3, node: <div className="note-card" style={{ ['--r' as string]: '3deg' }}><span className="label">stupid idea {idea1.n}</span>{idea1.text}</div> },
+    ...idea('note-1', idea1, 30, 3, 3),
     { key: 'set-main', x: 56, y: 5, node: <Clip id="set-main" caption="the main set" r={4} /> },
     { key: 'ai-retro', x: 6, y: 34, node: <div style={{ width: 190 }}><Polaroid id="ai-me-retro" alt="AI-made picture of Ishant in front of old computer screens" caption="AI me, hacking (not really)" r={5} tape="blue" /></div> },
     { key: 'set-gc', x: 33, y: 28, node: <div style={{ width: 250 }}><Polaroid id="set-gc" alt="A set design for a video shoot" caption="set design" r={-2} tape="mint" /></div> },
-    { key: 'note-2', x: 52, y: 47, node: <div className="note-card" style={{ ['--r' as string]: '-4deg', background: 'var(--blush)' }}><span className="label">stupid idea {idea2.n}</span>{idea2.text}</div> },
+    ...idea('note-2', idea2, 52, 47, -4, 'var(--blush)'),
     { key: 'ai-sleep', x: 26, y: 58, node: <div style={{ width: 210 }}><Polaroid id="ai-me-sleep" alt="AI-made picture of Ishant asleep on a keyboard" caption="AI me, after a deadline" r={-4} /></div> },
     { key: 'set-9', x: 3, y: 66, node: <Clip id="set-9" caption="set test" r={-5} /> },
-    { key: 'note-3', x: 50, y: 76, node: <div className="note-card" style={{ ['--r' as string]: '2deg', background: 'var(--mint)' }}><span className="label">stupid idea {idea3.n}</span>{idea3.text}</div> },
+    ...idea('note-3', idea3, 50, 76, 2, 'var(--mint)'),
     { key: 'set-hog', x: 30, y: 86, node: <div style={{ width: 230 }}><Polaroid id="set-hog" alt="The House of Growth set" caption="house of growth set" r={3} tape="pink" /></div> },
     // Project cards last, so they sit on top of the pile and their links stay clickable.
-    { key: 'brainjot', x: 74, y: 30, node: <div className="project-card" style={{ ['--r' as string]: '-3deg' }}><span className="label muted">things I build with AI</span><span className="px">{brainjot.name}</span><span>{brainjot.note}</span><a className="link-underline label" href={brainjot.href} target="_blank" rel="noopener noreferrer">open ↗</a></div> },
-    { key: 'notch', x: 76, y: 60, node: <div className="project-card" style={{ ['--r' as string]: '2deg' }}><span className="label muted">things I build with AI</span><span className="px">{notch.name}</span><span>{notch.note}</span><a className="link-underline label" href={notch.href} target="_blank" rel="noopener noreferrer">open ↗</a></div> },
-    ...(roadmappHref
-      ? [{ key: 'roadmapp', x: 74, y: 84, node: <div className="project-card" style={{ ['--r' as string]: '-1deg' }}><span className="label muted">overview deck</span><span className="px">{roadmapp.name}</span><span>{roadmapp.note}</span><a className="link-underline label" href={roadmappHref} target="_blank" rel="noopener">open the PDF ↗</a></div> }]
-      : []),
+    ...project('brainjot', brainjot, 74, 30, -3),
+    ...project('notch', notch, 76, 60, 2),
+    ...project('roadmapp', roadmapp, 74, 84, -1),
   ];
 
   return (

@@ -5,6 +5,10 @@ NEXT_TELEMETRY_DISABLED = "1"
 # Must match the Dockerfile and the volume mounted in Dokploy.
 DATA_DIR = "/app/data"
 
+[phases.setup]
+# The CMS (/admin) encodes uploads with ffmpeg and cwebp. "..." keeps Node.
+nixPkgs = ["...", "ffmpeg-headless", "libwebp"]
+
 [phases.install]
 cmds = ["npm ci --include=dev"]
 

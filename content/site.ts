@@ -1,91 +1,42 @@
-// Who you are, how to reach you, and the small lists the home page uses.
+// Who you are, how to reach you, and the small lists the home page and the
+// playground use. The text is content/data/site.json, which the CMS (/admin)
+// edits; this file holds its types.
 
-export const SITE = {
-  name: 'Ishant Chauhan',
-  shortName: 'Ishant',
-  role: 'Brand & Creative Strategist',
-  company: 'Emami',
-  hometown: 'Haridwar',
-  url: 'https://heyishant.com',
-  email: 'heyishant@gmail.com',
-  resume: '/resume.pdf',
-  tagline: "Ideas that feel human, look interesting, and don't immediately feel like an ad.",
-  description:
-    "I'm Ishant, a brand and creative strategist. I make campaigns, YouTube content and AI-led creative for brands like CashKaro, Emami and Tech Burner's channels.",
-  status: 'making things at Emami · open to good problems',
-  cycleWords: ['content', 'a campaign', 'a video', 'a weird idea'],
-  heroStickers: [
-    { text: 'makes things', color: 'mint', r: -7 },
-    { text: 'give value, take value', color: 'sand', r: 6 },
-    { text: 'brand & creative strategist', color: 'yellow', r: -3 },
-    { text: 'currently @ emami', color: 'sky', r: 4 },
-    { text: 'from haridwar', color: 'blush', r: -5 },
-  ],
-  /** Short version for the home page, in your words (from "who am i.txt"). */
-  aboutShort: [
-    "Over the years, I've worked across content, brands, creators, creative, technology and AI.",
-    'I like figuring out what we should make, why we should make it, and how we can make it better. ✨',
-  ],
-  /** Full "who am i" text for the Journey intro. */
-  aboutFull: `I'm Ishant.
-I make things.
-
-Sometimes it's content.
-Sometimes it's a campaign.
-Sometimes it's a video.
-Sometimes it's a weird idea that somehow makes sense.
-
-Over the years, I have worked across content, brands, creators, creative, technology and AI.
-
-I like figuring out:
-What should we make?
-Why should we make it?
-And how can we make it better?
-
-I like ideas that feel human,
-look interesting,
-and don't immediately feel like an ad.
-
-That's pretty much what I have been doing so far.
-And I am a big believer in “give value, take value.”`,
-  readingList: ['art', 'films', 'designs', 'memes', 'psychology', 'tech', 'content', 'AI', 'mathematics', 'marketing', 'building weird things'],
-  skills: [
-    { label: 'Creative strategy', emoji: ['✨', '💡'], color: 'yellow' },
-    { label: 'Content production', emoji: ['🎬', '✂️'], color: 'mint' },
-    { label: 'AI workflows', emoji: ['🤖', '⚡'], color: 'pink' },
-    { label: 'Brand campaigns', emoji: ['📣', '🎯'], color: 'sky' },
-    { label: 'Team lead', emoji: ['👥', '🧠'], color: 'sand' },
-  ],
-  brands: [
-    'Tech Burner',
-    'House of Growth',
-    'House of Affairs',
-    'Monk Entertainment',
-    'CashKaro',
-    'EarnKaro',
-    'Emami',
-    'Its Fifth Sense',
-    'Reserve Nooe',
-    'Dhiru Monchik',
-    'Dumb Project',
-  ],
-  socials: [
-    { id: 'instagram', label: 'Instagram', handle: '@ishantbuildss', href: 'https://instagram.com/ishantbuildss' },
-    { id: 'linkedin', label: 'LinkedIn', handle: 'in/ishant-chauhan', href: 'https://www.linkedin.com/in/ishant-chauhan/' },
-    { id: 'youtube', label: 'YouTube', handle: '@shopokplease', href: 'https://www.youtube.com/@shopokplease/shorts' },
-    { id: 'x', label: 'X', handle: '@heyishant', href: 'https://x.com/heyishant' },
-    { id: 'github', label: 'GitHub', handle: 'heyishantofficial', href: 'https://github.com/heyishantofficial' },
-  ],
-  stupidIdeas: [
-    { n: '01', text: 'A dating app for people who hate dating apps.' },
-    { n: '02', text: 'LinkedOut. A Glassdoor-style website for people who left companies.' },
-    { n: '03', text: 'An AI that judges your startup idea. Honestly. Out loud. In front of others.' },
-  ],
-  sideProjects: [
-    { name: 'Brainjot', note: 'A notes app I built with AI.', href: 'https://www.brainjot.space/' },
-    { name: 'Notch Drawer', note: 'A small macOS app that lives in the MacBook notch.', href: 'https://notchdrawer.tech/' },
-    { name: 'Roadmapp', note: 'The overview deck (PDF).', file: 'roadmapp-overview' },
-  ],
-} as const;
+import site from './data/site.json';
 
 export type StickerColor = 'yellow' | 'mint' | 'pink' | 'sky' | 'sand' | 'blush' | 'blue' | 'green' | 'orange';
+
+export interface SiteContent {
+  name: string;
+  shortName: string;
+  role: string;
+  company: string;
+  hometown: string;
+  url: string;
+  email: string;
+  /** The PDF behind every "Resume" button (public/resume.pdf). */
+  resume: string;
+  tagline: string;
+  /** For Google and link previews. */
+  description: string;
+  /** The line with the green dot under the hero. */
+  status: string;
+  /** "Sometimes it's …" in the hero, cycling. */
+  cycleWords: string[];
+  /** The first two sit either side of the name, the rest underneath. */
+  heroStickers: { text: string; color: StickerColor; r: number }[];
+  /** Short version for the home page, in your words (from "who am i.txt"). */
+  aboutShort: string[];
+  /** Full "who am i" text for the Journey intro. */
+  aboutFull: string;
+  readingList: string[];
+  skills: { label: string; emoji: [string, string]; color: StickerColor }[];
+  brands: string[];
+  socials: { id: string; label: string; handle: string; href: string }[];
+  /** Note cards on the playground. */
+  stupidIdeas: { n: string; text: string }[];
+  /** Project cards on the playground. `file` is a document id from content/media.json. */
+  sideProjects: { name: string; note: string; href?: string; file?: string }[];
+}
+
+export const SITE = site as SiteContent;

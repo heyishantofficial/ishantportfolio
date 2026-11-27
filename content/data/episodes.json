@@ -1,0 +1,273 @@
+[
+  {
+    "n": "01",
+    "slug": "ep-01",
+    "title": "Where I started",
+    "company": "Dhiru Monchik & Dumb Project",
+    "period": "Mar 2019 – Feb 2022",
+    "logline": "Making videos with a friend, then a documentary channel of my own.",
+    "color": "yellow",
+    "roles": [
+      {
+        "company": "Dhiru Monchik",
+        "title": "Video Producer & Editor",
+        "period": "Mar 2019 – Feb 2022",
+        "notes": "Content writing, strategy, YouTube content, and end-to-end production."
+      },
+      {
+        "company": "Dumb Project",
+        "title": "Co-Founder & Content Head",
+        "aka": "aka: I gave myself too many jobs",
+        "period": "Jan 2021 – Jun 2021",
+        "notes": "A documentary-focused social media platform. Worked on the content and overall direction. Built the visual identity, messaging, positioning and, most importantly, the content."
+      }
+    ],
+    "story": [
+      "I don't think I really started with a plan.\nI started by making things.",
+      "I was working with Dhiru Monchik, a friend and a YouTuber with 4M+ subs today, writing scripts, designing thumbnails and stuff, editing his videos, shooting his videos and bla bla, basically all the things related to content.\nI was learning mostly by doing.",
+      "And somewhere in between all of that, I started thinking...\nWhat if I build something myself?",
+      "That became Dumb Project, a documentary channel with my school friend Vashu.\nWe wanted to make documentaries and build something of our own around it.\nSo suddenly I wasn't just thinking about videos anymore.",
+      "I was thinking about the name.\nThe identity.\nThe content.\nHow to package it.\nHow to get people to care about it.",
+      "Basically, I gave myself a lot of work for free.\nBut I loved it.\nBecause I was slowly discovering that I wasn't only interested in making things.",
+      "I liked figuring out what should be made in the first place.\nAnd that changed something for me.\nI started wondering what would happen if I got to do this with a much bigger playground.",
+      "I didn't know it then...\nbut something was already around the corner.\n\nAnd then I joined..."
+    ],
+    "notes": [
+      "Basically, I gave myself a lot of work for free. But I loved it.",
+      "I liked figuring out what should be made in the first place."
+    ],
+    "cameraRoll": [
+      {
+        "id": "ep01-dp-clip",
+        "caption": "dumb project days"
+      },
+      {
+        "id": "ep01-dp",
+        "caption": "dumb project"
+      },
+      {
+        "id": "ep01-2018",
+        "caption": "2018"
+      }
+    ],
+    "todo": [
+      "Screenshot (213).png is missing from the server. Send the original to add it here."
+    ]
+  },
+  {
+    "n": "02",
+    "slug": "ep-02",
+    "title": "The shift",
+    "company": "Tech Burner (Burner Digital)",
+    "period": "May 2022 – Feb 2024",
+    "logline": "Proper teams, a much bigger audience, and learning why things work.",
+    "color": "mint",
+    "roles": [
+      {
+        "company": "Burner Digital",
+        "title": "Content Producer & Editor",
+        "period": "May 2022 – Feb 2024",
+        "notes": "Content strategy, YouTube content, and end-to-end production. Creative leadership on shoots, working with editors and designers, and getting things finished."
+      }
+    ],
+    "story": [
+      "I think this was the first time things started getting serious.\nI joined Tech Burner thinking I knew a decent amount about content.",
+      "Turns out... I knew shit. 😭",
+      "Suddenly there were proper teams, workflows, deadlines, a much bigger audience and people actually waiting for the things we were making.",
+      "So I started experimenting again.\nDifferent formats.\nDifferent ways of telling things.\nDifferent thumbnails.\nDifferent edits.\nDifferent ways of making people stop scrolling.",
+      "And because there was so much happening, I slowly started getting curious about everything around the content too.\nWhy did this work?\nWhy did that flop?\nWhy does changing one tiny thing suddenly make something perform?",
+      "I started moving from just making the thing to actually thinking about why we were making it.",
+      "I also got to build and work with a team of designers, editors, writers and creators.\nThat taught me something I didn't really understand before:\nmaking something yourself is easy, but getting 10 people to make it together is the actual problem.",
+      "Tech Burner was probably where I realised that I could do more than just design or edit.\nI could actually figure things out.\nAnd once I realised that...\nI wanted to see what else I could do.",
+      "Turns out, I was about to find out.\nBecause just when things started making sense, the whole team decided to move to Bangalore.\nAnd I wasn't going with them. (just single child problems)",
+      "(to be continued)"
+    ],
+    "notes": [
+      "Turns out... I knew shit. 😭",
+      "Making something yourself is easy. Getting 10 people to make it together is the actual problem."
+    ],
+    "cameraRoll": [
+      {
+        "id": "ep02-200k",
+        "caption": "200K at house of growth"
+      },
+      {
+        "id": "ep02-play-button",
+        "caption": "the silver play button"
+      },
+      {
+        "id": "ep02-bd-times",
+        "caption": "the 2023 season"
+      },
+      {
+        "id": "ep02-team",
+        "caption": "the team"
+      },
+      {
+        "id": "ep02-wave",
+        "caption": "hi from HoG"
+      },
+      {
+        "id": "ep02-desk",
+        "caption": "edit day"
+      },
+      {
+        "id": "ep02-edit",
+        "caption": "timeline life"
+      },
+      {
+        "id": "ep02-hog-profile",
+        "caption": "house of growth"
+      },
+      {
+        "id": "ep02-hoa-profile",
+        "caption": "house of affairs"
+      },
+      {
+        "id": "ep02-tb-profile",
+        "caption": "tech burner"
+      }
+    ],
+    "todo": [
+      "Your notes say this ended in both Jan 2024 and Feb 2024. Which one?"
+    ]
+  },
+  {
+    "n": "03",
+    "slug": "ep-03",
+    "title": "Bigger problem",
+    "company": "Monk Entertainment",
+    "period": "Mar 2024 – Aug 2024",
+    "logline": "Seeing the business behind the creator.",
+    "color": "pink",
+    "roles": [
+      {
+        "company": "Monk Entertainment",
+        "title": "Creative Producer",
+        "period": "Mar 2024 – Aug 2024",
+        "notes": "Brand campaigns and content ideation, planning and execution for clients. Leading teams of designers and editors, and turning a client brief into something worth watching."
+      }
+    ],
+    "story": [
+      "So... I quit Tech Burner.\nThe team was moving to Bangalore, and for me, that just wasn't possible.\nI'm a single child from Haridwar, and my parents were not really comfortable sending me that far away.",
+      "So there wasn't much to think about.\nI had to start looking again.",
+      "For almost two months, I was just trying to find the next thing.\nApplying.\nTalking to people.\nLooking at companies.\nWondering if I should continue doing what I was doing or try something completely different.",
+      "Eventually, I landed at Monk Entertainment.\nAnd this time, I walked into a slightly different world.\nTill then, I had mostly been on the creator side.",
+      "At Monk, I started seeing what happens behind the creator.\nBrands.\nClients.\nCampaigns.\nPitches.\nBudgets.\nDeadlines.",
+      "I started understanding that content isn't just about making something cool.\nThere is a business behind it.\nA reason why the brand is spending money.\nA reason why the audience should care.\nAnd a reason why the idea needs to work.",
+      "I started looking at my work differently.\nNot just: “Does this look good?”\nBut also: “Does this make sense?”\nThat was new for me.",
+      "I came here thinking I was going to learn more about content.\nI ended up learning a lot more about the business of content.\nAnd once I started seeing that side...\nI wanted to go even deeper.",
+      "Things were going pretty well at Monk.\nI was working from home, getting to understand the business side of content and seeing what happens behind the creator.\nThen, after a few months, they asked me to join them at the Mumbai office.",
+      "And I thought...\nBangalore nahi jaa paya, Mumbai kaise jaaunga bhai. 😂",
+      "So yeah, once again, I had to start looking.\nBut this time, I had a slightly different thought.\nI had already seen one side of the industry.\nThen I got to see what happens behind it.\nMaybe it was time to see what happens on the other side.",
+      "I just didn't know it yet. hehe"
+    ],
+    "notes": [
+      "Bangalore nahi jaa paya, Mumbai kaise jaaunga bhai. 😂",
+      "Not just “does this look good?” but also “does this make sense?”"
+    ],
+    "cameraRoll": [],
+    "todo": [
+      "No photos from Monk yet. Send 2–4 to fill this camera roll."
+    ]
+  },
+  {
+    "n": "04",
+    "slug": "ep-04",
+    "title": "Bigger picture",
+    "company": "CashKaro",
+    "period": "Sep 2024 – Jan 2026",
+    "logline": "Building for one brand, and figuring out this whole AI thing.",
+    "color": "sky",
+    "roles": [
+      {
+        "company": "CashKaro",
+        "title": "Content & Growth Lead",
+        "period": "Sep 2024 – Jan 2026",
+        "notes": "I ideated, planned and created content for social media, performance, educational channels, the app and digital channels. I used AI tools and workflows to support content ideation and creative production, and handled content from idea to production and publishing."
+      }
+    ],
+    "story": [
+      "So after Monk, I started looking again.\nAnd this time I was thinking a little differently.",
+      "Till now, I had mostly lived inside the content world.\nFirst making content with my friend.\nThen working in a content-driven org.\nThen understanding the business behind all of it.",
+      "Now I was curious about what happens when you're actually trying to build something for a brand.\nAnd that's how I ended up at CashKaro.",
+      "It felt different from everything I had done before.\nThere was no creator waiting for the next video.\nNo client asking for a content calendar.",
+      "Now there was a brand to think about and just one direction.\nWhat should we say?\nHow should we say it?\nWhere should it live?\nAnd most importantly...\nwhy should anyone care?",
+      "I started getting involved in campaigns, content, performance, activation and retention marketing, and all the random things that sit somewhere between marketing and making stuff.\nAnd I really liked that.",
+      "Because I could finally use all the things I had picked up along the way.\nThe edit and design brain from the beginning.\nThe content brain from Tech Burner.\nThe business understanding from Monk.",
+      "And then, somewhere along the way, I started figuring out this whole AI thing.",
+      "At first, I was just playing with it.\nMaking weird stuff. Trying different tools. Breaking things. Trying again.",
+      "But slowly I started seeing where it could actually be useful for brands.\nNot just “look, AI can make this.”\nMore like:\n“Can this help us make something faster?”\n“Can we try an idea that would normally take too much time?”\n“Can we use it to make the brand do something it couldn't do before?”\nThat's when it got interesting for me.",
+      "I started looking at AI less like a cool new tool and more like another part of the creative process.\nExcept now all these things had to work together.",
+      "And that was probably the first time I felt like:\nOh shit. Maybe all those different things I was doing were actually adding up.",
+      "Maybe I wasn't jumping from one thing to another.\nMaybe I was just collecting things."
+    ],
+    "notes": [
+      "…and most importantly, why should anyone care?",
+      "Maybe I was just collecting things."
+    ],
+    "cameraRoll": [
+      {
+        "id": "ck-meta-hidden-cashback-app",
+        "caption": "from the work"
+      },
+      {
+        "id": "ck-travel-hack",
+        "caption": "travel hack"
+      },
+      {
+        "id": "ck-wallet-mein-paise",
+        "caption": "wallet mein paise"
+      }
+    ],
+    "todo": [
+      "These are stills from your CashKaro ads. Send behind-the-scenes photos if you have them."
+    ]
+  },
+  {
+    "n": "05",
+    "slug": "ep-05",
+    "title": "Putting it all together",
+    "company": "Emami",
+    "period": "Feb 2026 – now",
+    "logline": "AI-led creative for brands that have to perform.",
+    "color": "sand",
+    "roles": [
+      {
+        "company": "Emami",
+        "title": "Brand & Creative Strategist",
+        "period": "Feb 2026 – Present",
+        "notes": "I work on AI-led creative workflows and brand content that has to perform, not just look good. My work covers creative strategy, content production, and building systems that let good creative get made repeatedly."
+      }
+    ],
+    "story": [
+      "By this point, I had collected quite a few things.\nThe edit and design brain from the beginning.\nThe content brain from Tech Burner.\nThe business understanding from Monk.\nThe brand thinking from CashKaro.",
+      "And somewhere along the way, I had started getting really curious about AI.\nNot because I wanted to become an “AI guy”.\nI just had a lot of ideas.\nAnd sometimes the problem was that I couldn't make them fast enough.",
+      "So I started using AI to close that gap.\nI'd have some vague idea in my head...\n“What if we tried this?”\nAnd instead of spending days figuring out whether it was even possible, I could just try it.",
+      "Make something.\nBreak it.\nChange it.\nTry another version.",
+      "Sometimes the idea was shit.\nSometimes the AI was shit.\nSometimes both of us were shit. 😂",
+      "But sometimes...\nit worked.\nAnd that’s when it became interesting.",
+      "I started figuring out how these tools could actually fit into the way brands work.\nNot replacing the thinking.\nNot replacing the craft.\nJust making the distance between “I have an idea” and “let's see it” much shorter.",
+      "And that changed the way I started working.\nI could explore more.\nTest more.\nMake more versions.\nTake an idea that was sitting somewhere in my head and actually build it.",
+      "So now all those things I had picked up over the years had to work together.",
+      "And honestly...\nI'll say it again.\nMaybe all those random things I was doing were actually adding up.\nMaybe I wasn't jumping from one thing to another.\nMaybe I was just collecting things.\nAnd now I'm finally figuring out what I can do with all of them."
+    ],
+    "notes": [
+      "Sometimes both of us were shit. 😂",
+      "The distance between “I have an idea” and “let’s see it”, much shorter."
+    ],
+    "cameraRoll": [
+      {
+        "id": "emami-ai-office",
+        "caption": "made with AI"
+      },
+      {
+        "id": "emami-ai-moms-adapt",
+        "caption": "moms adapt"
+      }
+    ],
+    "todo": [
+      "These are stills from your Emami AI ads. Send behind-the-scenes photos if you have them."
+    ]
+  }
+]

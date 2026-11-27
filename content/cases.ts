@@ -1,4 +1,7 @@
-// The four featured cases. Text comes from your notes where it exists.
+import cases from './data/cases.json';
+
+// The featured cases, in the order the home page shows them. The text is
+// content/data/cases.json, which the CMS (/admin) edits; this file holds its types.
 // Empty fields (brief, idea, results) are hidden on the live site and show up
 // as "needs" notes on the preview build, so you can see what to send.
 
@@ -26,70 +29,6 @@ export interface CaseStudy {
   todo?: string[];
 }
 
-export const CASES: CaseStudy[] = [
-  {
-    slug: 'goat-latent',
-    tab: 'Case 01',
-    color: 'ink',
-    brand: 'CashKaro',
-    title: "India's GOAT Latent",
-    oneLiner: "Three YouTube films for CashKaro's GOAT campaign.",
-    tags: ['campaign', 'youtube', 'comedy'],
-    cover: { kind: 'youtube', id: '4ys_Tyxy-Ac' },
-    todo: [
-      'The brief: what CashKaro needed from this campaign',
-      'Your role and the team',
-      'The idea in one or two lines',
-      'Results: views, subscribers, installs, anything you have',
-    ],
-  },
-  {
-    slug: 'cashkaro-ads',
-    tab: 'Case 02',
-    color: 'yellow',
-    brand: 'CashKaro',
-    title: 'Ads that stop the scroll',
-    oneLiner: 'Ads and films for Meta and YouTube, mostly talking-head Hinglish, made to sell without feeling like an ad.',
-    period: 'Sep 2024 – Jan 2026',
-    role: 'Content & Growth Lead',
-    tags: ['performance', 'vertical video', 'hinglish'],
-    cover: { kind: 'video', id: 'ck-meta-hidden-cashback-app' },
-    context:
-      'I ideated, planned and created content for social media, performance, educational channels, the app and digital channels. I used AI tools and workflows to support content ideation and creative production, and handled content from idea to production and publishing.',
-    todo: ['The brief', 'Results: CTR, CPI or CPA, ROAS, spends, winners', 'Which ads did best, and why'],
-  },
-  {
-    slug: 'emami-ai',
-    tab: 'Case 03',
-    color: 'blue',
-    brand: 'Emami',
-    title: 'Emami × AI',
-    oneLiner: 'AI-led video ads for Emami, from the first idea to the final edit.',
-    period: 'Feb 2026 – now',
-    role: 'Brand & Creative Strategist',
-    tags: ['AI', 'video ads', 'workflow'],
-    cover: { kind: 'video', id: 'emami-ai-office-portrait' },
-    context:
-      'I work on AI-led creative workflows and brand content that has to perform, not just look good. My work covers creative strategy, content production, and building systems that let good creative get made repeatedly.',
-    todo: ['The brief and the product', 'Tools you used, step by step', 'Results: time saved, cost, performance'],
-  },
-  {
-    slug: 'tech-burner',
-    tab: 'Case 04',
-    color: 'pink',
-    brand: 'Tech Burner',
-    title: 'Channels at Tech Burner',
-    oneLiner: 'Leading House of Growth and House of Affairs, and producing for Tech Burner: ideas, teams, shoots and publishing.',
-    period: 'May 2022 – Feb 2024',
-    role: 'Channel Lead & Content Producer',
-    team: 'A creator, a writer and two editors per channel',
-    tags: ['youtube', 'channel lead', 'team'],
-    cover: { kind: 'photo', id: 'ep02-play-button' },
-    context:
-      'House of Growth and House of Affairs were niche channels Tech Burner launched with in-house creators. I led each channel with a creator, a writer and two editors, handling everything from ideation and content direction to execution, team coordination and publishing. On Tech Burner itself I worked on content from idea to execution and editing: developing concepts, editing videos and packaging content.\n\nIronically, the original channels have since been deleted. These are the few videos I still have from that chapter.',
-    bts: ['ep02-200k', 'ep02-play-button', 'ep02-team', 'ep02-wave'],
-    todo: ['Numbers: subscribers, views, the 200K moment', 'One video you are proudest of, and why'],
-  },
-];
+export const CASES = cases as CaseStudy[];
 
 export const caseBySlug = (slug: string) => CASES.find((c) => c.slug === slug);

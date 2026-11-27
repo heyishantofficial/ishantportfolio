@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit",
     "media:encode": "node scripts/encode-media.mjs",
     "media:push": "node scripts/push-media.mjs",
-    "media:key": "node scripts/media-key.mjs"
+    "media:key": "node scripts/media-key.mjs",
+    "cms:password": "node scripts/cms-password.mjs",
+    "cms:local": "CMS_LOCAL_REPO=. node server/index.js"
   },
   "dependencies": {
     "compression": "^1.8.2",

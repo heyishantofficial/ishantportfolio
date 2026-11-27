@@ -1,0 +1,638 @@
+[
+  {
+    "id": "goat-indias-goat-latent",
+    "title": "India’s GOAT Latent",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "youtube",
+    "youtubeId": "4ys_Tyxy-Ac",
+    "caseSlug": "goat-latent"
+  },
+  {
+    "id": "goat-cashback-vs-coins-ft-goatswami",
+    "title": "Cashback💸 vs Coins ft. Goatswami",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "youtube",
+    "youtubeId": "-Zivb5HvCsk",
+    "caseSlug": "goat-latent"
+  },
+  {
+    "id": "goat-og-goaties-returns",
+    "title": "OG Goaties Returns",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "youtube",
+    "youtubeId": "urm9mbWdqmo",
+    "caseSlug": "goat-latent"
+  },
+  {
+    "id": "ck-meta-001",
+    "title": "CashKaro Meta ad 1",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-002",
+    "title": "CashKaro Meta ad 2",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-003",
+    "title": "CashKaro Meta ad 3",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-cashkaro-2",
+    "title": "CashKaro film 2",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-cashkaro",
+    "title": "CashKaro film",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-chhota-nahi-bada-hai",
+    "title": "Chhota nahi bada hai",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "youtube",
+    "youtubeId": "BS8kUgRMnYk",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-cid-cid",
+    "title": "CID CID",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-credit-card-travel",
+    "title": "Credit card travel",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-hidden-cashback-app",
+    "title": "Hidden cashback app",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-mocumentry-style",
+    "title": "Mockumentary style",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-meta-stop-coupon-hunting",
+    "title": "Stop coupon hunting",
+    "brand": "CashKaro",
+    "category": "campaigns",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-001",
+    "title": "CashKaro ad 1",
+    "brand": "CashKaro",
+    "category": "brand",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-002",
+    "title": "CashKaro ad 2",
+    "brand": "CashKaro",
+    "category": "brand",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-003",
+    "title": "CashKaro ad 3",
+    "brand": "CashKaro",
+    "category": "brand",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-004",
+    "title": "CashKaro ad 4",
+    "brand": "CashKaro",
+    "category": "brand",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-005",
+    "title": "CashKaro ad 5",
+    "brand": "CashKaro",
+    "category": "brand",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-006",
+    "title": "CashKaro ad 6",
+    "brand": "CashKaro",
+    "category": "brand",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-travel-hack",
+    "title": "Travel hack",
+    "brand": "CashKaro",
+    "category": "brand",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "ck-wallet-mein-paise",
+    "title": "Wallet mein paise",
+    "brand": "CashKaro",
+    "category": "brand",
+    "kind": "video",
+    "caseSlug": "cashkaro-ads"
+  },
+  {
+    "id": "emami-ai-moms-adapt",
+    "title": "Moms adapt",
+    "brand": "Emami",
+    "category": "ai",
+    "kind": "video",
+    "caseSlug": "emami-ai"
+  },
+  {
+    "id": "emami-ai-office",
+    "title": "Office",
+    "brand": "Emami",
+    "category": "ai",
+    "kind": "video",
+    "caseSlug": "emami-ai"
+  },
+  {
+    "id": "emami-ai-office-2",
+    "title": "Office 2",
+    "brand": "Emami",
+    "category": "ai",
+    "kind": "video",
+    "caseSlug": "emami-ai"
+  },
+  {
+    "id": "emami-ai-office-portrait-2",
+    "title": "Office portrait 2",
+    "brand": "Emami",
+    "category": "ai",
+    "kind": "video",
+    "caseSlug": "emami-ai"
+  },
+  {
+    "id": "emami-ai-office-portrait",
+    "title": "Office portrait",
+    "brand": "Emami",
+    "category": "ai",
+    "kind": "video",
+    "caseSlug": "emami-ai"
+  },
+  {
+    "id": "emami-why-himalayan-shilajit-is-the-best",
+    "title": "Why Himalayan Shilajit is the Best?",
+    "brand": "Emami",
+    "category": "brand",
+    "kind": "youtube",
+    "youtubeId": "3i5-LfPSLiQ",
+    "short": true,
+    "caseSlug": "emami-ai"
+  },
+  {
+    "id": "tb-1-year-journey-of-our-special-project",
+    "title": "1 Year Journey of our Special Project",
+    "brand": "Tech Burner",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "PqqwTBKYusU",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "tb-i-tried-futuristic-luxury-car",
+    "title": "I Tried Futuristic Luxury Car",
+    "brand": "Tech Burner",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "h_JcE0yHkDo",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "tb-why-everyone-in-india-is-buying-iphones",
+    "title": "Why everyone in India is buying iPhones",
+    "brand": "Tech Burner",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "-DL5DYg8La4",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "tb-world-s-biggest-electric-car",
+    "title": "World's Biggest Electric Car",
+    "brand": "Tech Burner",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "bnJw9v0YN34",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "hog-bhaang-business-is-in-india",
+    "title": "Bhaang Business is in India",
+    "brand": "House of Growth",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "jKdQxwVXZ_E",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "hog-how-mukesh-ambani-might-kill-pepsi",
+    "title": "How Mukesh Ambani Might Kill Pepsi 🤔",
+    "brand": "House of Growth",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "xlfwW3FDNYM",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "hog-the-rising-industry-of-fast-food",
+    "title": "The Rising Industry Of Fast Food",
+    "brand": "House of Growth",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "dx_a9uduzQ0",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "hog-will-hotstar-survive-house-of-growth",
+    "title": "WILL HOTSTAR SURVIVE · House of Growth",
+    "brand": "House of Growth",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "fMDqcUzjFhQ",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "hoa-akhand-bharat-reality-house-of-affairs",
+    "title": "Akhand Bharat Reality · House of Affairs",
+    "brand": "House of Affairs",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "CBkV9dk9a2Y",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "hoa-isro-explained",
+    "title": "ISRO Explained",
+    "brand": "House of Affairs",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "u_i5sRaE6Rk",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "hoa-not-right-ep-02-house-of-affairs",
+    "title": "NOT RIGHT Ep 02 · House of Affairs",
+    "brand": "House of Affairs",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "9tuzXWW8FLw",
+    "caseSlug": "tech-burner"
+  },
+  {
+    "id": "ek-004",
+    "title": "EarnKaro ad 4",
+    "brand": "EarnKaro",
+    "category": "brand",
+    "kind": "video"
+  },
+  {
+    "id": "ek-axis",
+    "title": "Axis credit card",
+    "brand": "EarnKaro",
+    "category": "brand",
+    "kind": "video"
+  },
+  {
+    "id": "ek-don-t-miss-this-opportunity",
+    "title": "Don’t Miss This Opportunity",
+    "brand": "EarnKaro",
+    "category": "brand",
+    "kind": "youtube",
+    "youtubeId": "UDHQpluCwEQ",
+    "short": true
+  },
+  {
+    "id": "ek-earn-from-online-income",
+    "title": "Earn from Online Income",
+    "brand": "EarnKaro",
+    "category": "brand",
+    "kind": "youtube",
+    "youtubeId": "tfwfkmtfO4g",
+    "short": true
+  },
+  {
+    "id": "ek-earn-money-as-content-creator",
+    "title": "Earn Money as Content Creator",
+    "brand": "EarnKaro",
+    "category": "brand",
+    "kind": "youtube",
+    "youtubeId": "-6hMuKsg81I",
+    "short": true
+  },
+  {
+    "id": "ek-how-creators-secretly-make-money",
+    "title": "How Creators Secretly Make Money",
+    "brand": "EarnKaro",
+    "category": "brand",
+    "kind": "youtube",
+    "youtubeId": "flOaXia8SBA",
+    "short": true
+  },
+  {
+    "id": "ek-how-to-find-affiliate-deals",
+    "title": "How to Find Affiliate Deals",
+    "brand": "EarnKaro",
+    "category": "brand",
+    "kind": "youtube",
+    "youtubeId": "959-Iel1qac",
+    "short": true
+  },
+  {
+    "id": "ek-how-to-use-earnkaro-dashboard",
+    "title": "How to Use EarnKaro Dashboard",
+    "brand": "EarnKaro",
+    "category": "brand",
+    "kind": "youtube",
+    "youtubeId": "jor71EpSufc",
+    "short": true
+  },
+  {
+    "id": "fifth-its-fifth-sense-01",
+    "title": "Its Fifth Sense 01",
+    "brand": "Its Fifth Sense",
+    "category": "brand",
+    "kind": "video",
+    "href": "https://www.instagram.com/reel/DcOndYpsCSL/"
+  },
+  {
+    "id": "fifth-its-fifth-sense-02",
+    "title": "Its Fifth Sense 02",
+    "brand": "Its Fifth Sense",
+    "category": "brand",
+    "kind": "video",
+    "href": "https://www.instagram.com/reel/DcSsIMDxGPt/"
+  },
+  {
+    "id": "fifth-its-fifth-sense-03",
+    "title": "Its Fifth Sense 03",
+    "brand": "Its Fifth Sense",
+    "category": "brand",
+    "kind": "video",
+    "href": "https://www.instagram.com/reel/DctBYSEMVkR/"
+  },
+  {
+    "id": "nooe-reservenooe-01",
+    "title": "Reserve Nooe 01",
+    "brand": "Reserve Nooe",
+    "category": "brand",
+    "kind": "video"
+  },
+  {
+    "id": "nooe-reservenooe-02",
+    "title": "Reserve Nooe 02",
+    "brand": "Reserve Nooe",
+    "category": "brand",
+    "kind": "video"
+  },
+  {
+    "id": "nooe-reservenooe-03",
+    "title": "Reserve Nooe 03",
+    "brand": "Reserve Nooe",
+    "category": "brand",
+    "kind": "video"
+  },
+  {
+    "id": "nooe-reservenooe-04",
+    "title": "Reserve Nooe 04",
+    "brand": "Reserve Nooe",
+    "category": "brand",
+    "kind": "video"
+  },
+  {
+    "id": "ck-ai-ai-rohan-video-with-reaction",
+    "title": "AI Rohan, with reaction",
+    "brand": "CashKaro",
+    "category": "ai",
+    "kind": "video"
+  },
+  {
+    "id": "trend-ghibli-trend-ad",
+    "title": "Ghibli trend ad",
+    "category": "ai",
+    "kind": "youtube",
+    "youtubeId": "MJXMCwwNoTg"
+  },
+  {
+    "id": "dumb-2020-rewind",
+    "title": "2020 Rewind",
+    "brand": "Dumb Project",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "vyZxS83BF8g"
+  },
+  {
+    "id": "dumb-explaining-elon-musk-and-his-weird-tweets",
+    "title": "Explaining Elon Musk and his weird Tweets",
+    "brand": "Dumb Project",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "NXQiEDvogE4"
+  },
+  {
+    "id": "dumb-is-cryptocurrency-really-the-future-of-money",
+    "title": "Is Cryptocurrency really the Future of Money?",
+    "brand": "Dumb Project",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "udVU2cNjEIs"
+  },
+  {
+    "id": "dumb-nequality-in-vaccine-distribution-explained",
+    "title": "Inequality in Vaccine Distribution Explained",
+    "brand": "Dumb Project",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "cR-6XkRdyMI"
+  },
+  {
+    "id": "sop-can-kirana-store-survive-online-shopping",
+    "title": "Can KIRANA STORE survive ONLINE SHOPPING?",
+    "brand": "Shop Ok Please",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "QnEpgOsk-6U",
+    "short": true
+  },
+  {
+    "id": "sop-is-refurbished-phone-a-scam",
+    "title": "Is Refurbished phone a Scam?",
+    "brand": "Shop Ok Please",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "C-9EFrFh63I",
+    "short": true
+  },
+  {
+    "id": "sop-smartphones-ditched-the-headphone-jack",
+    "title": "Smartphones Ditched the Headphone Jack",
+    "brand": "Shop Ok Please",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "b1IalWaJ2C8",
+    "short": true
+  },
+  {
+    "id": "sop-stop-using-bad-lighting",
+    "title": "STOP Using Bad Lighting",
+    "brand": "Shop Ok Please",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "Hn1rlQy8iiw",
+    "short": true
+  },
+  {
+    "id": "sop-we-tested-10-minute-delivery",
+    "title": "We Tested 10-Minute Delivery!",
+    "brand": "Shop Ok Please",
+    "category": "youtube",
+    "kind": "youtube",
+    "youtubeId": "HX2aTeIVbRA",
+    "short": true
+  },
+  {
+    "id": "set-4",
+    "title": "Set clip 4",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-6-1",
+    "title": "Set clip 6.1",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-6",
+    "title": "Set clip 6",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-7",
+    "title": "Set clip 7",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-9",
+    "title": "Set clip 9",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-10",
+    "title": "Set clip 10",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-12",
+    "title": "Set clip 12",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-13",
+    "title": "Set clip 13",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-14",
+    "title": "Set clip 14",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-gc-2",
+    "title": "GC set 2",
+    "category": "sets",
+    "kind": "image"
+  },
+  {
+    "id": "set-gc-3",
+    "title": "GC set 3",
+    "category": "sets",
+    "kind": "image"
+  },
+  {
+    "id": "set-gc",
+    "title": "GC set",
+    "category": "sets",
+    "kind": "image"
+  },
+  {
+    "id": "set-hoa",
+    "title": "House of Affairs set",
+    "category": "sets",
+    "kind": "image"
+  },
+  {
+    "id": "set-hog",
+    "title": "House of Growth set",
+    "category": "sets",
+    "kind": "image"
+  },
+  {
+    "id": "set-main-2",
+    "title": "Main set, take 2",
+    "category": "sets",
+    "kind": "video"
+  },
+  {
+    "id": "set-main",
+    "title": "Main set",
+    "category": "sets",
+    "kind": "video"
+  }
+]

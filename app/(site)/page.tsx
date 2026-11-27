@@ -22,22 +22,26 @@ function Hero() {
           my name is
         </p>
         <div className="name-row">
-          <span className="wob">
-            <Sticker color={s0.color} r={s0.r} enter i={0}>
-              {s0.text}
-            </Sticker>
-          </span>
+          {s0 ? (
+            <span className="wob">
+              <Sticker color={s0.color} r={s0.r} enter i={0}>
+                {s0.text}
+              </Sticker>
+            </span>
+          ) : null}
           <h1 id="hero-name" className="px hero-name">
             <span className="doodle enter-doodle">
               <PixelLetters text="Ishant" enter />
             </span>
             <span className="sr-only"> Chauhan, {SITE.role}</span>
           </h1>
-          <span className="wob slow">
-            <Sticker color={s1.color} r={s1.r} enter i={1}>
-              {s1.text}
-            </Sticker>
-          </span>
+          {s1 ? (
+            <span className="wob slow">
+              <Sticker color={s1.color} r={s1.r} enter i={1}>
+                {s1.text}
+              </Sticker>
+            </span>
+          ) : null}
         </div>
         <div className="hero-stickers">
           {rest.map((s, i) => (

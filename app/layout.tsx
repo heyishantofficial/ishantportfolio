@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { DM_Mono, Handjet, Inter, Just_Me_Again_Down_Here } from 'next/font/google';
-import { Footer } from '@/components/Footer';
-import { AnalyticsInit } from '@/components/interactive';
-import { Nav } from '@/components/Nav';
 import { SITE } from '@/content/site';
 import { IS_DRAFT } from '@/lib/draft';
 import './globals.css';
@@ -35,19 +32,8 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
-// Runs before first paint: the splash shows once per browser session.
+// Runs before first paint: the splash (app/(site)/layout.tsx) shows once per browser session.
 const SPLASH = `try{var s=sessionStorage,d=document.documentElement;if(s.getItem('hi'))d.classList.add('seen');else{s.setItem('hi','1');d.classList.add('first-visit')}}catch(e){document.documentElement.classList.add('seen')}`;
-
-const PERSON = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: SITE.name,
-  jobTitle: SITE.role,
-  worksFor: { '@type': 'Organization', name: SITE.company },
-  url: SITE.url,
-  email: `mailto:${SITE.email}`,
-  sameAs: SITE.socials.map((s) => s.href),
-};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -56,17 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: SPLASH }} />
       </head>
       <body>
-        <a className="skip-link" href="#main">
-          Skip to content
-        </a>
-        <div className="splash" aria-hidden="true">
-          <p className="hand">oh, hey! you found me 👋</p>
-        </div>
-        <Nav />
-        <main id="main">{children}</main>
-        <Footer />
-        <AnalyticsInit />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(PERSON) }} />
+        {children}
       </body>
     </html>
   );

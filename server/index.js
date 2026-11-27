@@ -18,6 +18,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
+import { cmsRouter } from './cms.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT) || 3000;
@@ -129,6 +130,15 @@ app.put('/api/media/:dir/:name', async (req, res) => {
     await fsp.rm(tmp, { force: true });
     res.status(500).json({ error: `Upload failed: ${err.message}` });
   }
+});
+
+// ---------- the CMS (/admin, and its API) ----------
+
+app.use('/api/cms', cmsRouter({ DATA_DIR, MEDIA_DIR, mediaKeyHash: MEDIA_KEY_HASH }));
+app.use('/admin', (_req, res, next) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.setHeader('Cache-Control', 'no-store');
+  next();
 });
 
 // ---------- media + old uploads ----------

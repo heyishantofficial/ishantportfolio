@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { SiteFrame } from '@/components/SiteFrame';
 import { Sticker } from '@/components/ui';
 
 export default function NotFound() {
   return (
+    <SiteFrame>
     <div className="container section" style={{ display: 'grid', gap: 22, justifyItems: 'center', textAlign: 'center' }}>
       <Sticker color="pink" r={-4}>
         error 404
@@ -22,5 +24,6 @@ export default function NotFound() {
         </Link>
       </div>
     </div>
+    </SiteFrame>
   );
 }
